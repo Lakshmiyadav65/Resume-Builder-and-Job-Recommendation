@@ -1,0 +1,36 @@
+{
+  "name": "atscribe-ai-resume-analyzer",
+  "version": "1.0.0",
+  "description": "AI-Powered Dual-Mode Resume Analysis & Recruitment Platform",
+  "private": true,
+  "workspaces": [
+    "backend",
+    "frontend"
+  ],
+  "scripts": {
+    "install-all": "cd backend && npm install && cd ../frontend && npm install",
+    "dev-backend": "cd backend && npm run dev",
+    "dev-frontend": "cd frontend && npm start",
+    "dev": "npx concurrently \"npm run dev-backend\" \"npm run dev-frontend\"",
+    "build": "npm install --prefix backend && npm install --prefix frontend && npm run build --prefix frontend",
+    "start": "npm start --prefix backend"
+  },
+  "keywords": [
+    "resume",
+    "ats",
+    "ai",
+    "gemini",
+    "recruitment",
+    "mern",
+    "react",
+    "nodejs",
+    "mongodb"
+  ],
+  "author": "Lakshmi",
+  "license": "MIT",
+  "homepage": "https://github.com/Lakshmiyadav65/Resume-Builder#readme",
+  "devDependencies": {
+    "concurrently": "^9.2.1",
+    "gh-pages": "^6.3.0"
+  }
+}

@@ -1,0 +1,121 @@
+.sidebar {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 280px;
+  height: 100vh;
+  background: rgba(20, 20, 20, 0.95);
+  backdrop-filter: blur(20px);
+  border-right: 1px solid rgba(60, 60, 60, 0.5);
+  display: flex;
+  flex-direction: column;
+  z-index: 100;
+  overflow-y: auto;
+  box-shadow: 4px 0 20px rgba(0, 0, 0, 0.5);
+}
+
+.sidebar-header {
+  padding: 20px 15px;
+  border-bottom: 1px solid rgba(60, 60, 60, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sidebar-logo {
+  width: 90%;
+  max-width: 240px;
+  height: auto;
+  object-fit: contain;
+  cursor: pointer;
+  transition: transform 0.3s ease;
+}
+
+.sidebar-nav {
+  flex: 1;
+  padding: 20px 15px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.sidebar-item {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 16px 20px;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  color: #999999;
+  font-weight: 500;
+}
+
+.sidebar-item.active {
+  background: linear-gradient(135deg, rgba(148, 72, 196, 0.3), rgba(93, 42, 145, 0.3));
+  border: 1px solid rgba(148, 72, 196, 0.4);
+  color: #ffffff;
+  box-shadow: 0 4px 15px rgba(148, 72, 196, 0.2);
+}
+
+.sidebar-icon {
+  font-size: 1.3rem;
+}
+
+.sidebar-label {
+  font-size: 1rem;
+}
+
+.sidebar-footer {
+  padding: 20px 25px;
+  border-top: 1px solid rgba(60, 60, 60, 0.5);
+}
+
+.dark-mode-toggle {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #999999;
+  font-weight: 500;
+}
+
+.toggle-switch {
+  width: 48px;
+  height: 26px;
+  background: rgba(148, 72, 196, 0.2);
+  border-radius: 13px;
+  position: relative;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-left: auto;
+}
+
+.toggle-switch.active {
+  background: linear-gradient(135deg, #9448C4, #5D2A91);
+}
+
+.toggle-thumb {
+  width: 20px;
+  height: 20px;
+  background: white;
+  border-radius: 50%;
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  transition: transform 0.3s ease;
+}
+
+.toggle-switch.active .toggle-thumb {
+  transform: translateX(22px);
+}
+
+@media (max-width: 768px) {
+  .sidebar {
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+  }
+
+  .sidebar.open {
+    transform: translateX(0);
+  }
+}
