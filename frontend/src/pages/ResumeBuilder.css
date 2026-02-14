@@ -5,6 +5,55 @@
   color: #fff;
 }
 
+/* Builder Header */
+.builder-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  max-width: 1200px;
+  margin: 0 auto 30px;
+  padding: 0 20px;
+}
+
+.back-to-dashboard-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  background: rgba(45, 55, 72, 0.8);
+  border: 2px solid rgba(99, 102, 241, 0.3);
+  border-radius: 10px;
+  color: #fff;
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.back-to-dashboard-btn:hover {
+  background: rgba(99, 102, 241, 0.2);
+  border-color: #6366f1;
+  box-shadow: 0 4px 16px rgba(99, 102, 241, 0.2);
+}
+
+.builder-title {
+  font-size: 1.8rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin: 0;
+  text-align: center;
+  flex: 1;
+}
+
+.header-spacer {
+  width: 180px;
+  /* Same width as back button to center the title */
+}
+
+
 /* Progress Stepper */
 .stepper {
   display: flex;
@@ -531,6 +580,27 @@ textarea {
 
 /* Responsive Design */
 @media (max-width: 768px) {
+  .builder-header {
+    flex-direction: column;
+    gap: 15px;
+    margin-bottom: 20px;
+  }
+
+  .builder-title {
+    font-size: 1.4rem;
+    order: -1;
+    /* Title first on mobile */
+  }
+
+  .header-spacer {
+    display: none;
+  }
+
+  .back-to-dashboard-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
   .stepper {
     overflow-x: auto;
     justify-content: flex-start;

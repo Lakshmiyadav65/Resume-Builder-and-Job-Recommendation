@@ -868,6 +868,21 @@ const ResumeBuilder = () => {
 
     return (
         <div className="resume-builder-container">
+            {/* Header with Back Navigation */}
+            <div className="builder-header">
+                <motion.button
+                    className="back-to-dashboard-btn"
+                    onClick={() => navigate('/dashboard')}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                >
+                    <FcPrevious style={{ fontSize: '1.5rem' }} />
+                    <span>Back to Dashboard</span>
+                </motion.button>
+                <h1 className="builder-title">Build Your Resume</h1>
+                <div className="header-spacer"></div>
+            </div>
+
             {/* Progress Stepper */}
             <div className="stepper">
                 {steps.map((step) => (
