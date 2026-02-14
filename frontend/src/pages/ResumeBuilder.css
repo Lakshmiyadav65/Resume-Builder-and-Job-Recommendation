@@ -436,6 +436,91 @@ textarea {
   cursor: not-allowed;
 }
 
+/* Template Selection */
+.template-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 25px;
+  margin-top: 20px;
+}
+
+.template-card {
+  background: rgba(45, 55, 72, 0.4);
+  border: 2px solid rgba(99, 102, 241, 0.2);
+  border-radius: 16px;
+  padding: 25px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.template-card:hover {
+  border-color: rgba(99, 102, 241, 0.5);
+  transform: translateY(-5px);
+  box-shadow: 0 8px 24px rgba(99, 102, 241, 0.2);
+}
+
+.template-card.selected {
+  border-color: #6366f1;
+  background: rgba(99, 102, 241, 0.1);
+  box-shadow: 0 8px 32px rgba(99, 102, 241, 0.3);
+}
+
+.template-preview {
+  text-align: center;
+  margin-bottom: 20px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid rgba(99, 102, 241, 0.2);
+}
+
+.template-icon {
+  font-size: 4rem;
+  margin-bottom: 15px;
+}
+
+.template-preview h3 {
+  font-size: 1.3rem;
+  margin: 0;
+  color: #fff;
+}
+
+.template-features {
+  text-align: left;
+}
+
+.template-description {
+  font-size: 0.9rem;
+  color: #a0aec0;
+  margin-bottom: 15px;
+  line-height: 1.5;
+}
+
+.template-features ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.template-features li {
+  font-size: 0.85rem;
+  color: #cbd5e1;
+  padding: 6px 0;
+}
+
+.selected-badge {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: #fff;
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
   .stepper {
@@ -444,33 +529,33 @@ textarea {
     gap: 30px;
     padding-bottom: 10px;
   }
-  
+
   .stepper::before {
     display: none;
   }
-  
+
   .step-circle {
     width: 45px;
     height: 45px;
     font-size: 1.3rem;
   }
-  
+
   .step-title {
     font-size: 0.75rem;
   }
-  
+
   .builder-form {
     padding: 25px;
   }
-  
+
   .form-grid {
     grid-template-columns: 1fr;
   }
-  
+
   .navigation-buttons {
     flex-direction: column;
   }
-  
+
   .next-btn {
     margin-left: 0;
   }
@@ -480,11 +565,11 @@ textarea {
   .resume-builder-container {
     padding: 20px 10px;
   }
-  
+
   .builder-form {
     padding: 20px;
   }
-  
+
   .step-content h2 {
     font-size: 1.5rem;
   }

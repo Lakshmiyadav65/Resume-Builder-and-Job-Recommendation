@@ -70,7 +70,8 @@ const ResumeBuilder = () => {
         { number: 4, title: 'Experience', icon: '💼' },
         { number: 5, title: 'Projects', icon: '🚀' },
         { number: 6, title: 'Skills', icon: '⚡' },
-        { number: 7, title: 'Review', icon: '✅' },
+        { number: 7, title: 'Template', icon: '🎨' },
+        { number: 8, title: 'Review', icon: '✅' },
     ];
 
     useEffect(() => {
@@ -121,7 +122,10 @@ const ResumeBuilder = () => {
     };
 
     const handleEnhanceBullet = async (text, section, expIndex, bulletIndex) => {
-        if (!text.trim()) return;
+        if (!text.trim()) {
+            alert('Please enter some text first before enhancing');
+            return;
+        }
 
         setIsEnhancing(true);
         setEnhancingIndex(`${section}-${expIndex}-${bulletIndex}`);
@@ -143,9 +147,12 @@ const ResumeBuilder = () => {
                     }
                     return newData;
                 });
+            } else {
+                alert('Failed to enhance text. Please try again.');
             }
         } catch (error) {
             console.error('Enhancement failed:', error);
+            alert('AI enhancement failed. Please check your internet connection and try again.');
         } finally {
             setIsEnhancing(false);
             setEnhancingIndex(null);
@@ -153,6 +160,11 @@ const ResumeBuilder = () => {
     };
 
     const handleGenerateSummary = async () => {
+        if (!resumeData.objective.targetRole) {
+            alert('Please enter your target role first');
+            return;
+        }
+
         setIsEnhancing(true);
         try {
             const response = await generateSummary({
@@ -164,9 +176,12 @@ const ResumeBuilder = () => {
 
             if (response.success) {
                 handleInputChange('objective', 'summary', response.summary);
+            } else {
+                alert('Failed to generate summary. Please try again.');
             }
         } catch (error) {
             console.error('Summary generation failed:', error);
+            alert('AI summary generation failed. Please check your internet connection and try again.');
         } finally {
             setIsEnhancing(false);
         }
@@ -184,9 +199,12 @@ const ResumeBuilder = () => {
 
             if (response.success) {
                 handleInputChange('skills', 'technical', response.skills);
+            } else {
+                alert('Failed to suggest skills. Please try again.');
             }
         } catch (error) {
             console.error('Skill suggestion failed:', error);
+            alert('AI skill suggestion failed. Please check your internet connection and try again.');
         } finally {
             setIsEnhancing(false);
         }
@@ -635,11 +653,138 @@ const ResumeBuilder = () => {
                                 onChange={(e) => handleInputChange('skills', 'languages', e.target.value.split(',').map(s => s.trim()).filter(Boolean))}
                                 rows="2"
                             />
+
                         </div>
                     </div>
                 );
 
             case 7:
+                return (
+                    <div className="step-content">
+                        <h2>Choose Your Template</h2>
+                        <p style={{ textAlign: 'center', color: '#999', marginBottom: '30px' }}>
+                            Select a professional template that best matches your career style
+                        </p>
+                        <div className="template-grid">
+                            <motion.div
+                                className={`template-card ${resumeData.selectedTemplate === 'modern' ? 'selected' : ''}`}
+                                onClick={() => handleInputChange('selectedTemplate', null, 'modern')}
+                                whileHover={{ scale: 1.03 }}
+                                whileTap={{ scale: 0.98 }}
+                            >
+                                <div className="template-preview">
+                                    <div className="template-icon">📄</div>
+                                    <h3>Modern Professional</h3>
+                                </div>
+                                <div className="template-features">
+                                    <p className="template-description">Clean, ATS-friendly design with bold section headers</p>
+                                    <ul>
+                                        <li>✓ Best for Tech & Corporate</li>
+                                        <li>✓ Excellent ATS compatibility</li>
+                                        <li>✓ Easy to scan</li>
+                                    </ul>
+                                </div>
+                                {resumeData.selectedTemplate === 'modern' && (
+                                    <div className="selected-badge">✓ Selected</div>
+                                )}
+                            </motion.div>
+
+                            <motion.div
+                                className={`template-card ${resumeData.selectedTemplate === 'classic' ? 'selected' : ''}`}
+                                onClick={() => handleInputChange('selectedTemplate', null, 'classic')}
+                                whileHover={{ scale: 1.03 }}
+                                whileTap={{ scale: 0.98 }}
+                            >
+                                <div className="template-preview">
+                                    <div className="template-icon">📋</div>
+                                    <h3>Classic Executive</h3>
+                                </div>
+                                <div className="template-features">
+                                    <p className="template-description">Traditional format with serif fonts and formal layout</p>
+                                    <ul>
+                                        <li>✓ Best for Finance & Legal</li>
+                                        <li>✓ Professional appearance</li>
+                                        <li>✓ Conservative design</li>
+                                    </ul>
+                                </div>
+                                {resumeData.selectedTemplate === 'classic' && (
+                                    <div className="selected-badge">✓ Selected</div>
+                                )}
+                            </motion.div>
+
+                            <motion.div
+                                className={`template-card ${resumeData.selectedTemplate === 'minimal' ? 'selected' : ''}`}
+                                onClick={() => handleInputChange('selectedTemplate', null, 'minimal')}
+                                whileHover={{ scale: 1.03 }}
+                                whileTap={{ scale: 0.98 }}
+                            >
+                                <div className="template-preview">
+                                    <div className="template-icon">🎯</div>
+                                    <h3>Minimal Clean</h3>
+                                </div>
+                                <div className="template-features">
+                                    <p className="template-description">Minimalist design focusing on content over decoration</p>
+                                    <ul>
+                                        <li>✓ Best for Design & Creative</li>
+                                        <li>✓ Maximum readability</li>
+                                        <li>✓ Contemporary style</li>
+                                    </ul>
+                                </div>
+                                {resumeData.selectedTemplate === 'minimal' && (
+                                    <div className="selected-badge">✓ Selected</div>
+                                )}
+                            </motion.div>
+
+                            <motion.div
+                                className={`template-card ${resumeData.selectedTemplate === 'creative' ? 'selected' : ''}`}
+                                onClick={() => handleInputChange('selectedTemplate', null, 'creative')}
+                                whileHover={{ scale: 1.03 }}
+                                whileTap={{ scale: 0.98 }}
+                            >
+                                <div className="template-preview">
+                                    <div className="template-icon">🎨</div>
+                                    <h3>Creative Bold</h3>
+                                </div>
+                                <div className="template-features">
+                                    <p className="template-description">Distinctive design with visual elements and color accents</p>
+                                    <ul>
+                                        <li>✓ Best for Marketing & Media</li>
+                                        <li>✓ Eye-catching layout</li>
+                                        <li>✓ Personality showcase</li>
+                                    </ul>
+                                </div>
+                                {resumeData.selectedTemplate === 'creative' && (
+                                    <div className="selected-badge">✓ Selected</div>
+                                )}
+                            </motion.div>
+
+                            <motion.div
+                                className={`template-card ${resumeData.selectedTemplate === 'technical' ? 'selected' : ''}`}
+                                onClick={() => handleInputChange('selectedTemplate', null, 'technical')}
+                                whileHover={{ scale: 1.03 }}
+                                whileTap={{ scale: 0.98 }}
+                            >
+                                <div className="template-preview">
+                                    <div className="template-icon">💻</div>
+                                    <h3>Technical Developer</h3>
+                                </div>
+                                <div className="template-features">
+                                    <p className="template-description">Code-inspired layout optimized for technical roles</p>
+                                    <ul>
+                                        <li>✓ Best for Software Engineers</li>
+                                        <li>✓ Skills-focused sections</li>
+                                        <li>✓ GitHub/Portfolio highlights</li>
+                                    </ul>
+                                </div>
+                                {resumeData.selectedTemplate === 'technical' && (
+                                    <div className="selected-badge">✓ Selected</div>
+                                )}
+                            </motion.div>
+                        </div>
+                    </div>
+                );
+
+            case 8:
                 return (
                     <div className="step-content review-step">
                         <h2>Review & Finalize</h2>
