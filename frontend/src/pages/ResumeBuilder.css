@@ -64,12 +64,20 @@
   border-color: #10b981;
 }
 
+/* Make the checkmark icon visible on completed steps */
+.step.completed .step-circle svg {
+  color: #ffffff !important;
+  font-size: 1.8rem;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+}
+
 .step-title {
   font-size: 0.85rem;
   color: #a0aec0;
   font-weight: 500;
   margin: 0;
   text-align: center;
+  white-space: nowrap;
 }
 
 .step.active .step-title {

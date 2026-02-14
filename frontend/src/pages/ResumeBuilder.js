@@ -127,6 +127,10 @@ const ResumeBuilder = () => {
             return;
         }
 
+        console.log('🤖 Enhancing bullet point...');
+        console.log('Text:', text);
+        console.log('Section:', section, 'Index:', expIndex, bulletIndex);
+
         setIsEnhancing(true);
         setEnhancingIndex(`${section}-${expIndex}-${bulletIndex}`);
 
@@ -135,9 +139,13 @@ const ResumeBuilder = () => {
                 ? resumeData.experience[expIndex]?.role
                 : resumeData.projects[expIndex]?.name;
 
-            const response = await enhanceBullet({ text, role });
+            const requestData = { text, role: role || '' };
+            console.log('Request Data:', requestData);
 
-            if (response.success) {
+            const response = await enhanceBullet(requestData);
+            console.log('API Response:', response);
+
+            if (response.success && response.enhanced) {
                 setResumeData(prev => {
                     const newData = { ...prev };
                     if (section === 'experience') {
@@ -147,12 +155,15 @@ const ResumeBuilder = () => {
                     }
                     return newData;
                 });
+                console.log('✅ Bullet enhanced successfully');
             } else {
+                console.error('❌ API returned unsuccessful response:', response);
                 alert('Failed to enhance text. Please try again.');
             }
         } catch (error) {
-            console.error('Enhancement failed:', error);
-            alert('AI enhancement failed. Please check your internet connection and try again.');
+            console.error('❌ Enhancement error:', error);
+            console.error('Error details:', error.response?.data || error.message);
+            alert(`AI enhancement failed: ${error.response?.data?.error || error.message || 'Unknown error'}. Please check your internet connection and try again.`);
         } finally {
             setIsEnhancing(false);
             setEnhancingIndex(null);
@@ -165,23 +176,35 @@ const ResumeBuilder = () => {
             return;
         }
 
+        console.log('🤖 Generating AI Summary...');
+        console.log('Target Role:', resumeData.objective.targetRole);
+
         setIsEnhancing(true);
         try {
-            const response = await generateSummary({
+            const requestData = {
                 targetRole: resumeData.objective.targetRole,
-                education: resumeData.education[0]?.degree,
+                education: resumeData.education[0]?.degree || '',
                 experience: resumeData.experience.length > 0 ? `${resumeData.experience.length} roles` : 'Entry level',
-                skills: resumeData.skills.technical,
-            });
+                skills: resumeData.skills.technical || [],
+            };
 
-            if (response.success) {
+            console.log('Request Data:', requestData);
+
+            const response = await generateSummary(requestData);
+
+            console.log('API Response:', response);
+
+            if (response.success && response.summary) {
                 handleInputChange('objective', 'summary', response.summary);
+                console.log('✅ Summary generated successfully');
             } else {
+                console.error('❌ API returned unsuccessful response:', response);
                 alert('Failed to generate summary. Please try again.');
             }
         } catch (error) {
-            console.error('Summary generation failed:', error);
-            alert('AI summary generation failed. Please check your internet connection and try again.');
+            console.error('❌ Summary generation error:', error);
+            console.error('Error details:', error.response?.data || error.message);
+            alert(`AI summary generation failed: ${error.response?.data?.error || error.message || 'Unknown error'}. Please check your internet connection and try again.`);
         } finally {
             setIsEnhancing(false);
         }
@@ -193,18 +216,27 @@ const ResumeBuilder = () => {
             return;
         }
 
+        console.log('🤖 Suggesting skills for role:', resumeData.objective.targetRole);
+
         setIsEnhancing(true);
         try {
-            const response = await suggestSkills({ targetRole: resumeData.objective.targetRole });
+            const requestData = { targetRole: resumeData.objective.targetRole };
+            console.log('Request Data:', requestData);
 
-            if (response.success) {
+            const response = await suggestSkills(requestData);
+            console.log('API Response:', response);
+
+            if (response.success && response.skills) {
                 handleInputChange('skills', 'technical', response.skills);
+                console.log('✅ Skills suggested successfully');
             } else {
+                console.error('❌ API returned unsuccessful response:', response);
                 alert('Failed to suggest skills. Please try again.');
             }
         } catch (error) {
-            console.error('Skill suggestion failed:', error);
-            alert('AI skill suggestion failed. Please check your internet connection and try again.');
+            console.error('❌ Skill suggestion error:', error);
+            console.error('Error details:', error.response?.data || error.message);
+            alert(`AI skill suggestion failed: ${error.response?.data?.error || error.message || 'Unknown error'}. Please check your internet connection and try again.`);
         } finally {
             setIsEnhancing(false);
         }
