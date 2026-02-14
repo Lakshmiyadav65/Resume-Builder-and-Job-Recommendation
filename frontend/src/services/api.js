@@ -75,4 +75,42 @@ export const generateAssignments = async (data) => {
   return response.data;
 };
 
+// Resume Builder APIs
+export const saveResume = async (data) => {
+  const response = await api.post('/resume-builder/save', data);
+  return response.data;
+};
+
+export const getResume = async (sessionId) => {
+  const response = await api.get(`/resume-builder/${sessionId}`);
+  return response.data;
+};
+
+export const enhanceBullet = async (data) => {
+  const response = await api.post('/resume-builder/enhance-bullet', data);
+  return response.data;
+};
+
+export const generateSummary = async (data) => {
+  const response = await api.post('/resume-builder/generate-summary', data);
+  return response.data;
+};
+
+export const suggestSkills = async (data) => {
+  const response = await api.post('/resume-builder/suggest-skills', data);
+  return response.data;
+};
+
+export const generatePDF = async (data) => {
+  const response = await api.post('/resume-builder/generate-pdf', data, {
+    responseType: 'blob'
+  });
+  return response.data;
+};
+
+export const updateResumeStatus = async (data) => {
+  const response = await api.put('/resume-builder/update-status', data);
+  return response.data;
+};
+
 export default api;

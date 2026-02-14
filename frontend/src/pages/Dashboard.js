@@ -83,7 +83,7 @@ const Dashboard = () => {
 
   const validateJobDescription = (text) => {
     const trimmedText = text.trim();
-    
+
     // Check minimum length (at least 50 characters)
     if (trimmedText.length < 50) {
       return { valid: false, message: 'Job description is too short. Please provide a detailed job description (minimum 50 characters).' };
@@ -113,7 +113,7 @@ const Dashboard = () => {
 
     // Check for job-related keywords
     const jobKeywords = [
-      'experience', 'skill', 'skills', 'responsibility', 'responsibilities', 
+      'experience', 'skill', 'skills', 'responsibility', 'responsibilities',
       'qualification', 'qualifications', 'requirement', 'requirements',
       'role', 'position', 'job', 'work', 'candidate', 'team',
       'develop', 'manage', 'lead', 'support', 'design', 'implement',
@@ -158,17 +158,17 @@ const Dashboard = () => {
     try {
       // Generate a new unique session ID for each analysis
       const newSessionId = `session_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
-      
+
       const formData = new FormData();
       formData.append('resume', resumeFile);
-      
+
       // Add job description (either text or file)
       if (jobDescFile) {
         formData.append('jobDescriptionFile', jobDescFile);
       } else {
         formData.append('jobDescription', jobDesc);
       }
-      
+
       formData.append('sessionId', newSessionId);
 
       const response = await analyzeResume(formData);
@@ -182,10 +182,10 @@ const Dashboard = () => {
     } catch (err) {
       console.error('Analysis error:', err);
       // Enhanced error handling for validation errors
-      const errorMessage = err.response?.data?.message || 
-                          err.response?.data?.reason || 
-                          err.response?.data?.error || 
-                          'Analysis failed. Please try again.';
+      const errorMessage = err.response?.data?.message ||
+        err.response?.data?.reason ||
+        err.response?.data?.error ||
+        'Analysis failed. Please try again.';
       setError(errorMessage);
     } finally {
       setLoading(false);
@@ -232,21 +232,21 @@ const Dashboard = () => {
 
   const renderFormattedFeedback = (feedback) => {
     if (!feedback) return 'No feedback available';
-    
+
     // Updated section headers to match new format
     const sections = ['STRENGTHS', 'WEAKNESSES/GAPS', 'OPPORTUNITIES', 'RECOMMENDATIONS'];
     let formattedContent = [];
     let currentSection = null;
     let currentContent = [];
-    
+
     const lines = feedback.split('\n');
-    
+
     lines.forEach((line) => {
       const trimmedLine = line.trim();
-      
+
       // Check if line is a section header (all caps)
       const isSection = sections.some(section => trimmedLine === section);
-      
+
       if (isSection) {
         // Save previous section if exists
         if (currentSection) {
@@ -263,7 +263,7 @@ const Dashboard = () => {
         currentContent.push(cleanedLine);
       }
     });
-    
+
     // Add the last section
     if (currentSection) {
       formattedContent.push({
@@ -271,12 +271,12 @@ const Dashboard = () => {
         content: currentContent.join('\n')
       });
     }
-    
+
     // If no sections found, return original text
     if (formattedContent.length === 0) {
       return <div>{feedback}</div>;
     }
-    
+
     return (
       <div>
         {formattedContent.map((section, index) => (
@@ -296,7 +296,7 @@ const Dashboard = () => {
   return (
     <div className="dashboard-container">
       <Sidebar />
-      
+
       <div className="dashboard-main">
         <motion.div
           className="dashboard-header"
@@ -306,7 +306,7 @@ const Dashboard = () => {
         >
           <div className="header-left">
             <div className="mode-selector" ref={dropdownRef}>
-              <button 
+              <button
                 className="mode-badge clickable"
                 onClick={() => setShowModeDropdown(!showModeDropdown)}
               >
@@ -314,7 +314,7 @@ const Dashboard = () => {
                 Student Mode
                 <FaChevronDown className={`dropdown-icon ${showModeDropdown ? 'open' : ''}`} />
               </button>
-              
+
               <AnimatePresence>
                 {showModeDropdown && (
                   <motion.div
@@ -324,7 +324,7 @@ const Dashboard = () => {
                     exit={{ opacity: 0, y: -10 }}
                     transition={{ duration: 0.2 }}
                   >
-                    <div 
+                    <div
                       className="mode-option active"
                       onClick={() => handleModeSwitch('student')}
                     >
@@ -334,7 +334,7 @@ const Dashboard = () => {
                         <span className="mode-desc">Analyze your resume & prepare</span>
                       </div>
                     </div>
-                    <div 
+                    <div
                       className="mode-option"
                       onClick={() => handleModeSwitch('recruiter')}
                     >
@@ -371,39 +371,68 @@ const Dashboard = () => {
           {!analysisComplete ? (
             <div className="upload-section">
               <motion.div
-                className="upload-card"
+                className="choice-container"
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: 0.3 }}
+                transition={{ delay: 0.2 }}
               >
-                <h3>Upload Files</h3>
-                <div
-                  className={`dropzone ${isDragging ? 'dragging' : ''} ${resumeFile ? 'has-file' : ''}`}
-                  onDragOver={handleDragOver}
-                  onDragLeave={handleDragLeave}
-                  onDrop={handleDrop}
-                  onClick={() => document.getElementById('file-input').click()}
-                >
-                  <input
-                    id="file-input"
-                    type="file"
-                    accept=".pdf"
-                    onChange={handleFileChange}
-                    style={{ display: 'none' }}
-                    disabled={analysisComplete}
-                  />
-                  <FcUpload className="upload-icon" style={{ fontSize: '3.5rem' }} />
-                  {resumeFile ? (
-                    <>
-                      <p className="upload-text success">✓ {resumeFile.name}</p>
-                      <p className="upload-hint">Click to change file</p>
-                    </>
-                  ) : (
-                    <>
-                      <p className="upload-text">Drag and drop file here</p>
-                      <p className="upload-hint">Limit 20MB per file • PDF</p>
-                    </>
-                  )}
+                <h3 style={{ textAlign: 'center', marginBottom: '30px', fontSize: '1.5rem' }}>
+                  Choose Your Starting Point
+                </h3>
+                <div className="choice-cards">
+                  <motion.div
+                    className="choice-card"
+                    whileHover={{ scale: 1.03, y: -5 }}
+                    onClick={() => navigate('/resume-builder')}
+                  >
+                    <div className="choice-icon">✨</div>
+                    <h4>Build from Scratch</h4>
+                    <p>Create a professional resume with our AI-powered builder</p>
+                    <ul className="choice-features">
+                      <li>✓ Step-by-step guidance</li>
+                      <li>✓ AI content enhancement</li>
+                      <li>✓ Professional templates</li>
+                    </ul>
+                  </motion.div>
+
+                  <motion.div
+                    className="choice-card"
+                    whileHover={{ scale: 1.03, y: -5 }}
+                  >
+                    <div className="choice-icon">📄</div>
+                    <h4>Upload Existing Resume</h4>
+                    <p>Analyze and improve your current resume</p>
+                    <div className="upload-inner">
+                      <div
+                        className={`dropzone ${isDragging ? 'dragging' : ''} ${resumeFile ? 'has-file' : ''}`}
+                        onDragOver={handleDragOver}
+                        onDragLeave={handleDragLeave}
+                        onDrop={handleDrop}
+                        onClick={() => document.getElementById('file-input').click()}
+                      >
+                        <input
+                          id="file-input"
+                          type="file"
+                          accept=".pdf"
+                          onChange={handleFileChange}
+                          style={{ display: 'none' }}
+                          disabled={analysisComplete}
+                        />
+                        <FcUpload className="upload-icon-small" style={{ fontSize: '2.5rem' }} />
+                        {resumeFile ? (
+                          <>
+                            <p className="upload-text success">✓ {resumeFile.name}</p>
+                            <p className="upload-hint">Click to change file</p>
+                          </>
+                        ) : (
+                          <>
+                            <p className="upload-text-small">Drag and drop or click</p>
+                            <p className="upload-hint">PDF only, max 20MB</p>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  </motion.div>
                 </div>
               </motion.div>
 
@@ -436,7 +465,7 @@ const Dashboard = () => {
                     </motion.button>
                   </div>
                 </div>
-                
+
                 {jobDescFile ? (
                   <div className="jd-file-display">
                     <div className="jd-file-info">

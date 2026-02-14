@@ -25,6 +25,7 @@ const analysisRoutes = require('./routes/analysis');
 const chatRoutes = require('./routes/chat');
 const prepPlanRoutes = require('./routes/prepPlan');
 const recruiterRoutes = require('./routes/recruiter');
+const resumeBuilderRoutes = require('./routes/resumeBuilder');
 
 // Serve static files from the React frontend app
 app.use(express.static(path.join(__dirname, '../frontend/build')));
@@ -34,6 +35,7 @@ app.use('/api/analysis', analysisRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/prep-plan', prepPlanRoutes);
 app.use('/api/recruiter', recruiterRoutes);
+app.use('/api/resume-builder', resumeBuilderRoutes);
 
 // Health Check
 app.get('/api/health', (req, res) => {

@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AppProvider } from './context/AppContext';
 import LandingPage from './pages/LandingPage';
 import Dashboard from './pages/Dashboard';
+import ResumeBuilder from './pages/ResumeBuilder';
 import RecruiterDashboard from './pages/RecruiterDashboard';
 import RecruiterRanking from './pages/RecruiterRanking';
 import AssignmentGenerator from './pages/AssignmentGenerator';
@@ -17,6 +18,7 @@ function App() {
         <Routes>
           <Route path="/" element={<LandingPage />} />
           <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/resume-builder" element={<ResumeBuilder />} />
           <Route path="/recruiter-dashboard" element={<RecruiterDashboard />} />
           <Route path="/recruiter-ranking" element={<RecruiterRanking />} />
           <Route path="/assignment-generator" element={<AssignmentGenerator />} />

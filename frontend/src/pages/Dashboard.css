@@ -167,7 +167,97 @@
   gap: 30px;
 }
 
-.upload-card, .job-desc-card {
+/* Choice Cards */
+.choice-container {
+  background: rgba(40, 40, 40, 0.8);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(60, 60, 60, 0.5);
+  border-radius: 20px;
+  padding: 40px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.choice-cards {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 30px;
+}
+
+.choice-card {
+  background: linear-gradient(135deg, rgba(148, 72, 196, 0.1) 0%, rgba(93, 42, 145, 0.1) 100%);
+  border: 2px solid rgba(148, 72, 196, 0.3);
+  border-radius: 16px;
+  padding: 30px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-align: center;
+}
+
+.choice-card:hover {
+  border-color: #9448C4;
+  background: linear-gradient(135deg, rgba(148, 72, 196, 0.15) 0%, rgba(93, 42, 145, 0.15) 100%);
+  transform: translateY(-5px);
+  box-shadow: 0 12px 40px rgba(148, 72, 196, 0.3);
+}
+
+.choice-icon {
+  font-size: 4rem;
+  margin-bottom: 20px;
+}
+
+.choice-card h4 {
+  font-size: 1.5rem;
+  margin-bottom: 15px;
+  color: #ffffff;
+}
+
+.choice-card p {
+  font-size: 1rem;
+  color: #999999;
+  margin-bottom: 20px;
+}
+
+.choice-features {
+  list-style: none;
+  padding: 0;
+  margin: 20px 0 0;
+  text-align: left;
+}
+
+.choice-features li {
+  padding: 8px 0;
+  color: #cbd5e1;
+  font-size: 0.95rem;
+}
+
+.upload-inner {
+  margin-top: 20px;
+}
+
+.upload-inner .dropzone {
+  padding: 30px 20px;
+  margin-top: 15px;
+}
+
+.upload-text-small {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #ffffff;
+  margin-bottom: 8px;
+}
+
+.upload-icon-small {
+  margin-bottom: 15px;
+}
+
+@media (max-width: 768px) {
+  .choice-cards {
+    grid-template-columns: 1fr;
+  }
+}
+
+.upload-card,
+.job-desc-card {
   background: rgba(40, 40, 40, 0.8);
   backdrop-filter: blur(20px);
   border: 1px solid rgba(60, 60, 60, 0.5);
@@ -176,7 +266,8 @@
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
 }
 
-.upload-card h3, .job-desc-card h3 {
+.upload-card h3,
+.job-desc-card h3 {
   font-size: 1.5rem;
   margin-bottom: 20px;
   color: #ffffff;
@@ -212,7 +303,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  
+
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
 }
 
@@ -277,7 +368,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  
+
 }
 
 .jd-remove-button:disabled {
@@ -369,7 +460,7 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  
+
 }
 
 .analyze-button:disabled {
@@ -387,7 +478,9 @@
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .error-message {
@@ -428,7 +521,7 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  
+
 }
 
 .gauges-container {
