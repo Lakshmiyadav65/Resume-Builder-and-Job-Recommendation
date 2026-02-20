@@ -3,11 +3,25 @@ import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FcUpload, FcDocument, FcVoicePresentation, FcSearch, FcCalendar, FcGraduationCap, FcBusinessman, FcRedo, FcBarChart } from 'react-icons/fc';
 import { FaChevronDown } from 'react-icons/fa';
+import { Button } from '../components/ui/button';
+import { Input } from '../components/ui/input';
+import { Textarea } from '../components/ui/textarea';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/ui/card';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "../components/ui/dropdown-menu"
 import { useApp } from '../context/AppContext';
 import { analyzeResume } from '../services/api';
 import Sidebar from '../components/Sidebar';
 import CircularGauge from '../components/CircularGauge';
 import './Dashboard.css';
+
+const MotionCard = motion(Card);
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -305,48 +319,34 @@ const Dashboard = () => {
           transition={{ duration: 0.5 }}
         >
           <div className="header-left">
-            <div className="mode-selector" ref={dropdownRef}>
-              <button
-                className="mode-badge clickable"
-                onClick={() => setShowModeDropdown(!showModeDropdown)}
-              >
-                <FcGraduationCap style={{ fontSize: '1.3rem', marginRight: '8px' }} />
-                Student Mode
-                <FaChevronDown className={`dropdown-icon ${showModeDropdown ? 'open' : ''}`} />
-              </button>
-
-              <AnimatePresence>
-                {showModeDropdown && (
-                  <motion.div
-                    className="mode-dropdown"
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
-                    transition={{ duration: 0.2 }}
-                  >
-                    <div
-                      className="mode-option active"
-                      onClick={() => handleModeSwitch('student')}
-                    >
-                      <FcGraduationCap className="mode-icon" />
-                      <div className="mode-text">
-                        <span className="mode-title">Student Mode</span>
-                        <span className="mode-desc">Analyze your resume & prepare</span>
-                      </div>
+            <div className="mode-selector">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" className="mode-badge gap-2 bg-slate-800 text-slate-200 border-slate-700 hover:bg-slate-700 hover:text-white">
+                    <FcGraduationCap style={{ fontSize: '1.3rem' }} />
+                    Student Mode
+                    <FaChevronDown className="ml-2 h-4 w-4 opacity-50" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-56 bg-slate-900 border-slate-700 text-slate-200">
+                  <DropdownMenuLabel>Select Mode</DropdownMenuLabel>
+                  <DropdownMenuSeparator className="bg-slate-700" />
+                  <DropdownMenuItem className="cursor-pointer focus:bg-slate-800 focus:text-white" onClick={() => handleModeSwitch('student')}>
+                    <FcGraduationCap className="mr-2 h-4 w-4" />
+                    <div className="flex flex-col">
+                      <span className="font-medium">Student Mode</span>
+                      <span className="text-xs text-slate-400">Analyze & prepare</span>
                     </div>
-                    <div
-                      className="mode-option"
-                      onClick={() => handleModeSwitch('recruiter')}
-                    >
-                      <FcBusinessman className="mode-icon" />
-                      <div className="mode-text">
-                        <span className="mode-title">Recruiter Mode</span>
-                        <span className="mode-desc">Rank resumes & evaluate candidates</span>
-                      </div>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem className="cursor-pointer focus:bg-slate-800 focus:text-white" onClick={() => handleModeSwitch('recruiter')}>
+                    <FcBusinessman className="mr-2 h-4 w-4" />
+                    <div className="flex flex-col">
+                      <span className="font-medium">Recruiter Mode</span>
+                      <span className="text-xs text-slate-400">Rank & evaluate</span>
                     </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
           <div className="header-right">
@@ -380,70 +380,78 @@ const Dashboard = () => {
                   Choose Your Starting Point
                 </h3>
                 <div className="choice-cards">
-                  <motion.div
-                    className="choice-card"
+                  <MotionCard
+                    className="choice-card cursor-pointer bg-slate-800/50 border-slate-700 hover:bg-slate-800 hover:border-indigo-500 transition-colors"
                     whileHover={{ scale: 1.03, y: -5 }}
                     onClick={() => navigate('/resume-builder')}
                   >
-                    <div className="choice-icon">✨</div>
-                    <h4>Build from Scratch</h4>
-                    <p>Create a professional resume with our AI-powered builder</p>
-                    <ul className="choice-features">
-                      <li>✓ Step-by-step guidance</li>
-                      <li>✓ AI content enhancement</li>
-                      <li>✓ Professional templates</li>
-                    </ul>
-                  </motion.div>
+                    <CardHeader className="text-center pb-2">
+                      <div className="choice-icon text-4xl mb-4">✨</div>
+                      <CardTitle>Build from Scratch</CardTitle>
+                      <CardDescription>Create a professional resume with our AI-powered builder</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <ul className="choice-features space-y-2 text-sm text-slate-300">
+                        <li>✓ Step-by-step guidance</li>
+                        <li>✓ AI content enhancement</li>
+                        <li>✓ Professional templates</li>
+                      </ul>
+                    </CardContent>
+                  </MotionCard>
 
-                  <motion.div
-                    className="choice-card"
+                  <MotionCard
+                    className="choice-card bg-slate-800/50 border-slate-700 hover:bg-slate-800 transition-colors"
                     whileHover={{ scale: 1.03, y: -5 }}
                   >
-                    <div className="choice-icon">📄</div>
-                    <h4>Upload Existing Resume</h4>
-                    <p>Analyze and improve your current resume</p>
-                    <div className="upload-inner">
-                      <div
-                        className={`dropzone ${isDragging ? 'dragging' : ''} ${resumeFile ? 'has-file' : ''}`}
-                        onDragOver={handleDragOver}
-                        onDragLeave={handleDragLeave}
-                        onDrop={handleDrop}
-                        onClick={() => document.getElementById('file-input').click()}
-                      >
-                        <input
-                          id="file-input"
-                          type="file"
-                          accept=".pdf"
-                          onChange={handleFileChange}
-                          style={{ display: 'none' }}
-                          disabled={analysisComplete}
-                        />
-                        <FcUpload className="upload-icon-small" style={{ fontSize: '2.5rem' }} />
-                        {resumeFile ? (
-                          <>
-                            <p className="upload-text success">✓ {resumeFile.name}</p>
-                            <p className="upload-hint">Click to change file</p>
-                          </>
-                        ) : (
-                          <>
-                            <p className="upload-text-small">Drag and drop or click</p>
-                            <p className="upload-hint">PDF only, max 20MB</p>
-                          </>
-                        )}
+                    <CardHeader className="text-center pb-2">
+                      <div className="choice-icon text-4xl mb-4">📄</div>
+                      <CardTitle>Upload Existing Resume</CardTitle>
+                      <CardDescription>Analyze and improve your current resume</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="upload-inner">
+                        <div
+                          className={`dropzone ${isDragging ? 'dragging' : ''} ${resumeFile ? 'has-file' : ''} border-2 border-dashed border-slate-600 rounded-lg p-6 text-center transition-colors hover:border-indigo-500 hover:bg-slate-700/50 cursor-pointer`}
+                          onDragOver={handleDragOver}
+                          onDragLeave={handleDragLeave}
+                          onDrop={handleDrop}
+                          onClick={() => document.getElementById('file-input').click()}
+                        >
+                          <input
+                            id="file-input"
+                            type="file"
+                            accept=".pdf"
+                            onChange={handleFileChange}
+                            style={{ display: 'none' }}
+                            disabled={analysisComplete}
+                          />
+                          <FcUpload className="upload-icon-small mx-auto mb-2" style={{ fontSize: '2.5rem' }} />
+                          {resumeFile ? (
+                            <>
+                              <p className="upload-text success text-green-400 font-medium">✓ {resumeFile.name}</p>
+                              <p className="upload-hint text-xs text-slate-400">Click to change file</p>
+                            </>
+                          ) : (
+                            <>
+                              <p className="upload-text-small font-medium text-slate-300">Drag and drop or click</p>
+                              <p className="upload-hint text-xs text-slate-400">PDF only, max 20MB</p>
+                            </>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  </motion.div>
+                    </CardContent>
+                  </MotionCard>
                 </div>
               </motion.div>
 
-              <motion.div
-                className="job-desc-card"
+              <MotionCard
+                className="job-desc-card bg-slate-800/50 border-slate-700 mt-8"
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: 0.4 }}
               >
-                <div className="job-desc-header">
-                  <h3>Paste the Job Description Here</h3>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-xl">Paste the Job Description Here</CardTitle>
                   <div className="job-desc-actions">
                     <input
                       id="jd-file-upload"
@@ -453,48 +461,49 @@ const Dashboard = () => {
                       style={{ display: 'none' }}
                       disabled={analysisComplete}
                     />
-                    <motion.button
-                      className="upload-jd-button"
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="upload-jd-button gap-2 bg-slate-700 border-slate-600 hover:bg-slate-600"
                       onClick={() => document.getElementById('jd-file-upload').click()}
                       disabled={analysisComplete}
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
                       title="Upload job description PDF"
                     >
                       <FcUpload /> Upload PDF
-                    </motion.button>
+                    </Button>
                   </div>
-                </div>
-
-                {jobDescFile ? (
-                  <div className="jd-file-display">
-                    <div className="jd-file-info">
-                      <FcDocument className="jd-file-icon" style={{ fontSize: '2rem' }} />
-                      <div className="jd-file-details">
-                        <p className="jd-file-name">{jobDescFile.name}</p>
-                        <p className="jd-file-size">{(jobDescFile.size / 1024).toFixed(2)} KB</p>
+                </CardHeader>
+                <CardContent>
+                  {jobDescFile ? (
+                    <div className="jd-file-display flex items-center justify-between bg-slate-700/50 p-4 rounded-lg border border-slate-600">
+                      <div className="jd-file-info flex items-center gap-4">
+                        <FcDocument className="jd-file-icon" style={{ fontSize: '2rem' }} />
+                        <div className="jd-file-details">
+                          <p className="jd-file-name font-medium text-slate-200">{jobDescFile.name}</p>
+                          <p className="jd-file-size text-xs text-slate-400">{(jobDescFile.size / 1024).toFixed(2)} KB</p>
+                        </div>
                       </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="jd-remove-button hover:bg-red-500/20 hover:text-red-400"
+                        onClick={removeJobDescFile}
+                        disabled={analysisComplete}
+                      >
+                        ×
+                      </Button>
                     </div>
-                    <motion.button
-                      className="jd-remove-button"
-                      onClick={removeJobDescFile}
-                      whileHover={{ scale: 1.1 }}
-                      whileTap={{ scale: 0.9 }}
+                  ) : (
+                    <Textarea
+                      className="job-desc-textarea min-h-[150px] bg-slate-900/50 border-slate-600 focus:border-indigo-500"
+                      placeholder="Enter the job description..."
+                      value={jobDesc}
+                      onChange={(e) => setJobDesc(e.target.value)}
                       disabled={analysisComplete}
-                    >
-                      ×
-                    </motion.button>
-                  </div>
-                ) : (
-                  <textarea
-                    className="job-desc-textarea"
-                    placeholder="Enter the job description..."
-                    value={jobDesc}
-                    onChange={(e) => setJobDesc(e.target.value)}
-                    disabled={analysisComplete}
-                  />
-                )}
-              </motion.div>
+                    />
+                  )}
+                </CardContent>
+              </MotionCard>
 
               {error && (
                 <motion.div
@@ -507,24 +516,24 @@ const Dashboard = () => {
               )}
 
               <div className="action-buttons">
-                <motion.button
-                  className="analyze-button"
+                <Button
+                  className="analyze-button w-full shadow-lg hover:shadow-indigo-500/25"
+                  variant="gradient"
+                  size="lg"
                   onClick={handleAnalyze}
                   disabled={loading || analysisComplete}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
                 >
                   {loading ? (
                     <>
-                      <div className="spinner"></div>
+                      <div className="spinner mr-2"></div>
                       Analyzing...
                     </>
                   ) : (
                     <>
-                      <FcBarChart style={{ marginRight: '8px' }} /> Start Analysis
+                      <FcBarChart style={{ marginRight: '8px', fontSize: '1.2rem' }} /> Start Analysis
                     </>
                   )}
-                </motion.button>
+                </Button>
               </div>
             </div>
           ) : (
@@ -537,14 +546,13 @@ const Dashboard = () => {
               >
                 <div className="results-header">
                   <h2><FcBarChart style={{ marginRight: '10px', fontSize: '1.8rem' }} />Match Scores</h2>
-                  <motion.button
-                    className="new-analysis-button"
+                  <Button
+                    variant="outline"
+                    className="new-analysis-button gap-2 border-slate-600 hover:bg-slate-700"
                     onClick={handleNewAnalysis}
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
                   >
-                    <FcRedo style={{ marginRight: '8px' }} /> New Analysis
-                  </motion.button>
+                    <FcRedo /> New Analysis
+                  </Button>
                 </div>
 
                 <div className="gauges-container">
@@ -560,43 +568,61 @@ const Dashboard = () => {
                   />
                 </div>
 
-                <div className="feedback-section">
-                  <h3><FcDocument style={{ marginRight: '10px', fontSize: '1.5rem' }} />Qualitative Feedback</h3>
-                  <div className="feedback-content">
-                    {renderFormattedFeedback(analysisData?.feedback)}
-                  </div>
-                </div>
+                <Card className="feedback-section bg-slate-800/50 border-slate-700 mt-6">
+                  <CardHeader>
+                    <CardTitle className="flex items-center text-xl">
+                      <FcDocument className="mr-3 text-2xl" /> Qualitative Feedback
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="feedback-content text-slate-300">
+                      {renderFormattedFeedback(analysisData?.feedback)}
+                    </div>
+                  </CardContent>
+                </Card>
 
-                <div className="navigation-cards">
-                  <motion.div
-                    className="nav-card"
+                <div className="navigation-cards grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
+                  <MotionCard
+                    className="nav-card cursor-pointer bg-slate-800/50 border-slate-700 hover:bg-slate-800 hover:border-indigo-500 transition-colors"
                     whileHover={{ scale: 1.03, y: -5 }}
                     onClick={() => navigate('/chat')}
                   >
-                    <FcVoicePresentation className="nav-icon" style={{ fontSize: '3rem' }} />
-                    <h4>Chat with Resume</h4>
-                    <p>Ask questions about your resume</p>
-                  </motion.div>
+                    <CardHeader className="text-center pb-2">
+                      <div className="flex justify-center mb-4">
+                        <FcVoicePresentation className="text-5xl" />
+                      </div>
+                      <CardTitle className="text-lg">Chat with Resume</CardTitle>
+                      <CardDescription>Ask questions about your resume</CardDescription>
+                    </CardHeader>
+                  </MotionCard>
 
-                  <motion.div
-                    className="nav-card"
+                  <MotionCard
+                    className="nav-card cursor-pointer bg-slate-800/50 border-slate-700 hover:bg-slate-800 hover:border-indigo-500 transition-colors"
                     whileHover={{ scale: 1.03, y: -5 }}
                     onClick={() => navigate('/deep-dive')}
                   >
-                    <FcSearch className="nav-icon" style={{ fontSize: '3rem' }} />
-                    <h4>Deep Dive</h4>
-                    <p>Detailed skills gap analysis</p>
-                  </motion.div>
+                    <CardHeader className="text-center pb-2">
+                      <div className="flex justify-center mb-4">
+                        <FcSearch className="text-5xl" />
+                      </div>
+                      <CardTitle className="text-lg">Deep Dive</CardTitle>
+                      <CardDescription>Detailed skills gap analysis</CardDescription>
+                    </CardHeader>
+                  </MotionCard>
 
-                  <motion.div
-                    className="nav-card"
+                  <MotionCard
+                    className="nav-card cursor-pointer bg-slate-800/50 border-slate-700 hover:bg-slate-800 hover:border-indigo-500 transition-colors"
                     whileHover={{ scale: 1.03, y: -5 }}
                     onClick={() => navigate('/preparation')}
                   >
-                    <FcCalendar className="nav-icon" style={{ fontSize: '3rem' }} />
-                    <h4>Preparation Plan</h4>
-                    <p>Get personalized study plan</p>
-                  </motion.div>
+                    <CardHeader className="text-center pb-2">
+                      <div className="flex justify-center mb-4">
+                        <FcCalendar className="text-5xl" />
+                      </div>
+                      <CardTitle className="text-lg">Preparation Plan</CardTitle>
+                      <CardDescription>Get personalized study plan</CardDescription>
+                    </CardHeader>
+                  </MotionCard>
                 </div>
               </motion.div>
             </AnimatePresence>

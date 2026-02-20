@@ -2,6 +2,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FcSupport, FcDocument, FcBusinessContact, FcSms } from 'react-icons/fc';
 import { FaPaperPlane, FaTrash } from 'react-icons/fa';
+import { Button } from '../components/ui/button';
+import { Textarea } from '../components/ui/textarea';
+import { Badge } from '../components/ui/badge';
 import { useApp } from '../context/AppContext';
 import { initChat, sendChatMessage, getChatHistory, clearChat } from '../services/api';
 import Sidebar from '../components/Sidebar';
@@ -62,7 +65,7 @@ const ChatWithResume = () => {
         if (response.success) {
           setSessionId(response.sessionId);
           setChatInitialized(true);
-          
+
           // Add welcome message from AI
           const welcomeMessage = {
             role: 'assistant',
@@ -86,7 +89,7 @@ const ChatWithResume = () => {
 Feel free to ask me anything about your resume! I'm here to provide personalized, insightful answers. 🚀`,
             timestamp: new Date(),
           };
-          
+
           setMessages([welcomeMessage]);
         }
       } catch (err) {
@@ -159,7 +162,7 @@ Feel free to ask me anything about your resume! I'm here to provide personalized
   return (
     <div className="chat-container">
       <Sidebar />
-      
+
       <div className="chat-main">
         <motion.div
           className="chat-header"
@@ -171,33 +174,31 @@ Feel free to ask me anything about your resume! I'm here to provide personalized
             <div className="header-text">
               <h1><FcSms style={{ marginRight: '10px' }} />Chat with Your Resume</h1>
               {resumeFile && (
-                <div className="resume-info-badge">
-                  <FcDocument style={{ marginRight: '5px', fontSize: '1rem' }} />
+                <Badge variant="secondary" className="resume-info-badge gap-2 font-normal text-slate-300 bg-slate-800">
+                  <FcDocument style={{ fontSize: '1rem' }} />
                   <span className="resume-name">{resumeFile.name}</span>
                   <span className="resume-size">({(resumeFile.size / 1024).toFixed(1)} KB)</span>
-                </div>
+                </Badge>
               )}
             </div>
           </div>
-          <div className="header-actions">
+          <div className="header-actions flex items-center gap-3">
             {chatInitialized && (
-              <motion.button
-                className="clear-button"
+              <Button
+                variant="ghost"
+                className="clear-button gap-2 text-slate-400 hover:text-red-400 hover:bg-red-900/10"
                 onClick={handleClearChat}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
               >
                 <FaTrash /> Clear Chat
-              </motion.button>
+              </Button>
             )}
-            <motion.button
-              className="upload-button"
+            <Button
+              variant="outline"
+              className="upload-button gap-2 border-slate-600 hover:bg-slate-700"
               onClick={() => document.getElementById('chat-file-input').click()}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
             >
-              <FcDocument style={{ marginRight: '8px' }} /> {resumeFile ? 'Change Resume' : 'Upload Resume'}
-            </motion.button>
+              <FcDocument /> {resumeFile ? 'Change Resume' : 'Upload Resume'}
+            </Button>
             <input
               id="chat-file-input"
               type="file"
@@ -217,14 +218,14 @@ Feel free to ask me anything about your resume! I'm here to provide personalized
             <FcSupport className="welcome-icon" style={{ fontSize: '4rem' }} />
             <h2>Welcome to Resume Chat!</h2>
             <p>Upload your resume to start asking questions about it.</p>
-            <motion.button
-              className="upload-welcome-button"
+            <Button
+              size="lg"
+              variant="gradient"
+              className="upload-welcome-button gap-2 mt-4"
               onClick={() => document.getElementById('chat-file-input').click()}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
             >
-              <FcDocument style={{ marginRight: '8px' }} /> Upload Resume (PDF)
-            </motion.button>
+              <FcDocument style={{ fontSize: '1.2rem' }} /> Upload Resume (PDF)
+            </Button>
           </motion.div>
         ) : (
           <>
@@ -284,24 +285,24 @@ Feel free to ask me anything about your resume! I'm here to provide personalized
             )}
 
             <div className="chat-input-container">
-              <textarea
-                className="chat-input"
+              <Textarea
+                className="chat-input bg-slate-800 border-slate-700 min-h-[50px] resize-none"
                 placeholder="Ask something about the resume..."
                 value={inputMessage}
                 onChange={(e) => setInputMessage(e.target.value)}
-                onKeyPress={handleKeyPress}
+                onKeyDown={handleKeyPress}
                 disabled={loading}
                 rows={1}
               />
-              <motion.button
-                className="send-button"
+              <Button
+                size="icon"
+                variant="gradient"
+                className="send-button h-12 w-12 shrink-0"
                 onClick={handleSendMessage}
                 disabled={!inputMessage.trim() || loading}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
               >
                 <FaPaperPlane />
-              </motion.button>
+              </Button>
             </div>
           </>
         )}

@@ -6,14 +6,11 @@
 
 ## 🚀 Live Demo
 
-**Frontend**: https://atscribe-frontend-production.up.railway.app  
-**Backend**: https://atscribe-backend-production.up.railway.app/api/health
+[Link to be updated after new deployment]
 
 ## 📌 Quick Links
 
 - [GitHub Repository](https://github.com/Lakshmiyadav65/Resume-Builder)
-- [Documentation](./PROJECT_OVERVIEW.md)
-- [Deployment Guide](./DEPLOYMENT.md)
 
 **Modern MERN Stack Application with AI-Powered Resume Analysis**
 
@@ -311,28 +308,7 @@ The build folder will contain optimized production files.
 
 ## 🚢 Deployment
 
-### 🚀 Live Demo
-
-**Coming Soon**: Deployed on Railway
-
-### Quick Deploy to Railway
-
-See detailed deployment guide: [`DEPLOYMENT.md`](./DEPLOYMENT.md)
-
-```bash
-# 1. Push to GitHub
-git init
-git add .
-git commit -m "Initial commit"
-git remote add origin https://github.com/Lakshmiyadav65/Resume-Builder.git
-git push -u origin main
-
-# 2. Deploy on Railway
-# Go to https://railway.app
-# Login with GitHub → New Project → Deploy from GitHub
-# Select: atscribe-ai-resume-analyzer
-# Configure backend & frontend services
-```
+Detailed deployment guide coming soon.
 
 **GitHub Repository**: https://github.com/Lakshmiyadav65/Resume-Builder
 

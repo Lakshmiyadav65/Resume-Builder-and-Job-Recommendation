@@ -1,6 +1,10 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { FcTodoList, FcIdea } from 'react-icons/fc';
+import { Button } from '../components/ui/button';
+import { Textarea } from '../components/ui/textarea';
+import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
+import { Badge } from '../components/ui/badge';
 import { generateAssignments } from '../services/api';
 import Sidebar from '../components/Sidebar';
 import './AssignmentGenerator.css';
@@ -14,7 +18,7 @@ const AssignmentGenerator = () => {
 
   const validateJobDescription = (text) => {
     const trimmedText = text.trim();
-    
+
     if (trimmedText.length < 50) {
       return { valid: false, message: 'Job description is too short. Please provide a detailed job description (minimum 50 characters).' };
     }
@@ -25,7 +29,7 @@ const AssignmentGenerator = () => {
     }
 
     const jobKeywords = [
-      'experience', 'skill', 'skills', 'responsibility', 'responsibilities', 
+      'experience', 'skill', 'skills', 'responsibility', 'responsibilities',
       'qualification', 'qualifications', 'requirement', 'requirements',
       'role', 'position', 'job', 'work', 'candidate', 'team',
       'develop', 'manage', 'lead', 'support', 'design', 'implement',
@@ -88,7 +92,7 @@ const AssignmentGenerator = () => {
   return (
     <div className="assignment-generator-container">
       <Sidebar />
-      
+
       <div className="assignment-generator-main">
         <motion.div
           className="assignment-generator-header"
@@ -97,16 +101,17 @@ const AssignmentGenerator = () => {
           transition={{ duration: 0.5 }}
         >
           <div className="header-left">
-            <span className="mode-badge">💼 Recruiter Mode</span>
+            <Badge variant="outline" className="mode-badge bg-slate-800 text-slate-300 border-slate-600 gap-2 px-3 py-1 text-sm font-medium">
+              💼 Recruiter Mode
+            </Badge>
           </div>
           <div className="header-right">
-            <motion.button
-              className="share-button"
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
+            <Button
+              variant="ghost"
+              className="share-button text-slate-400 hover:text-white hover:bg-slate-800"
             >
               Share
-            </motion.button>
+            </Button>
           </div>
         </motion.div>
 
@@ -119,25 +124,30 @@ const AssignmentGenerator = () => {
           <h2 className="section-title">📋 Assignment Idea Generator</h2>
 
           {!generated ? (
-            <div className="input-section">
+            <div className="input-section max-w-3xl mx-auto">
               <motion.div
-                className="job-desc-card"
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: 0.3 }}
               >
-                <h3>Enter Job Description</h3>
-                <p className="description-hint">
-                  Paste the complete job description to generate skill-based assignment ideas
-                  that help evaluate candidates effectively.
-                </p>
-                <textarea
-                  className="job-desc-textarea"
-                  placeholder="Enter the job description here..."
-                  value={jobDesc}
-                  onChange={(e) => setJobDesc(e.target.value)}
-                  disabled={generated}
-                />
+                <Card className="job-desc-card bg-slate-800 border-slate-700">
+                  <CardHeader>
+                    <CardTitle className="text-xl text-white">Enter Job Description</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="description-hint text-slate-400 mb-4 text-sm">
+                      Paste the complete job description to generate skill-based assignment ideas
+                      that help evaluate candidates effectively.
+                    </p>
+                    <Textarea
+                      className="job-desc-textarea bg-slate-900 border-slate-600 min-h-[200px] text-slate-200 resize-y"
+                      placeholder="Enter the job description here..."
+                      value={jobDesc}
+                      onChange={(e) => setJobDesc(e.target.value)}
+                      disabled={generated}
+                    />
+                  </CardContent>
+                </Card>
               </motion.div>
 
               {error && (
@@ -150,17 +160,17 @@ const AssignmentGenerator = () => {
                 </motion.div>
               )}
 
-              <div className="action-buttons">
-                <motion.button
-                  className="generate-button"
+              <div className="action-buttons mt-6 flex justify-center">
+                <Button
+                  variant="gradient"
+                  size="lg"
+                  className="generate-button w-full md:w-auto min-w-[200px] shadow-lg hover:shadow-indigo-500/25"
                   onClick={handleGenerateAssignments}
                   disabled={loading || generated}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
                 >
                   {loading ? (
                     <>
-                      <div className="spinner"></div>
+                      <div className="spinner mr-2"></div>
                       Generating Ideas...
                     </>
                   ) : (
@@ -168,7 +178,7 @@ const AssignmentGenerator = () => {
                       <FcIdea style={{ marginRight: '8px', fontSize: '1.3rem' }} /> Generate Assignment Ideas
                     </>
                   )}
-                </motion.button>
+                </Button>
               </div>
             </div>
           ) : (
@@ -177,16 +187,15 @@ const AssignmentGenerator = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
             >
-              <div className="results-header">
-                <h2>💡 Generated Assignment Ideas</h2>
-                <motion.button
-                  className="new-generation-button"
+              <div className="results-header flex items-center justify-between mb-6">
+                <h2 className="text-2xl font-bold text-white">💡 Generated Assignment Ideas</h2>
+                <Button
+                  variant="outline"
+                  className="new-generation-button border-slate-600 hover:bg-slate-700"
                   onClick={handleNewGeneration}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
                 >
                   <FcTodoList style={{ marginRight: '8px' }} /> New Generation
-                </motion.button>
+                </Button>
               </div>
 
               <div className="assignments-list">
@@ -194,26 +203,31 @@ const AssignmentGenerator = () => {
                   assignments.map((assignment, index) => (
                     <motion.div
                       key={index}
-                      className="assignment-card"
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: index * 0.1 }}
                     >
-                      <div className="assignment-number">{index + 1}</div>
-                      <div className="assignment-content">
-                        <h3>{assignment.title}</h3>
-                        <p className="assignment-description">{assignment.description}</p>
-                        <div className="assignment-meta">
-                          <div className="meta-item">
-                            <strong>📊 Evaluation Criteria:</strong>
-                            <span>{assignment.evaluationCriteria}</span>
+                      <Card className="assignment-card bg-slate-800 border-slate-700 hover:bg-slate-700/50 transition-colors">
+                        <CardContent className="p-6 flex gap-4">
+                          <div className="assignment-number flex items-center justify-center w-8 h-8 rounded-full bg-indigo-500/20 text-indigo-400 font-bold text-sm shrink-0 h-fit mt-1">
+                            {index + 1}
                           </div>
-                          <div className="meta-item">
-                            <strong>⏱️ Estimated Time:</strong>
-                            <span>{assignment.estimatedTime}</span>
+                          <div className="assignment-content flex-1">
+                            <h3 className="text-xl font-bold text-white mb-2">{assignment.title}</h3>
+                            <p className="assignment-description text-slate-300 mb-4">{assignment.description}</p>
+                            <div className="assignment-meta flex flex-wrap gap-4 text-sm bg-slate-900/50 p-3 rounded-lg border border-slate-700/50">
+                              <div className="meta-item flex items-center gap-2">
+                                <strong className="text-indigo-300">📊 Evaluation Criteria:</strong>
+                                <span className="text-slate-400">{assignment.evaluationCriteria}</span>
+                              </div>
+                              <div className="meta-item flex items-center gap-2">
+                                <strong className="text-indigo-300">⏱️ Estimated Time:</strong>
+                                <span className="text-slate-400">{assignment.estimatedTime}</span>
+                              </div>
+                            </div>
                           </div>
-                        </div>
-                      </div>
+                        </CardContent>
+                      </Card>
                     </motion.div>
                   ))
                 ) : (

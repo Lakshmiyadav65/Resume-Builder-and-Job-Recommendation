@@ -1,10 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FcCheckmark, FcNext, FcPrevious, FcDocument } from 'react-icons/fc';
+import { FcNext, FcPrevious, FcDocument, FcCheckmark } from 'react-icons/fc';
+import { FaCheck } from 'react-icons/fa';
+import { Button } from '../components/ui/button';
+import { Input } from '../components/ui/input';
+import { Textarea } from '../components/ui/textarea';
+import { Card, CardContent } from '../components/ui/card';
+import { Badge } from '../components/ui/badge';
 import { useApp } from '../context/AppContext';
 import { saveResume, enhanceBullet, generateSummary, suggestSkills, generatePDF } from '../services/api';
 import './ResumeBuilder.css';
+
+const MotionCard = motion(Card);
 
 const ResumeBuilder = () => {
     const navigate = useNavigate();
@@ -297,50 +305,50 @@ const ResumeBuilder = () => {
                     <div className="step-content">
                         <h2>Personal Information</h2>
                         <div className="form-grid">
-                            <input
+                            <Input
                                 type="text"
                                 placeholder="Full Name *"
                                 value={resumeData.personalInfo.fullName}
                                 onChange={(e) => handleInputChange('personalInfo', 'fullName', e.target.value)}
                                 required
                             />
-                            <input
+                            <Input
                                 type="email"
                                 placeholder="Email *"
                                 value={resumeData.personalInfo.email}
                                 onChange={(e) => handleInputChange('personalInfo', 'email', e.target.value)}
                                 required
                             />
-                            <input
+                            <Input
                                 type="tel"
                                 placeholder="Phone Number"
                                 value={resumeData.personalInfo.phone}
                                 onChange={(e) => handleInputChange('personalInfo', 'phone', e.target.value)}
                             />
-                            <input
+                            <Input
                                 type="text"
                                 placeholder="Location (City, State)"
                                 value={resumeData.personalInfo.location}
                                 onChange={(e) => handleInputChange('personalInfo', 'location', e.target.value)}
                             />
-                            <input
+                            <Input
                                 type="url"
                                 placeholder="LinkedIn Profile URL"
                                 value={resumeData.personalInfo.linkedin}
                                 onChange={(e) => handleInputChange('personalInfo', 'linkedin', e.target.value)}
                             />
-                            <input
+                            <Input
                                 type="url"
                                 placeholder="GitHub Profile URL"
                                 value={resumeData.personalInfo.github}
                                 onChange={(e) => handleInputChange('personalInfo', 'github', e.target.value)}
                             />
-                            <input
+                            <Input
                                 type="url"
                                 placeholder="Portfolio Website"
                                 value={resumeData.personalInfo.portfolio}
                                 onChange={(e) => handleInputChange('personalInfo', 'portfolio', e.target.value)}
-                                className="full-width"
+                                className="full-width col-span-2"
                             />
                         </div>
                     </div>
@@ -351,29 +359,29 @@ const ResumeBuilder = () => {
                     <div className="step-content">
                         <h2>Career Objective</h2>
                         <div className="form-group">
-                            <input
+                            <Input
                                 type="text"
                                 placeholder="Target Job Role (e.g., Software Engineer, Data Analyst) *"
                                 value={resumeData.objective.targetRole}
                                 onChange={(e) => handleInputChange('objective', 'targetRole', e.target.value)}
                                 required
                             />
-                            <div className="textarea-with-ai">
-                                <textarea
+                            <div className="textarea-with-ai mt-4">
+                                <Textarea
                                     placeholder="Professional Summary (2-3 sentences about your career goals and strengths)"
                                     value={resumeData.objective.summary}
                                     onChange={(e) => handleInputChange('objective', 'summary', e.target.value)}
-                                    rows="4"
+                                    rows={4}
                                 />
-                                <motion.button
-                                    className="ai-enhance-btn"
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="ai-enhance-btn gap-2"
                                     onClick={handleGenerateSummary}
                                     disabled={!resumeData.objective.targetRole || isEnhancing}
-                                    whileHover={{ scale: 1.05 }}
-                                    whileTap={{ scale: 0.95 }}
                                 >
                                     ✨ {isEnhancing ? 'Generating...' : 'AI Generate Summary'}
-                                </motion.button>
+                                </Button>
                             </div>
                         </div>
                     </div>
@@ -386,33 +394,33 @@ const ResumeBuilder = () => {
                         {resumeData.education.map((edu, index) => (
                             <div key={index} className="array-item">
                                 <div className="form-grid">
-                                    <input
+                                    <Input
                                         type="text"
                                         placeholder="University/College Name *"
                                         value={edu.university}
                                         onChange={(e) => handleInputChange('education', 'university', e.target.value, index)}
                                         required
                                     />
-                                    <input
+                                    <Input
                                         type="text"
                                         placeholder="Degree (e.g., B.Tech, M.Sc.) *"
                                         value={edu.degree}
                                         onChange={(e) => handleInputChange('education', 'degree', e.target.value, index)}
                                         required
                                     />
-                                    <input
+                                    <Input
                                         type="text"
                                         placeholder="Major/Specialization"
                                         value={edu.major}
                                         onChange={(e) => handleInputChange('education', 'major', e.target.value, index)}
                                     />
-                                    <input
+                                    <Input
                                         type="text"
                                         placeholder="Graduation Year"
                                         value={edu.graduationYear}
                                         onChange={(e) => handleInputChange('education', 'graduationYear', e.target.value, index)}
                                     />
-                                    <input
+                                    <Input
                                         type="text"
                                         placeholder="GPA (optional)"
                                         value={edu.gpa}
@@ -420,23 +428,25 @@ const ResumeBuilder = () => {
                                     />
                                 </div>
                                 {index > 0 && (
-                                    <button
-                                        className="remove-btn"
+                                    <Button
+                                        variant="destructive"
+                                        className="remove-btn mt-4"
                                         onClick={() => removeArrayItem('education', index)}
                                     >
                                         Remove Education
-                                    </button>
+                                    </Button>
                                 )}
                             </div>
                         ))}
-                        <button
-                            className="add-btn"
+                        <Button
+                            variant="gradient"
+                            className="add-btn w-full mt-4"
                             onClick={() => addArrayItem('education', {
                                 university: '', degree: '', major: '', graduationYear: '', gpa: '', relevantCoursework: []
                             })}
                         >
                             + Add Another Education
-                        </button>
+                        </Button>
                     </div>
                 );
 
@@ -447,19 +457,19 @@ const ResumeBuilder = () => {
                         {resumeData.experience.map((exp, expIndex) => (
                             <div key={expIndex} className="array-item">
                                 <div className="form-grid">
-                                    <input
+                                    <Input
                                         type="text"
                                         placeholder="Company Name *"
                                         value={exp.company}
                                         onChange={(e) => handleInputChange('experience', 'company', e.target.value, expIndex)}
                                     />
-                                    <input
+                                    <Input
                                         type="text"
                                         placeholder="Job Title *"
                                         value={exp.role}
                                         onChange={(e) => handleInputChange('experience', 'role', e.target.value, expIndex)}
                                     />
-                                    <input
+                                    <Input
                                         type="text"
                                         placeholder="Duration (e.g., Jan 2020 - Dec 2021)"
                                         value={exp.duration}
@@ -471,7 +481,7 @@ const ResumeBuilder = () => {
                                 <h4>Responsibilities & Achievements</h4>
                                 {exp.responsibilities.map((resp, respIndex) => (
                                     <div key={respIndex} className="bullet-input-group">
-                                        <textarea
+                                        <Textarea
                                             placeholder="Describe your responsibility or achievement..."
                                             value={resp}
                                             onChange={(e) => {
@@ -479,60 +489,66 @@ const ResumeBuilder = () => {
                                                 newResp[respIndex] = e.target.value;
                                                 handleInputChange('experience', 'responsibilities', newResp, expIndex);
                                             }}
-                                            rows="2"
+                                            rows={2}
                                         />
-                                        <div className="bullet-actions">
-                                            <motion.button
-                                                className="ai-mini-btn"
+                                        <div className="bullet-actions mt-2">
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                className="ai-mini-btn gap-2"
                                                 onClick={() => handleEnhanceBullet(resp, 'experience', expIndex, respIndex)}
                                                 disabled={isEnhancing || !resp.trim()}
-                                                whileHover={{ scale: 1.05 }}
-                                                whileTap={{ scale: 0.95 }}
                                             >
                                                 ✨ {isEnhancing && enhancingIndex === `experience-${expIndex}-${respIndex}` ? 'Enhancing...' : 'Enhance'}
-                                            </motion.button>
+                                            </Button>
                                             {respIndex > 0 && (
-                                                <button
-                                                    className="remove-mini-btn"
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    className="remove-mini-btn text-destructive hover:text-destructive/90"
                                                     onClick={() => {
                                                         const newResp = exp.responsibilities.filter((_, i) => i !== respIndex);
                                                         handleInputChange('experience', 'responsibilities', newResp, expIndex);
                                                     }}
                                                 >
                                                     Remove
-                                                </button>
+                                                </Button>
                                             )}
                                         </div>
                                     </div>
                                 ))}
-                                <button
-                                    className="add-mini-btn"
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="add-mini-btn mt-2 border-dashed border-2"
                                     onClick={() => {
                                         const newResp = [...exp.responsibilities, ''];
                                         handleInputChange('experience', 'responsibilities', newResp, expIndex);
                                     }}
                                 >
                                     + Add Responsibility
-                                </button>
+                                </Button>
 
                                 {expIndex > 0 && (
-                                    <button
-                                        className="remove-btn"
+                                    <Button
+                                        variant="destructive"
+                                        className="remove-btn mt-4"
                                         onClick={() => removeArrayItem('experience', expIndex)}
                                     >
                                         Remove Experience
-                                    </button>
+                                    </Button>
                                 )}
                             </div>
                         ))}
-                        <button
-                            className="add-btn"
+                        <Button
+                            variant="gradient"
+                            className="add-btn w-full mt-4"
                             onClick={() => addArrayItem('experience', {
                                 company: '', role: '', duration: '', responsibilities: ['']
                             })}
                         >
                             + Add Another Experience
-                        </button>
+                        </Button>
                     </div>
                 );
 
@@ -543,43 +559,43 @@ const ResumeBuilder = () => {
                         {resumeData.projects.map((proj, projIndex) => (
                             <div key={projIndex} className="array-item">
                                 <div className="form-grid">
-                                    <input
+                                    <Input
                                         type="text"
                                         placeholder="Project Name *"
                                         value={proj.name}
                                         onChange={(e) => handleInputChange('projects', 'name', e.target.value, projIndex)}
                                     />
-                                    <input
+                                    <Input
                                         type="text"
                                         placeholder="Technologies (comma-separated)"
                                         value={proj.technologies.join(', ')}
                                         onChange={(e) => handleInputChange('projects', 'technologies', e.target.value.split(',').map(t => t.trim()), projIndex)}
                                     />
-                                    <input
+                                    <Input
                                         type="url"
                                         placeholder="GitHub Link"
                                         value={proj.githubLink}
                                         onChange={(e) => handleInputChange('projects', 'githubLink', e.target.value, projIndex)}
                                     />
-                                    <input
+                                    <Input
                                         type="url"
                                         placeholder="Live Demo Link"
                                         value={proj.liveLink}
                                         onChange={(e) => handleInputChange('projects', 'liveLink', e.target.value, projIndex)}
                                     />
                                 </div>
-                                <textarea
+                                <Textarea
                                     placeholder="Project Description"
                                     value={proj.description}
                                     onChange={(e) => handleInputChange('projects', 'description', e.target.value, projIndex)}
-                                    rows="2"
-                                    className="full-width"
+                                    rows={2}
+                                    className="full-width mb-4"
                                 />
 
                                 <h4>Key Highlights</h4>
                                 {proj.highlights.map((highlight, hlIndex) => (
                                     <div key={hlIndex} className="bullet-input-group">
-                                        <textarea
+                                        <Textarea
                                             placeholder="Describe a key achievement or feature..."
                                             value={highlight}
                                             onChange={(e) => {
@@ -587,60 +603,66 @@ const ResumeBuilder = () => {
                                                 newHighlights[hlIndex] = e.target.value;
                                                 handleInputChange('projects', 'highlights', newHighlights, projIndex);
                                             }}
-                                            rows="2"
+                                            rows={2}
                                         />
-                                        <div className="bullet-actions">
-                                            <motion.button
-                                                className="ai-mini-btn"
+                                        <div className="bullet-actions mt-2">
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                className="ai-mini-btn gap-2"
                                                 onClick={() => handleEnhanceBullet(highlight, 'projects', projIndex, hlIndex)}
                                                 disabled={isEnhancing || !highlight.trim()}
-                                                whileHover={{ scale: 1.05 }}
-                                                whileTap={{ scale: 0.95 }}
                                             >
                                                 ✨ {isEnhancing && enhancingIndex === `projects-${projIndex}-${hlIndex}` ? 'Enhancing...' : 'Enhance'}
-                                            </motion.button>
+                                            </Button>
                                             {hlIndex > 0 && (
-                                                <button
-                                                    className="remove-mini-btn"
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    className="remove-mini-btn text-destructive hover:text-destructive/90"
                                                     onClick={() => {
                                                         const newHighlights = proj.highlights.filter((_, i) => i !== hlIndex);
                                                         handleInputChange('projects', 'highlights', newHighlights, projIndex);
                                                     }}
                                                 >
                                                     Remove
-                                                </button>
+                                                </Button>
                                             )}
                                         </div>
                                     </div>
                                 ))}
-                                <button
-                                    className="add-mini-btn"
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="add-mini-btn mt-2 border-dashed border-2"
                                     onClick={() => {
                                         const newHighlights = [...proj.highlights, ''];
                                         handleInputChange('projects', 'highlights', newHighlights, projIndex);
                                     }}
                                 >
                                     + Add Highlight
-                                </button>
+                                </Button>
 
                                 {projIndex > 0 && (
-                                    <button
-                                        className="remove-btn"
+                                    <Button
+                                        variant="destructive"
+                                        className="remove-btn mt-4"
                                         onClick={() => removeArrayItem('projects', projIndex)}
                                     >
                                         Remove Project
-                                    </button>
+                                    </Button>
                                 )}
                             </div>
                         ))}
-                        <button
-                            className="add-btn"
+                        <Button
+                            variant="gradient"
+                            className="add-btn w-full mt-4"
                             onClick={() => addArrayItem('projects', {
                                 name: '', description: '', technologies: [], githubLink: '', liveLink: '', highlights: ['']
                             })}
                         >
                             + Add Another Project
-                        </button>
+                        </Button>
                     </div>
                 );
 
@@ -650,40 +672,40 @@ const ResumeBuilder = () => {
                         <h2>Skills</h2>
                         <div className="form-group">
                             <label>Technical Skills</label>
-                            <textarea
+                            <Textarea
                                 placeholder="Enter skills separated by commas (e.g., Python, React, SQL, AWS)"
                                 value={resumeData.skills.technical.join(', ')}
                                 onChange={(e) => handleInputChange('skills', 'technical', e.target.value.split(',').map(s => s.trim()).filter(Boolean))}
-                                rows="3"
+                                rows={3}
                             />
-                            <motion.button
-                                className="ai-enhance-btn"
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                className="ai-enhance-btn gap-2 mt-4"
                                 onClick={handleSuggestSkills}
                                 disabled={!resumeData.objective.targetRole || isEnhancing}
-                                whileHover={{ scale: 1.05 }}
-                                whileTap={{ scale: 0.95 }}
                             >
                                 ✨ {isEnhancing ? 'Suggesting...' : 'AI Suggest Skills for ' + (resumeData.objective.targetRole || 'Role')}
-                            </motion.button>
+                            </Button>
                         </div>
 
                         <div className="form-group">
                             <label>Soft Skills</label>
-                            <textarea
+                            <Textarea
                                 placeholder="Enter soft skills separated by commas (e.g., Leadership, Communication, Problem Solving)"
                                 value={resumeData.skills.soft.join(', ')}
                                 onChange={(e) => handleInputChange('skills', 'soft', e.target.value.split(',').map(s => s.trim()).filter(Boolean))}
-                                rows="2"
+                                rows={2}
                             />
                         </div>
 
                         <div className="form-group">
                             <label>Languages</label>
-                            <textarea
+                            <Textarea
                                 placeholder="Languages you speak (e.g., English, Spanish, Mandarin)"
                                 value={resumeData.skills.languages.join(', ')}
                                 onChange={(e) => handleInputChange('skills', 'languages', e.target.value.split(',').map(s => s.trim()).filter(Boolean))}
-                                rows="2"
+                                rows={2}
                             />
 
                         </div>
@@ -697,121 +719,141 @@ const ResumeBuilder = () => {
                         <p style={{ textAlign: 'center', color: '#999', marginBottom: '30px' }}>
                             Select a professional template that best matches your career style
                         </p>
-                        <div className="template-grid">
-                            <motion.div
-                                className={`template-card ${resumeData.selectedTemplate === 'modern' ? 'selected' : ''}`}
+                        <div className="template-grid grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <MotionCard
+                                className={`template-card cursor-pointer border-2 transition-colors ${resumeData.selectedTemplate === 'modern' ? 'border-indigo-500 bg-slate-800' : 'border-slate-700 bg-slate-800/50 hover:border-slate-500'}`}
                                 onClick={() => handleInputChange('selectedTemplate', null, 'modern')}
                                 whileHover={{ scale: 1.03 }}
                                 whileTap={{ scale: 0.98 }}
                             >
-                                <div className="template-preview">
-                                    <div className="template-icon">📄</div>
-                                    <h3>Modern Professional</h3>
-                                </div>
-                                <div className="template-features">
-                                    <p className="template-description">Clean, ATS-friendly design with bold section headers</p>
-                                    <ul>
-                                        <li>✓ Best for Tech & Corporate</li>
-                                        <li>✓ Excellent ATS compatibility</li>
-                                        <li>✓ Easy to scan</li>
-                                    </ul>
-                                </div>
-                                {resumeData.selectedTemplate === 'modern' && (
-                                    <div className="selected-badge">✓ Selected</div>
-                                )}
-                            </motion.div>
+                                <CardContent className="p-6">
+                                    <div className="template-preview text-center mb-4">
+                                        <div className="template-icon text-4xl mb-2">📄</div>
+                                        <h3 className="font-bold text-lg">Modern Professional</h3>
+                                    </div>
+                                    <div className="template-features text-sm text-slate-300">
+                                        <p className="template-description mb-2">Clean, ATS-friendly design with bold section headers</p>
+                                        <ul className="space-y-1">
+                                            <li>✓ Best for Tech & Corporate</li>
+                                            <li>✓ Excellent ATS compatibility</li>
+                                            <li>✓ Easy to scan</li>
+                                        </ul>
+                                    </div>
+                                    {resumeData.selectedTemplate === 'modern' && (
+                                        <div className="mt-4 flex justify-center">
+                                            <Badge className="bg-green-500 hover:bg-green-600">✓ Selected</Badge>
+                                        </div>
+                                    )}
+                                </CardContent>
+                            </MotionCard>
 
-                            <motion.div
-                                className={`template-card ${resumeData.selectedTemplate === 'classic' ? 'selected' : ''}`}
+                            <MotionCard
+                                className={`template-card cursor-pointer border-2 transition-colors ${resumeData.selectedTemplate === 'classic' ? 'border-indigo-500 bg-slate-800' : 'border-slate-700 bg-slate-800/50 hover:border-slate-500'}`}
                                 onClick={() => handleInputChange('selectedTemplate', null, 'classic')}
                                 whileHover={{ scale: 1.03 }}
                                 whileTap={{ scale: 0.98 }}
                             >
-                                <div className="template-preview">
-                                    <div className="template-icon">📋</div>
-                                    <h3>Classic Executive</h3>
-                                </div>
-                                <div className="template-features">
-                                    <p className="template-description">Traditional format with serif fonts and formal layout</p>
-                                    <ul>
-                                        <li>✓ Best for Finance & Legal</li>
-                                        <li>✓ Professional appearance</li>
-                                        <li>✓ Conservative design</li>
-                                    </ul>
-                                </div>
-                                {resumeData.selectedTemplate === 'classic' && (
-                                    <div className="selected-badge">✓ Selected</div>
-                                )}
-                            </motion.div>
+                                <CardContent className="p-6">
+                                    <div className="template-preview text-center mb-4">
+                                        <div className="template-icon text-4xl mb-2">📋</div>
+                                        <h3 className="font-bold text-lg">Classic Executive</h3>
+                                    </div>
+                                    <div className="template-features text-sm text-slate-300">
+                                        <p className="template-description mb-2">Traditional format with serif fonts and formal layout</p>
+                                        <ul className="space-y-1">
+                                            <li>✓ Best for Finance & Legal</li>
+                                            <li>✓ Professional appearance</li>
+                                            <li>✓ Conservative design</li>
+                                        </ul>
+                                    </div>
+                                    {resumeData.selectedTemplate === 'classic' && (
+                                        <div className="mt-4 flex justify-center">
+                                            <Badge className="bg-green-500 hover:bg-green-600">✓ Selected</Badge>
+                                        </div>
+                                    )}
+                                </CardContent>
+                            </MotionCard>
 
-                            <motion.div
-                                className={`template-card ${resumeData.selectedTemplate === 'minimal' ? 'selected' : ''}`}
+                            <MotionCard
+                                className={`template-card cursor-pointer border-2 transition-colors ${resumeData.selectedTemplate === 'minimal' ? 'border-indigo-500 bg-slate-800' : 'border-slate-700 bg-slate-800/50 hover:border-slate-500'}`}
                                 onClick={() => handleInputChange('selectedTemplate', null, 'minimal')}
                                 whileHover={{ scale: 1.03 }}
                                 whileTap={{ scale: 0.98 }}
                             >
-                                <div className="template-preview">
-                                    <div className="template-icon">🎯</div>
-                                    <h3>Minimal Clean</h3>
-                                </div>
-                                <div className="template-features">
-                                    <p className="template-description">Minimalist design focusing on content over decoration</p>
-                                    <ul>
-                                        <li>✓ Best for Design & Creative</li>
-                                        <li>✓ Maximum readability</li>
-                                        <li>✓ Contemporary style</li>
-                                    </ul>
-                                </div>
-                                {resumeData.selectedTemplate === 'minimal' && (
-                                    <div className="selected-badge">✓ Selected</div>
-                                )}
-                            </motion.div>
+                                <CardContent className="p-6">
+                                    <div className="template-preview text-center mb-4">
+                                        <div className="template-icon text-4xl mb-2">🎯</div>
+                                        <h3 className="font-bold text-lg">Minimal Clean</h3>
+                                    </div>
+                                    <div className="template-features text-sm text-slate-300">
+                                        <p className="template-description mb-2">Minimalist design focusing on content over decoration</p>
+                                        <ul className="space-y-1">
+                                            <li>✓ Best for Design & Creative</li>
+                                            <li>✓ Maximum readability</li>
+                                            <li>✓ Contemporary style</li>
+                                        </ul>
+                                    </div>
+                                    {resumeData.selectedTemplate === 'minimal' && (
+                                        <div className="mt-4 flex justify-center">
+                                            <Badge className="bg-green-500 hover:bg-green-600">✓ Selected</Badge>
+                                        </div>
+                                    )}
+                                </CardContent>
+                            </MotionCard>
 
-                            <motion.div
-                                className={`template-card ${resumeData.selectedTemplate === 'creative' ? 'selected' : ''}`}
+                            <MotionCard
+                                className={`template-card cursor-pointer border-2 transition-colors ${resumeData.selectedTemplate === 'creative' ? 'border-indigo-500 bg-slate-800' : 'border-slate-700 bg-slate-800/50 hover:border-slate-500'}`}
                                 onClick={() => handleInputChange('selectedTemplate', null, 'creative')}
                                 whileHover={{ scale: 1.03 }}
                                 whileTap={{ scale: 0.98 }}
                             >
-                                <div className="template-preview">
-                                    <div className="template-icon">🎨</div>
-                                    <h3>Creative Bold</h3>
-                                </div>
-                                <div className="template-features">
-                                    <p className="template-description">Distinctive design with visual elements and color accents</p>
-                                    <ul>
-                                        <li>✓ Best for Marketing & Media</li>
-                                        <li>✓ Eye-catching layout</li>
-                                        <li>✓ Personality showcase</li>
-                                    </ul>
-                                </div>
-                                {resumeData.selectedTemplate === 'creative' && (
-                                    <div className="selected-badge">✓ Selected</div>
-                                )}
-                            </motion.div>
+                                <CardContent className="p-6">
+                                    <div className="template-preview text-center mb-4">
+                                        <div className="template-icon text-4xl mb-2">🎨</div>
+                                        <h3 className="font-bold text-lg">Creative Bold</h3>
+                                    </div>
+                                    <div className="template-features text-sm text-slate-300">
+                                        <p className="template-description mb-2">Distinctive design with visual elements and color accents</p>
+                                        <ul className="space-y-1">
+                                            <li>✓ Best for Marketing & Media</li>
+                                            <li>✓ Eye-catching layout</li>
+                                            <li>✓ Personality showcase</li>
+                                        </ul>
+                                    </div>
+                                    {resumeData.selectedTemplate === 'creative' && (
+                                        <div className="mt-4 flex justify-center">
+                                            <Badge className="bg-green-500 hover:bg-green-600">✓ Selected</Badge>
+                                        </div>
+                                    )}
+                                </CardContent>
+                            </MotionCard>
 
-                            <motion.div
-                                className={`template-card ${resumeData.selectedTemplate === 'technical' ? 'selected' : ''}`}
+                            <MotionCard
+                                className={`template-card cursor-pointer border-2 transition-colors ${resumeData.selectedTemplate === 'technical' ? 'border-indigo-500 bg-slate-800' : 'border-slate-700 bg-slate-800/50 hover:border-slate-500'}`}
                                 onClick={() => handleInputChange('selectedTemplate', null, 'technical')}
                                 whileHover={{ scale: 1.03 }}
                                 whileTap={{ scale: 0.98 }}
                             >
-                                <div className="template-preview">
-                                    <div className="template-icon">💻</div>
-                                    <h3>Technical Developer</h3>
-                                </div>
-                                <div className="template-features">
-                                    <p className="template-description">Code-inspired layout optimized for technical roles</p>
-                                    <ul>
-                                        <li>✓ Best for Software Engineers</li>
-                                        <li>✓ Skills-focused sections</li>
-                                        <li>✓ GitHub/Portfolio highlights</li>
-                                    </ul>
-                                </div>
-                                {resumeData.selectedTemplate === 'technical' && (
-                                    <div className="selected-badge">✓ Selected</div>
-                                )}
-                            </motion.div>
+                                <CardContent className="p-6">
+                                    <div className="template-preview text-center mb-4">
+                                        <div className="template-icon text-4xl mb-2">💻</div>
+                                        <h3 className="font-bold text-lg">Technical Developer</h3>
+                                    </div>
+                                    <div className="template-features text-sm text-slate-300">
+                                        <p className="template-description mb-2">Code-inspired layout optimized for technical roles</p>
+                                        <ul className="space-y-1">
+                                            <li>✓ Best for Software Engineers</li>
+                                            <li>✓ Skills-focused sections</li>
+                                            <li>✓ GitHub/Portfolio highlights</li>
+                                        </ul>
+                                    </div>
+                                    {resumeData.selectedTemplate === 'technical' && (
+                                        <div className="mt-4 flex justify-center">
+                                            <Badge className="bg-green-500 hover:bg-green-600">✓ Selected</Badge>
+                                        </div>
+                                    )}
+                                </CardContent>
+                            </MotionCard>
                         </div>
                     </div>
                 );
@@ -821,41 +863,47 @@ const ResumeBuilder = () => {
                     <div className="step-content review-step">
                         <h2>Review & Finalize</h2>
                         <div className="review-summary">
-                            <div className="review-card">
-                                <FcCheckmark className="review-icon" />
-                                <h3>{resumeData.personalInfo.fullName || 'Your Name'}</h3>
-                                <p>{resumeData.objective.targetRole || 'Target Role'}</p>
-                                <p className="review-stats">
-                                    📚 {resumeData.education.length} Education{resumeData.education.length !== 1 ? 's' : ''} •
-                                    💼 {resumeData.experience.length} Experience{resumeData.experience.length !== 1 ? 's' : ''} •
-                                    🚀 {resumeData.projects.length} Project{resumeData.projects.length !== 1 ? 's' : ''}
-                                </p>
-                                <p className="review-stats">
-                                    ⚡ {resumeData.skills.technical.length} Technical Skills
-                                </p>
-                            </div>
+                            <Card className="review-card bg-slate-800 border-slate-700 text-center p-6">
+                                <CardContent>
+                                    <div className="flex justify-center mb-4">
+                                        <FcCheckmark className="review-icon text-5xl" />
+                                    </div>
+                                    <h3 className="text-2xl font-bold text-white mb-2">{resumeData.personalInfo.fullName || 'Your Name'}</h3>
+                                    <p className="text-xl text-indigo-400 mb-4">{resumeData.objective.targetRole || 'Target Role'}</p>
+                                    <div className="review-stats flex flex-wrap justify-center gap-2 mb-2 text-slate-300">
+                                        <Badge variant="secondary" className="text-sm py-1 px-3">📚 {resumeData.education.length} Education</Badge>
+                                        <Badge variant="secondary" className="text-sm py-1 px-3">💼 {resumeData.experience.length} Experience</Badge>
+                                        <Badge variant="secondary" className="text-sm py-1 px-3">🚀 {resumeData.projects.length} Project{resumeData.projects.length !== 1 ? 's' : ''}</Badge>
+                                    </div>
+                                    <div className="review-stats flex justify-center">
+                                        <Badge variant="outline" className="text-sm py-1 px-3 border-indigo-500 text-indigo-300">
+                                            ⚡ {resumeData.skills.technical.length} Technical Skills
+                                        </Badge>
+                                    </div>
+                                </CardContent>
+                            </Card>
 
                             <div className="review-actions">
-                                <motion.button
-                                    className="download-pdf-btn"
+                                <Button
+                                    variant="gradient"
+                                    size="lg"
+                                    className="download-pdf-btn gap-3 font-semibold shadow-lg hover:shadow-indigo-500/30"
                                     onClick={handleDownloadPDF}
                                     disabled={isSaving}
-                                    whileHover={{ scale: 1.05 }}
-                                    whileTap={{ scale: 0.95 }}
                                 >
-                                    <FcDocument style={{ fontSize: '1.5rem', marginRight: '8px' }} />
+                                    <FcDocument style={{ fontSize: '1.5rem' }} />
                                     {isSaving ? 'Generating PDF...' : 'Download Resume PDF'}
-                                </motion.button>
+                                </Button>
 
-                                <motion.button
-                                    className="analyze-resume-btn"
+                                <Button
+                                    variant="outline"
+                                    size="lg"
+                                    className="analyze-resume-btn gap-3 border-indigo-500/50 hover:bg-indigo-500/10 hover:text-indigo-300"
                                     onClick={handleAnalyzeResume}
                                     disabled={isSaving}
-                                    whileHover={{ scale: 1.05 }}
-                                    whileTap={{ scale: 0.95 }}
                                 >
                                     🎯 Analyze Against Job Description
-                                </motion.button>
+                                </Button>
                             </div>
                         </div>
                     </div>
@@ -870,15 +918,14 @@ const ResumeBuilder = () => {
         <div className="resume-builder-container">
             {/* Header with Back Navigation */}
             <div className="builder-header">
-                <motion.button
-                    className="back-to-dashboard-btn"
+                <Button
+                    variant="ghost"
+                    className="back-to-dashboard-btn gap-2 text-slate-300 hover:text-white hover:bg-slate-800"
                     onClick={() => navigate('/dashboard')}
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
                 >
-                    <FcPrevious style={{ fontSize: '1.5rem' }} />
+                    <FcPrevious style={{ fontSize: '1.2rem' }} />
                     <span>Back to Dashboard</span>
-                </motion.button>
+                </Button>
                 <h1 className="builder-title">Build Your Resume</h1>
                 <div className="header-spacer"></div>
             </div>
@@ -892,7 +939,9 @@ const ResumeBuilder = () => {
                         onClick={() => setCurrentStep(step.number)}
                     >
                         <div className="step-circle">
-                            {currentStep > step.number ? <FcCheckmark /> : <span>{step.icon}</span>}
+                            {currentStep > step.number ? (
+                                <FaCheck style={{ color: 'white', fontSize: '1.5rem', filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.2))' }} />
+                            ) : <span>{step.icon}</span>}
                         </div>
                         <p className="step-title">{step.title}</p>
                     </div>
@@ -901,39 +950,37 @@ const ResumeBuilder = () => {
 
             {/* Form Content */}
             <AnimatePresence mode="wait">
-                <motion.div
+                <MotionCard
                     key={currentStep}
-                    className="builder-form"
+                    className="builder-form border-slate-700 bg-slate-900/80 backdrop-blur-md"
                     initial={{ opacity: 0, x: 20 }}
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, x: -20 }}
                     transition={{ duration: 0.3 }}
                 >
                     {renderStepContent()}
-                </motion.div>
+                </MotionCard>
             </AnimatePresence>
 
             {/* Navigation Buttons */}
             <div className="navigation-buttons">
-                <motion.button
-                    className="nav-btn prev-btn"
+                <Button
+                    variant="outline"
+                    className="nav-btn prev-btn bg-slate-800 border-slate-600 hover:bg-slate-700 text-white"
                     onClick={handlePrevious}
                     disabled={currentStep === 1}
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
                 >
-                    <FcPrevious /> Previous
-                </motion.button>
+                    <FcPrevious className="mr-2" /> Previous
+                </Button>
 
                 {currentStep < steps.length && (
-                    <motion.button
+                    <Button
+                        variant="gradient"
                         className="nav-btn next-btn"
                         onClick={handleNext}
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
                     >
-                        Next <FcNext />
-                    </motion.button>
+                        Next <FcNext className="ml-2" />
+                    </Button>
                 )}
             </div>
         </div>

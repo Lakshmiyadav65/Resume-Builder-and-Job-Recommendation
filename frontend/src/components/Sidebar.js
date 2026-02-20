@@ -2,20 +2,24 @@ import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { FcBarChart, FcVoicePresentation, FcSearch, FcCalendar, FcNightPortrait, FcTodoList, FcVip } from 'react-icons/fc';
+import { Button } from './ui/button';
+import { Switch } from './ui/switch';
 import { useApp } from '../context/AppContext';
+import { useState } from 'react';
 import './Sidebar.css';
 
 const Sidebar = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { userRole, setUserRole } = useApp();
+  const [darkMode, setDarkMode] = useState(true);
 
   // Determine role based on current route if userRole is not set
   React.useEffect(() => {
     if (!userRole) {
       const recruiterRoutes = ['/recruiter-dashboard', '/recruiter-ranking', '/assignment-generator'];
       const isRecruiterRoute = recruiterRoutes.some(route => location.pathname.startsWith(route));
-      
+
       if (isRecruiterRoute) {
         setUserRole('recruiter');
       } else if (location.pathname !== '/') {
@@ -45,28 +49,27 @@ const Sidebar = () => {
         <img src="/logo.png" alt="ATSCRIBE" className="sidebar-logo" onClick={() => navigate('/')} />
       </div>
 
-      <nav className="sidebar-nav">
+      <nav className="sidebar-nav px-4 space-y-2">
         {menuItems.map((item) => (
-          <motion.div
+          <Button
             key={item.path}
-            className={`sidebar-item ${location.pathname === item.path ? 'active' : ''}`}
+            variant={location.pathname === item.path ? "secondary" : "ghost"}
+            className={`w-full justify-start gap-4 text-left font-normal h-12 ${location.pathname === item.path ? 'bg-slate-800 text-white' : 'text-slate-400 hover:text-white hover:bg-slate-800/50'}`}
             onClick={() => navigate(item.path)}
-            whileHover={{ x: 5 }}
-            whileTap={{ scale: 0.98 }}
           >
-            <item.icon className="sidebar-icon" style={{ fontSize: '1.5rem' }} />
-            <span className="sidebar-label">{item.label}</span>
-          </motion.div>
+            <item.icon className="text-2xl" />
+            <span className="text-sm font-medium">{item.label}</span>
+          </Button>
         ))}
       </nav>
 
-      <div className="sidebar-footer">
-        <div className="dark-mode-toggle">
-          <FcNightPortrait className="sidebar-icon" style={{ fontSize: '1.5rem' }} />
-          <span>Dark Mode</span>
-          <div className="toggle-switch active">
-            <div className="toggle-thumb"></div>
+      <div className="sidebar-footer p-4 border-t border-slate-800">
+        <div className="dark-mode-toggle flex items-center justify-between w-full">
+          <div className="flex items-center gap-2 text-slate-400">
+            <FcNightPortrait className="text-2xl" />
+            <span className="text-sm font-medium">Dark Mode</span>
           </div>
+          <Switch checked={darkMode} onCheckedChange={setDarkMode} />
         </div>
       </div>
     </div>

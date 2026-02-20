@@ -2,8 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useApp } from '../context/AppContext';
-import { FaLinkedin, FaWhatsapp, FaMicrosoft, FaGraduationCap, FaBriefcase, FaArrowRight } from 'react-icons/fa';
-import { SiZoom, SiGooglecalendar, SiCalendly, SiGooglemeet } from 'react-icons/si';
+import { Button } from '../components/ui/button';
+import { Badge } from '../components/ui/badge';
+import { FaLinkedin, FaWhatsapp, FaMicrosoft, FaGraduationCap, FaBriefcase, FaArrowRight, FaSlack, FaTrello, FaSalesforce } from 'react-icons/fa';
+import { SiZoom, SiGooglecalendar, SiCalendly, SiGooglemeet, SiNotion, SiJira, SiAsana, SiHubspot, SiGmail } from 'react-icons/si';
 import { BsStars, BsMicrosoftTeams } from 'react-icons/bs';
 import './LandingPage.css';
 
@@ -128,14 +130,12 @@ const LandingPage = () => {
           <div className="logo-container">
             <img src="/logo.png" alt="ATSCRIBE" className="logo" />
           </div>
-          <motion.button
-            className="get-started-btn"
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
+          <Button
+            className="get-started-btn bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-full font-medium transition-all"
             onClick={() => document.getElementById('role-selection').scrollIntoView({ behavior: 'smooth' })}
           >
             Get Started
-          </motion.button>
+          </Button>
         </nav>
 
         <div className="hero-content">
@@ -146,9 +146,9 @@ const LandingPage = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3, duration: 0.8 }}
             >
-              <div className="hero-badge">
+              <Badge variant="secondary" className="hero-badge mb-6 px-4 py-2 text-sm font-medium bg-indigo-500/10 text-indigo-300 border border-indigo-500/30 rounded-full inline-block">
                 AI-Driven Talent Screening & Career Growth Platform
-              </div>
+              </Badge>
               <h1 className="hero-title">
                 Transforming How Talent<br />
                 Is Discovered & Hired
@@ -217,13 +217,11 @@ const LandingPage = () => {
               </p>
 
               <div className="card-button-wrapper">
-                <motion.button
-                  className="card-button student-button"
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
+                <Button
+                  className="card-button student-button w-full gap-2 bg-indigo-600 hover:bg-indigo-700"
                 >
                   Continue <FaArrowRight className="arrow-icon" />
-                </motion.button>
+                </Button>
               </div>
             </div>
           </motion.div>
@@ -253,13 +251,11 @@ const LandingPage = () => {
               </p>
 
               <div className="card-button-wrapper">
-                <motion.button
-                  className="card-button recruiter-button"
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
+                <Button
+                  className="card-button recruiter-button w-full gap-2 bg-pink-600 hover:bg-pink-700"
                 >
                   Continue <FaArrowRight className="arrow-icon" />
-                </motion.button>
+                </Button>
               </div>
             </div>
           </motion.div>
@@ -270,45 +266,60 @@ const LandingPage = () => {
 
         {/* Tools Integration Section */}
         <motion.div
-          className="tools-section"
+          className="tools-section-new"
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}
           viewport={{ once: true }}
           transition={{ duration: 0.8 }}
         >
-          <div className="tools-arch-container">
-            {/* Arch Line Removed */}
-
-            {/* Icons Removed */}
-
-            {/* Central Hub Icon */}
-            <div className="central-hub">
-              <div className="hub-icon">
-                <div className="hub-inner-icon">
-                  <span className="hub-text">ATS</span>
-                </div>
-              </div>
-              <div className="hub-ripple"></div>
-              <div className="hub-ripple delay-1"></div>
+          {/* Top Arc Icons */}
+          <div className="tools-arc-wrapper">
+            <div className="tools-arc">
+              <div className="arc-icon icon-1"><SiZoom /></div>
+              <div className="arc-icon icon-2"><FaSlack /></div>
+              <div className="arc-icon icon-3"><FaMicrosoft /></div>
+              <div className="arc-icon icon-4"><SiGooglemeet /></div>
+              <div className="arc-icon icon-5"><SiCalendly /></div>
+              <div className="arc-icon icon-6"><FaSalesforce /></div>
+              <div className="arc-icon icon-7"><SiNotion /></div>
+              <div className="arc-icon icon-8"><SiHubspot /></div>
+              <div className="arc-icon icon-9"><SiJira /></div>
+              <div className="arc-icon icon-10"><SiAsana /></div>
+              <div className="arc-icon icon-11"><SiGmail /></div>
+              <div className="arc-icon icon-12"><FaTrello /></div>
             </div>
           </div>
 
-          <div className="tools-content">
-            <h2 className="tools-title">
-              Connect With The<br />
-              Tools <span className="text-gray">You Already Use Daily</span>
-            </h2>
-            <p className="tools-subtitle">
-              Effortlessly integrate with your favorite platforms with<br />
-              all in one unified hiring experience.
-            </p>
-            <motion.button
-              className="tools-btn"
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              Get Started
-            </motion.button>
+          <div className="tools-text-group">
+            <h3 className="tools-subtitle-top">
+              Works with your existing ATS,<br />
+              CRM, scheduling, phone,<br />
+              and video conferencing tools
+            </h3>
+          </div>
+
+          {/* Green Glow Section */}
+          <div className="green-glow-container">
+            <div className="glow-background">
+              {/* Visual chevrons are handled in CSS via background gradients or clip-paths */}
+              <div className="chevron-overlay"></div>
+            </div>
+
+            <div className="tools-main-content">
+              <h2 className="tools-headline">
+                AI changes how work gets done.<br />
+                <span className="text-white">Recruiting is no exception.</span>
+              </h2>
+
+              <div className="tools-cta-buttons">
+                <Button className="btn-start-free rounded-full bg-white text-black hover:bg-gray-200 px-8 py-6 text-lg font-bold shadow-lg">
+                  Start for free
+                </Button>
+                <Button variant="outline" className="btn-book-demo rounded-full border-white text-white bg-transparent hover:bg-white/10 px-8 py-6 text-lg font-bold">
+                  Book a demo
+                </Button>
+              </div>
+            </div>
           </div>
         </motion.div>
       </motion.div>
