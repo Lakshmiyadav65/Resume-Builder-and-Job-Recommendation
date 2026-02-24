@@ -176,6 +176,7 @@ router.post('/rank-resumes', upload.fields([
 ]), async (req, res) => {
   try {
     const { jobDescription, sessionId } = req.body;
+    console.log(`Starting ranking for session: ${sessionId}`);
     const resumeFiles = req.files.resumes;
 
     if (!resumeFiles || resumeFiles.length === 0) {
@@ -258,12 +259,12 @@ router.post('/rank-resumes', upload.fields([
 Job Description:
 ${finalJobDescription}
 
-Resumes:
-${resumeTexts.map(r => `
-Resume ${r.index} (${r.fileName}):
-${r.text.substring(0, 3000)}
----
-`).join('\n')}
+    Resumes:
+    ${resumeTexts.map(r => `
+    Resume ${r.index} (${r.fileName}):
+    ${r.text.substring(0, 2000)}
+    ---
+    `).join('\n')}
 
 **INTELLIGENT RANKING INSTRUCTIONS:**
 
@@ -364,9 +365,9 @@ ${r.text.substring(0, 3000)}
         ],
         response_format: { type: "json_object" },
         temperature: 0.7,
-        max_tokens: 3000
+        max_tokens: 4000
       });
-    });
+    }, 5, 2000); // Increased retries and initial delay
 
     const text = completion.choices[0].message.content;
 
@@ -441,9 +442,20 @@ ${r.text.substring(0, 3000)}
 
   } catch (error) {
     console.error('Ranking error:', error);
+
+    // Log error to a file for debugging
+    try {
+      const fs = require('fs');
+      const logMsg = `\n[${new Date().toISOString()}] Ranking Error: ${error.message}\nStack: ${error.stack}\n`;
+      fs.appendFileSync('ranking-errors.log', logMsg);
+    } catch (e) {
+      console.error('Failed to write to log file', e);
+    }
+
     res.status(500).json({
       success: false,
-      error: error.message || 'Failed to rank resumes'
+      error: error.message || 'Failed to rank resumes',
+      details: process.env.NODE_ENV === 'development' ? error.stack : undefined
     });
   }
 });

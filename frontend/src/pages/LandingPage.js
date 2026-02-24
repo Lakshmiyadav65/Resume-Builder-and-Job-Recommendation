@@ -4,9 +4,8 @@ import { motion } from 'framer-motion';
 import { useApp } from '../context/AppContext';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
-import { FaLinkedin, FaWhatsapp, FaMicrosoft, FaGraduationCap, FaBriefcase, FaArrowRight, FaSlack, FaTrello, FaSalesforce } from 'react-icons/fa';
-import { SiZoom, SiGooglecalendar, SiCalendly, SiGooglemeet, SiNotion, SiJira, SiAsana, SiHubspot, SiGmail } from 'react-icons/si';
-import { BsStars, BsMicrosoftTeams } from 'react-icons/bs';
+import { FaGraduationCap, FaBriefcase, FaArrowRight, FaSlack, FaTrello, FaSalesforce, FaMicrosoft } from 'react-icons/fa';
+import { SiZoom, SiCalendly, SiGooglemeet, SiNotion, SiJira, SiAsana, SiHubspot, SiGmail } from 'react-icons/si';
 import './LandingPage.css';
 
 const LandingPage = () => {
@@ -261,9 +260,6 @@ const LandingPage = () => {
           </motion.div>
         </motion.div>
 
-        {/* Smaya Section */}
-
-
         {/* Tools Integration Section */}
         <motion.div
           className="tools-section-new"
@@ -296,30 +292,6 @@ const LandingPage = () => {
               CRM, scheduling, phone,<br />
               and video conferencing tools
             </h3>
-          </div>
-
-          {/* Green Glow Section */}
-          <div className="green-glow-container">
-            <div className="glow-background">
-              {/* Visual chevrons are handled in CSS via background gradients or clip-paths */}
-              <div className="chevron-overlay"></div>
-            </div>
-
-            <div className="tools-main-content">
-              <h2 className="tools-headline">
-                AI changes how work gets done.<br />
-                <span className="text-white">Recruiting is no exception.</span>
-              </h2>
-
-              <div className="tools-cta-buttons">
-                <Button className="btn-start-free rounded-full bg-white text-black hover:bg-gray-200 px-8 py-6 text-lg font-bold shadow-lg">
-                  Start for free
-                </Button>
-                <Button variant="outline" className="btn-book-demo rounded-full border-white text-white bg-transparent hover:bg-white/10 px-8 py-6 text-lg font-bold">
-                  Book a demo
-                </Button>
-              </div>
-            </div>
           </div>
         </motion.div>
       </motion.div>

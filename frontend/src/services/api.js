@@ -108,6 +108,27 @@ export const generatePDF = async (data) => {
   return response.data;
 };
 
+// Interview APIs
+export const inviteToInterview = async (candidateId, recruiterId, options = {}) => {
+  const response = await api.post('/interview/invite', { candidateId, recruiterId, ...options });
+  return response.data;
+};
+
+export const validateInterviewToken = async (token) => {
+  const response = await api.post('/interview/validate', { token });
+  return response.data;
+};
+
+export const getInterviewQuestion = async (token, stage) => {
+  const response = await api.post('/interview/question', { token, stage });
+  return response.data;
+};
+
+export const submitInterviewAnswer = async (data) => {
+  const response = await api.post('/interview/answer', data);
+  return response.data;
+};
+
 export const updateResumeStatus = async (data) => {
   const response = await api.put('/resume-builder/update-status', data);
   return response.data;

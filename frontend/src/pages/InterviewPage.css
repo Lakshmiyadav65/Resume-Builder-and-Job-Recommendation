@@ -1,0 +1,78 @@
+.interview-page-container {
+    min-height: 100vh;
+    background: #020617;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px;
+    font-family: 'Inter', sans-serif;
+}
+
+.interview-error-container {
+    text-align: center;
+    color: white;
+}
+
+.voice-visualizer {
+    height: 100px;
+}
+
+.wave-bar {
+    width: 10px;
+    border-radius: 5px;
+}
+
+.status-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+}
+
+.status-dot.idle {
+    background: #64748b;
+}
+
+.status-dot.listening {
+    background: #10b981;
+    box-shadow: 0 0 10px #10b981;
+}
+
+.status-dot.thinking {
+    background: #f59e0b;
+}
+
+.status-dot.speaking {
+    background: #6366f1;
+    box-shadow: 0 0 10px #6366f1;
+}
+
+.status-dot.evaluating {
+    background: #8b5cf6;
+}
+
+.interview-loading {
+    color: white;
+    font-size: 1.5rem;
+}
+
+.avatar-frame {
+    position: relative;
+    z-index: 1;
+}
+
+@keyframes pulse-ring {
+    0% {
+        transform: scale(0.95);
+        opacity: 0.5;
+    }
+
+    50% {
+        transform: scale(1.1);
+        opacity: 0.2;
+    }
+
+    100% {
+        transform: scale(0.95);
+        opacity: 0.5;
+    }
+}

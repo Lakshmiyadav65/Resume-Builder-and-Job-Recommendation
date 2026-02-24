@@ -1,11 +1,20 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { FcBarChart, FcVoicePresentation, FcSearch, FcCalendar, FcNightPortrait, FcTodoList, FcVip } from 'react-icons/fc';
+import {
+  FcBarChart,
+  FcVoicePresentation,
+  FcSearch,
+  FcCalendar,
+  FcNightPortrait,
+  FcTodoList,
+  FcVip,
+  FcCollaboration,
+  FcSurvey
+} from 'react-icons/fc';
 import { Button } from './ui/button';
 import { Switch } from './ui/switch';
 import { useApp } from '../context/AppContext';
-import { useState } from 'react';
 import './Sidebar.css';
 
 const Sidebar = () => {
@@ -22,7 +31,7 @@ const Sidebar = () => {
 
       if (isRecruiterRoute) {
         setUserRole('recruiter');
-      } else if (location.pathname !== '/') {
+      } else if (location.pathname !== '/' && !location.pathname.startsWith('/hr-dashboard')) {
         setUserRole('student');
       }
     }
@@ -37,33 +46,35 @@ const Sidebar = () => {
 
   const recruiterMenuItems = [
     { path: '/recruiter-dashboard', icon: FcBarChart, label: 'Dashboard' },
-    { path: '/recruiter-ranking', icon: FcVip, label: 'Rank Resumes' },
+    { path: '/recruiter-dashboard?tab=rank', icon: FcVip, label: 'Rank Resumes' },
     { path: '/assignment-generator', icon: FcTodoList, label: 'Assignment Ideas' },
   ];
 
-  const menuItems = userRole === 'recruiter' ? recruiterMenuItems : studentMenuItems;
+  let menuItems = studentMenuItems;
+  if (userRole === 'recruiter') menuItems = recruiterMenuItems;
 
   return (
     <div className="sidebar">
       <div className="sidebar-header">
-        <img src="/logo.png" alt="ATSCRIBE" className="sidebar-logo" onClick={() => navigate('/')} />
+        <img src="/logo.png" alt="ATSCRIBE" className="sidebar-logo cursor-pointer" onClick={() => navigate('/')} />
       </div>
 
-      <nav className="sidebar-nav px-4 space-y-2">
-        {menuItems.map((item) => (
+      {menuItems.map((item) => {
+        const isActive = (location.pathname + location.search) === item.path;
+        return (
           <Button
             key={item.path}
-            variant={location.pathname === item.path ? "secondary" : "ghost"}
-            className={`w-full justify-start gap-4 text-left font-normal h-12 ${location.pathname === item.path ? 'bg-slate-800 text-white' : 'text-slate-400 hover:text-white hover:bg-slate-800/50'}`}
+            variant={isActive ? "secondary" : "ghost"}
+            className={`w-full justify-start gap-4 text-left font-normal h-12 ${isActive ? 'bg-slate-800 text-white' : 'text-slate-400 hover:text-white hover:bg-slate-800/50'}`}
             onClick={() => navigate(item.path)}
           >
             <item.icon className="text-2xl" />
             <span className="text-sm font-medium">{item.label}</span>
           </Button>
-        ))}
-      </nav>
+        );
+      })}
 
-      <div className="sidebar-footer p-4 border-t border-slate-800">
+      <div className="sidebar-footer p-4 border-t border-slate-800 mt-auto">
         <div className="dark-mode-toggle flex items-center justify-between w-full">
           <div className="flex items-center gap-2 text-slate-400">
             <FcNightPortrait className="text-2xl" />
