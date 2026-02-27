@@ -95,37 +95,130 @@ const RecruiterDashboard = () => {
     window.speechSynthesis.speak(utter);
   };
 
-  const startListening = () => {
+  const manuallyStoppedRef = useRef(false);
+  const accumulatedTranscriptRef = useRef('');
+  const demoQuestionIndexRef = useRef(0);
+
+  const startListening = async () => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognition) { alert('Your browser does not support voice input. Please use Chrome or Edge.'); return; }
+    if (!SpeechRecognition) {
+      toast.error('Voice input requires Chrome or Edge browser.');
+      return;
+    }
+
+    // Stop any existing recognition
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.onend = null;
+        recognitionRef.current.onerror = null;
+        recognitionRef.current.onresult = null;
+        recognitionRef.current.stop();
+      } catch (_) { }
+      recognitionRef.current = null;
+    }
+
+    manuallyStoppedRef.current = false;
+    accumulatedTranscriptRef.current = '';
+    setVoiceTranscript('');
+
+    // KEY FIX: Pre-warm Chrome's audio pipeline via getUserMedia.
+    // Without this, Chrome on Windows opens the mic but onresult never fires,
+    // leaving the transcript completely blank.
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      stream.getTracks().forEach(t => t.stop()); // release — SR will reopen
+    } catch (permErr) {
+      console.error('[KIA] Mic permission denied:', permErr);
+      toast.error(
+        'Microphone access denied. Click the lock icon in the address bar, allow microphone, then try again.',
+        { duration: 6000 }
+      );
+      return;
+    }
+
     const recognition = new SpeechRecognition();
     recognition.lang = 'en-US';
     recognition.interimResults = true;
+    recognition.continuous = true;
     recognition.maxAlternatives = 1;
-    recognitionRef.current = recognition;
-    setVoiceTranscript('');
-    setIsListening(true);
-    recognition.onresult = (e) => {
-      const transcript = Array.from(e.results).map(r => r[0].transcript).join('');
-      setVoiceTranscript(transcript);
+
+    recognition.onstart = () => {
+      console.log('[KIA] Mic started');
+      setIsListening(true);
     };
+
+    recognition.onresult = (event) => {
+      let interim = '';
+      let final = '';
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const chunk = event.results[i][0].transcript;
+        if (event.results[i].isFinal) final += chunk + ' ';
+        else interim += chunk;
+      }
+      if (final.trim()) {
+        accumulatedTranscriptRef.current = (accumulatedTranscriptRef.current + ' ' + final).trim();
+      }
+      const display = (accumulatedTranscriptRef.current + ' ' + interim).trim();
+      setVoiceTranscript(display);
+      console.log('[KIA] Heard:', display);
+    };
+
     recognition.onend = () => {
-      setIsListening(false);
+      console.log('[KIA] onend. Stopped manually:', manuallyStoppedRef.current);
+      if (!manuallyStoppedRef.current) {
+        // Silence timeout — restart the same instance
+        setTimeout(() => {
+          if (manuallyStoppedRef.current || !recognitionRef.current) return;
+          try {
+            recognitionRef.current.start();
+            console.log('[KIA] Restarted after silence');
+          } catch (e) {
+            console.warn('[KIA] Restart failed:', e.message);
+          }
+        }, 100);
+      } else {
+        setIsListening(false);
+      }
     };
-    recognition.onerror = () => setIsListening(false);
+
+    recognition.onerror = (event) => {
+      console.error('[KIA] Error:', event.error);
+      if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
+        manuallyStoppedRef.current = true;
+        setIsListening(false);
+        toast.error('Microphone was blocked. Please allow access and try again.', { duration: 5000 });
+      } else if (event.error === 'audio-capture') {
+        manuallyStoppedRef.current = true;
+        setIsListening(false);
+        toast.error('No microphone detected. Please connect one and try again.');
+      } else if (event.error === 'aborted') {
+        // We triggered this — ignore
+      } else {
+        console.warn('[KIA] Non-fatal:', event.error);
+      }
+    };
+
+    recognitionRef.current = recognition;
     recognition.start();
   };
 
   const stopListeningAndSubmit = () => {
-    if (recognitionRef.current) recognitionRef.current.stop();
+    manuallyStoppedRef.current = true;
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.onend = null;
+        recognitionRef.current.stop();
+      } catch (_) { }
+    }
     setIsListening(false);
-    setTimeout(() => {
-      setVoiceTranscript(t => {
-        if (!t.trim()) return t;
-        submitVoiceAnswer(t);
-        return '';
-      });
-    }, 400);
+    const finalAnswer = accumulatedTranscriptRef.current.trim() || voiceTranscript.trim();
+    setVoiceTranscript('');
+    accumulatedTranscriptRef.current = '';
+    if (finalAnswer) {
+      submitVoiceAnswer(finalAnswer);
+    } else {
+      toast.error('No speech detected. Please speak clearly after clicking the mic, then tap stop.');
+    }
   };
 
   const submitVoiceAnswer = (answer) => {
@@ -163,6 +256,12 @@ const RecruiterDashboard = () => {
     setDemoQuestionIndex(0);
     setIsListening(false);
     setIsAgentSpeaking(false);
+    manuallyStoppedRef.current = true; // stop any active recognition
+    accumulatedTranscriptRef.current = '';
+    if (recognitionRef.current) {
+      try { recognitionRef.current.onend = null; recognitionRef.current.stop(); } catch (_) { }
+      recognitionRef.current = null;
+    }
     window.speechSynthesis && window.speechSynthesis.cancel();
     setShowDemoExperience(true);
   };
@@ -1458,7 +1557,7 @@ Expiry: `}<strong className="text-white font-bold">{(parseInt(linkExpiry))} hour
                         )}
                         <button
                           onClick={isListening ? stopListeningAndSubmit : startListening}
-                          disabled={demoTyping || isAgentSpeaking || demoMessages.length === 0}
+                          disabled={!isListening && (demoTyping || isAgentSpeaking || demoMessages.length === 0)}
                           style={{
                             width: '64px', height: '64px', borderRadius: '50%',
                             background: isListening ? 'linear-gradient(135deg, #ef4444, #b91c1c)' : (demoTyping || isAgentSpeaking || demoMessages.length === 0 ? 'rgba(255,255,255,0.05)' : 'linear-gradient(135deg, #9448C4, #5D2A91)'),
@@ -1535,7 +1634,7 @@ Expiry: `}<strong className="text-white font-bold">{(parseInt(linkExpiry))} hour
                 {/* CTAs */}
                 <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', justifyContent: 'center' }}>
                   <button
-                    onClick={() => { setDemoStep(0); setDemoMessages([]); setDemoQuestionIndex(0); setDemoUserInput(''); }}
+                    onClick={() => { setDemoStep(0); setDemoMessages([]); setDemoQuestionIndex(0); setVoiceTranscript(''); accumulatedTranscriptRef.current = ''; manuallyStoppedRef.current = true; }}
                     style={{ padding: '14px 32px', background: 'linear-gradient(135deg, #9448C4, #5D2A91)', color: 'white', border: 'none', borderRadius: '14px', fontSize: '13px', fontWeight: '900', cursor: 'pointer', letterSpacing: '0.04em', textTransform: 'uppercase', boxShadow: '0 8px 24px rgba(148,72,196,0.35)' }}
                   >
                     🔁 Try Again
