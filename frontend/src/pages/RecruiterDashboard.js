@@ -158,8 +158,8 @@ const RecruiterDashboard = () => {
       window.speechSynthesis.speak(utter);
 
       // Safety fallback: if speech synthesis never fires onend/onerror (a known Brave bug),
-      // calculate an estimated duration and force-trigger onEnd after that time.
-      const estimatedMs = Math.max(3000, text.length * 65); // ~65ms per character
+      // use a generous timeout so Chrome's normal speech can always finish first.
+      const estimatedMs = Math.max(8000, text.length * 150); // ~150ms per char, min 8s
       setTimeout(() => {
         if (speakGenRef.current !== myGen) return;
         if (!onEndCalled) {
@@ -310,19 +310,19 @@ const RecruiterDashboard = () => {
     }
     setIsListening(false);
 
-    // Always prioritize the current full transcript
-    const finalAnswer = voiceTranscript.trim();
+    // ALWAYS read from the ref — the React state 'voiceTranscript' can be stale in closures
+    const finalAnswer = accumulatedTranscriptRef.current.trim();
+    console.log('[KIA] Submit answer:', finalAnswer);
 
     setVoiceTranscript('');
     accumulatedTranscriptRef.current = '';
 
-    if (finalAnswer.length > 2) {
+    if (finalAnswer.length > 4) {
       submitVoiceAnswer(finalAnswer);
     } else {
-      toast.error('No speech detected. Please speak your answer clearly.');
-      // If they click stop but haven't said anything, don't just stay stuck
-      // Maybe they prefer typing or want to skip? 
-      // For now, let them retry startListening
+      toast.error('Please speak your answer before moving on.');
+      // Re-start listening so they can try again
+      setTimeout(() => startListening(), 500);
     }
   };
 
@@ -383,6 +383,8 @@ const RecruiterDashboard = () => {
       try { recognitionRef.current.onend = null; recognitionRef.current.stop(); } catch (_) { }
       recognitionRef.current = null;
     }
+    // Cancel speech without triggering safeOnEnd — increment generation first
+    ++speakGenRef.current;
     window.speechSynthesis && window.speechSynthesis.cancel();
     setShowDemoExperience(true);
   };
@@ -1675,8 +1677,8 @@ Expiry: `}<strong className="text-white font-bold">{(parseInt(linkExpiry))} hour
                     </span>
                   </div>
 
-                  {/* Explicit Submit Action if they have spoken */}
-                  {voiceTranscript.trim().length > 3 && !isAgentSpeaking && (
+                  {/* Explicit Submit Action — only show after student has given a real answer */}
+                  {voiceTranscript.trim().length > 20 && isListening && (
                     <motion.button
                       initial={{ opacity: 0, scale: 0.9 }}
                       animate={{ opacity: 1, scale: 1 }}
