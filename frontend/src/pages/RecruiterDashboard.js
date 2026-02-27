@@ -76,10 +76,22 @@ const RecruiterDashboard = () => {
   const demoMessagesEndRef = useRef(null);
 
   const demoQuestions = [
-    { q: "Tell me about yourself and your background.", followup: "Great! Let's dive deeper." },
-    { q: "What motivated you to apply for this role?", followup: "Interesting perspective!" },
-    { q: "Describe a challenging project you've worked on.", followup: "Impressive problem-solving skills!" },
-    { q: "Where do you see yourself in 5 years?", followup: "Ambitious goal — I like it!" },
+    {
+      q: "Walk me through a full-stack project you've built. What technologies did you use and what was your role?",
+      followup: "That's a strong foundation! It helps to see how you think end-to-end. Now let's go deeper."
+    },
+    {
+      q: "How do you approach optimizing a slow API endpoint in a Node.js backend connected to MongoDB?",
+      followup: "Great thinking! Knowing how to profile and optimize is critical for production systems."
+    },
+    {
+      q: "Tell me about a time you faced a difficult bug in production. How did you diagnose and resolve it?",
+      followup: "That's exactly the kind of systematic thinking we look for in senior engineers."
+    },
+    {
+      q: "How do you manage state in large React applications, and when would you choose Redux over Context API?",
+      followup: "Excellent answer. Understanding trade-offs between tools is key for building scalable apps."
+    },
   ];
 
   const speakText = (text, onEnd) => {
@@ -1622,18 +1634,29 @@ Expiry: `}<strong className="text-white font-bold">{(parseInt(linkExpiry))} hour
                   <div style={{
                     width: '160px',
                     height: '160px',
-                    background: 'rgba(255,255,255,0.03)',
+                    background: isListening
+                      ? 'radial-gradient(circle, rgba(59,130,246,0.12) 0%, rgba(0,0,0,0) 70%)'
+                      : isAgentSpeaking
+                        ? 'radial-gradient(circle, rgba(139,92,246,0.1) 0%, rgba(0,0,0,0) 70%)'
+                        : 'rgba(255,255,255,0.02)',
                     borderRadius: '50%',
-                    border: '1px solid rgba(255,255,255,0.06)',
-                    boxShadow: '0 20px 50px rgba(0,0,0,0.3), inset 0 2px 10px rgba(255,255,255,0.02)',
+                    border: isListening
+                      ? '1.5px solid rgba(59, 130, 246, 0.35)'
+                      : isAgentSpeaking
+                        ? '1.5px solid rgba(139, 92, 246, 0.25)'
+                        : '1px solid rgba(255,255,255,0.04)',
+                    boxShadow: isListening
+                      ? '0 0 30px rgba(59,130,246,0.15), 0 20px 50px rgba(0,0,0,0.3)'
+                      : '0 20px 50px rgba(0,0,0,0.3)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                     marginBottom: '24px',
-                    position: 'relative'
+                    position: 'relative',
+                    transition: 'all 0.4s ease'
                   }}>
                     {isListening && (
-                      <div style={{ position: 'absolute', inset: '-15px', borderRadius: '50%', border: '2px solid rgba(59, 130, 246, 0.2)', animation: 'ping 2s infinite' }}></div>
+                      <div style={{ position: 'absolute', inset: '-8px', borderRadius: '50%', border: '1.5px solid rgba(59, 130, 246, 0.15)', animation: 'ping 2s ease-out infinite' }}></div>
                     )}
 
                     <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
