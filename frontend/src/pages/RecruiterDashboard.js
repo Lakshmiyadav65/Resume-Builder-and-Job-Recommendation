@@ -102,12 +102,21 @@ const RecruiterDashboard = () => {
       console.log('[KIA] Speaker OFF — skipping audio, gen', myGen);
       setIsAgentSpeaking(true);
       setTimeout(() => {
-        if (speakGenRef.current !== myGen) return; // stale — another speak() started
+        if (speakGenRef.current !== myGen) return;
         setIsAgentSpeaking(false);
         onEnd && onEnd();
       }, 1500);
       return;
     }
+
+    // Guard: track whether onEnd has already been called to prevent double-firing
+    let onEndCalled = false;
+    const safeOnEnd = () => {
+      if (onEndCalled) return;
+      onEndCalled = true;
+      setIsAgentSpeaking(false);
+      if (onEnd) setTimeout(onEnd, 400);
+    };
 
     const utter = new SpeechSynthesisUtterance(text);
     utter.rate = 1.0;
@@ -127,33 +136,49 @@ const RecruiterDashboard = () => {
         console.log('[KIA] Utterance started, gen', myGen);
         setIsAgentSpeaking(true);
       };
+
       utter.onend = () => {
         if (speakGenRef.current !== myGen) {
           console.log('[KIA] Stale utterance onend ignored, gen', myGen);
           return;
         }
         console.log('[KIA] Utterance ended — triggering onEnd, gen', myGen);
-        setIsAgentSpeaking(false);
-        if (onEnd) setTimeout(onEnd, 400);
+        safeOnEnd();
       };
+
       utter.onerror = (e) => {
         if (speakGenRef.current !== myGen) return;
-        console.error('[KIA] Utterance error:', e.error);
-        // 'interrupted'/'canceled' means something external cancelled it — don't trigger onEnd
-        if (e.error === 'interrupted' || e.error === 'canceled') return;
-        setIsAgentSpeaking(false);
-        onEnd && onEnd();
+        console.warn('[KIA] Utterance error:', e.error, '— gen', myGen);
+        // 'interrupted' and 'canceled' happen in Brave/Firefox when the browser
+        // interrupts speech internally — we STILL need to call onEnd so the mic activates.
+        // Only ignore them if a NEWER speakText() call already started (checked above via gen).
+        safeOnEnd();
       };
 
       window.speechSynthesis.speak(utter);
+
+      // Safety fallback: if speech synthesis never fires onend/onerror (a known Brave bug),
+      // calculate an estimated duration and force-trigger onEnd after that time.
+      const estimatedMs = Math.max(3000, text.length * 65); // ~65ms per character
+      setTimeout(() => {
+        if (speakGenRef.current !== myGen) return;
+        if (!onEndCalled) {
+          console.warn('[KIA] Safety timeout triggered — speech events never fired, gen', myGen);
+          safeOnEnd();
+        }
+      }, estimatedMs);
     };
 
-    // Chrome sometimes has an empty voices list on first call — wait for it
+    // Chrome/Brave sometimes have an empty voices list on first call — wait for it
     if (window.speechSynthesis.getVoices().length === 0) {
       window.speechSynthesis.onvoiceschanged = () => {
         window.speechSynthesis.onvoiceschanged = null;
         trySpeak();
       };
+      // Brave sometimes never fires onvoiceschanged — fallback after 500ms
+      setTimeout(() => {
+        if (!onEndCalled && speakGenRef.current === myGen) trySpeak();
+      }, 500);
     } else {
       trySpeak();
     }
