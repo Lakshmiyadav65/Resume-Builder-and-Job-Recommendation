@@ -28,7 +28,7 @@ import { rankResumes } from '../services/api';
 import Sidebar from '../components/Sidebar';
 import './RecruiterDashboard.css';
 
-import { Search, MapPin, FileText, Eye, Send, User, ChevronLeft, ChevronRight, X, Mic, Video, Clock, Edit3, CheckCircle2, Copy, Briefcase, Mail, Sparkles, Play } from 'lucide-react';
+import { Search, MapPin, FileText, Eye, Send, User, ChevronLeft, ChevronRight, X, Mic, MicOff, Video, VolumeX, EyeOff, Clock, Edit3, CheckCircle2, Copy, Briefcase, Mail, Sparkles, Play, Settings } from 'lucide-react';
 import { Avatar, AvatarImage, AvatarFallback } from '../components/ui/avatar';
 import { toast } from 'sonner';
 import { inviteToInterview } from '../services/api';
@@ -69,6 +69,9 @@ const RecruiterDashboard = () => {
   const [isListening, setIsListening] = useState(false);
   const [isAgentSpeaking, setIsAgentSpeaking] = useState(false);
   const [voiceTranscript, setVoiceTranscript] = useState('');
+  const [isMuted, setIsMuted] = useState(false);
+  const [isSpeakerOff, setIsSpeakerOff] = useState(false);
+  const [showCaptions, setShowCaptions] = useState(true);
   const recognitionRef = useRef(null);
   const demoMessagesEndRef = useRef(null);
 
@@ -80,24 +83,86 @@ const RecruiterDashboard = () => {
   ];
 
   const speakText = (text, onEnd) => {
-    if (!window.speechSynthesis) { onEnd && onEnd(); return; }
-    window.speechSynthesis.cancel();
+    // Increment generation so any previous utterance's callbacks are ignored
+    const myGen = ++speakGenRef.current;
+    console.log('[KIA] speakText gen', myGen, ':', text);
+
+    // Stop any current recognition so the mic doesn't pick up the agent's voice
+    if (recognitionRef.current) {
+      manuallyStoppedRef.current = true;
+      try {
+        recognitionRef.current.onend = null;
+        recognitionRef.current.stop();
+      } catch (_) { }
+      recognitionRef.current = null;
+    }
+    setIsListening(false);
+
+    if (!window.speechSynthesis || isSpeakerOff) {
+      console.log('[KIA] Speaker OFF — skipping audio, gen', myGen);
+      setIsAgentSpeaking(true);
+      setTimeout(() => {
+        if (speakGenRef.current !== myGen) return; // stale — another speak() started
+        setIsAgentSpeaking(false);
+        onEnd && onEnd();
+      }, 1500);
+      return;
+    }
+
     const utter = new SpeechSynthesisUtterance(text);
-    utter.rate = 0.95;
-    utter.pitch = 1.1;
+    utter.rate = 1.0;
+    utter.pitch = 1.0;
     utter.volume = 1;
-    const voices = window.speechSynthesis.getVoices();
-    const preferred = voices.find(v => v.name.includes('Google') || v.name.includes('Samantha') || v.name.includes('Karen'));
-    if (preferred) utter.voice = preferred;
-    utter.onstart = () => setIsAgentSpeaking(true);
-    utter.onend = () => { setIsAgentSpeaking(false); onEnd && onEnd(); };
-    utter.onerror = () => { setIsAgentSpeaking(false); onEnd && onEnd(); };
-    window.speechSynthesis.speak(utter);
+
+    const trySpeak = () => {
+      const voices = window.speechSynthesis.getVoices();
+      const preferred = voices.find(v =>
+        v.name.includes('Google') || v.name.includes('Samantha') ||
+        v.name.includes('Karen') || v.name.includes('Microsoft Aria')
+      );
+      if (preferred) utter.voice = preferred;
+
+      utter.onstart = () => {
+        if (speakGenRef.current !== myGen) return;
+        console.log('[KIA] Utterance started, gen', myGen);
+        setIsAgentSpeaking(true);
+      };
+      utter.onend = () => {
+        if (speakGenRef.current !== myGen) {
+          console.log('[KIA] Stale utterance onend ignored, gen', myGen);
+          return;
+        }
+        console.log('[KIA] Utterance ended — triggering onEnd, gen', myGen);
+        setIsAgentSpeaking(false);
+        if (onEnd) setTimeout(onEnd, 400);
+      };
+      utter.onerror = (e) => {
+        if (speakGenRef.current !== myGen) return;
+        console.error('[KIA] Utterance error:', e.error);
+        // 'interrupted'/'canceled' means something external cancelled it — don't trigger onEnd
+        if (e.error === 'interrupted' || e.error === 'canceled') return;
+        setIsAgentSpeaking(false);
+        onEnd && onEnd();
+      };
+
+      window.speechSynthesis.speak(utter);
+    };
+
+    // Chrome sometimes has an empty voices list on first call — wait for it
+    if (window.speechSynthesis.getVoices().length === 0) {
+      window.speechSynthesis.onvoiceschanged = () => {
+        window.speechSynthesis.onvoiceschanged = null;
+        trySpeak();
+      };
+    } else {
+      trySpeak();
+    }
   };
 
   const manuallyStoppedRef = useRef(false);
   const accumulatedTranscriptRef = useRef('');
   const demoQuestionIndexRef = useRef(0);
+  const speakGenRef = useRef(0); // incremented each speakText call to cancel stale callbacks
 
   const startListening = async () => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -106,8 +171,9 @@ const RecruiterDashboard = () => {
       return;
     }
 
-    // Stop any existing recognition
+    // Stop any existing recognition properly
     if (recognitionRef.current) {
+      manuallyStoppedRef.current = true;
       try {
         recognitionRef.current.onend = null;
         recognitionRef.current.onerror = null;
@@ -117,24 +183,23 @@ const RecruiterDashboard = () => {
       recognitionRef.current = null;
     }
 
-    manuallyStoppedRef.current = false;
+    // Reset transcripts (manuallyStoppedRef is reset AFTER getUserMedia below)
     accumulatedTranscriptRef.current = '';
     setVoiceTranscript('');
 
-    // KEY FIX: Pre-warm Chrome's audio pipeline via getUserMedia.
-    // Without this, Chrome on Windows opens the mic but onresult never fires,
-    // leaving the transcript completely blank.
+    // MIC WARMUP: Chrome on Windows sometimes won't stream audio unless the device is opened first
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      stream.getTracks().forEach(t => t.stop()); // release — SR will reopen
+      setTimeout(() => stream.getTracks().forEach(t => t.stop()), 200);
     } catch (permErr) {
       console.error('[KIA] Mic permission denied:', permErr);
-      toast.error(
-        'Microphone access denied. Click the lock icon in the address bar, allow microphone, then try again.',
-        { duration: 6000 }
-      );
+      toast.error('Microphone access denied. Please allow microphone access.');
       return;
     }
+
+    // IMPORTANT: Reset manually-stopped AFTER the async warmup, not before
+    // to avoid a race where speakText sets manuallyStoppedRef=true between these lines
+    manuallyStoppedRef.current = false;
 
     const recognition = new SpeechRecognition();
     recognition.lang = 'en-US';
@@ -143,7 +208,7 @@ const RecruiterDashboard = () => {
     recognition.maxAlternatives = 1;
 
     recognition.onstart = () => {
-      console.log('[KIA] Mic started');
+      console.log('[KIA] Voice recognition started');
       setIsListening(true);
     };
 
@@ -155,51 +220,59 @@ const RecruiterDashboard = () => {
         if (event.results[i].isFinal) final += chunk + ' ';
         else interim += chunk;
       }
+
+      const display = (accumulatedTranscriptRef.current + ' ' + (final + interim)).trim();
+      console.log('[KIA] Live Transcript:', display);
+
       if (final.trim()) {
         accumulatedTranscriptRef.current = (accumulatedTranscriptRef.current + ' ' + final).trim();
       }
-      const display = (accumulatedTranscriptRef.current + ' ' + interim).trim();
+
       setVoiceTranscript(display);
-      console.log('[KIA] Heard:', display);
     };
 
     recognition.onend = () => {
-      console.log('[KIA] onend. Stopped manually:', manuallyStoppedRef.current);
+      console.log('[KIA] Voice recognition ended. Manual stop:', manuallyStoppedRef.current);
       if (!manuallyStoppedRef.current) {
-        // Silence timeout — restart the same instance
-        setTimeout(() => {
-          if (manuallyStoppedRef.current || !recognitionRef.current) return;
-          try {
-            recognitionRef.current.start();
-            console.log('[KIA] Restarted after silence');
-          } catch (e) {
-            console.warn('[KIA] Restart failed:', e.message);
-          }
-        }, 100);
+        // Auto-restart if it timed out due to silence
+        try {
+          recognition.start();
+        } catch (e) {
+          console.warn('[KIA] Auto-restart failed:', e);
+          setIsListening(false);
+        }
       } else {
         setIsListening(false);
       }
     };
 
     recognition.onerror = (event) => {
-      console.error('[KIA] Error:', event.error);
+      console.error('[KIA] Speech Recognition Error:', event.error);
+      if (event.error === 'no-speech') {
+        // Ignore, handled by onend auto-restart
+        return;
+      }
+
       if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
         manuallyStoppedRef.current = true;
         setIsListening(false);
-        toast.error('Microphone was blocked. Please allow access and try again.', { duration: 5000 });
-      } else if (event.error === 'audio-capture') {
+        toast.error('Microphone access was denied.');
+      } else if (event.error === 'aborted') {
+        // Logic triggered by us
+      } else {
+        // For other errors, stop listening state
         manuallyStoppedRef.current = true;
         setIsListening(false);
-        toast.error('No microphone detected. Please connect one and try again.');
-      } else if (event.error === 'aborted') {
-        // We triggered this — ignore
-      } else {
-        console.warn('[KIA] Non-fatal:', event.error);
       }
     };
 
     recognitionRef.current = recognition;
-    recognition.start();
+    try {
+      recognition.start();
+    } catch (e) {
+      console.error('[KIA] Start failed:', e);
+      setIsListening(false);
+    }
   };
 
   const stopListeningAndSubmit = () => {
@@ -211,26 +284,43 @@ const RecruiterDashboard = () => {
       } catch (_) { }
     }
     setIsListening(false);
-    const finalAnswer = accumulatedTranscriptRef.current.trim() || voiceTranscript.trim();
+
+    // Always prioritize the current full transcript
+    const finalAnswer = voiceTranscript.trim();
+
     setVoiceTranscript('');
     accumulatedTranscriptRef.current = '';
-    if (finalAnswer) {
+
+    if (finalAnswer.length > 2) {
       submitVoiceAnswer(finalAnswer);
     } else {
-      toast.error('No speech detected. Please speak clearly after clicking the mic, then tap stop.');
+      toast.error('No speech detected. Please speak your answer clearly.');
+      // If they click stop but haven't said anything, don't just stay stuck
+      // Maybe they prefer typing or want to skip? 
+      // For now, let them retry startListening
     }
   };
 
   const submitVoiceAnswer = (answer) => {
+    // Stop any active listening before proceeding
+    manuallyStoppedRef.current = true;
+    if (recognitionRef.current) {
+      try { recognitionRef.current.stop(); } catch (_) { }
+    }
+    setIsListening(false);
+
     const userMsg = { role: 'user', text: answer };
     const nextIndex = demoQuestionIndex + 1;
     setDemoMessages(prev => [...prev, userMsg]);
     setVoiceTranscript('');
     setDemoTyping(true);
+
     setTimeout(() => {
       if (nextIndex < demoQuestions.length) {
-        const followup = demoQuestions[nextIndex - 1 >= 0 ? nextIndex - 1 : 0].followup;
+        const prevQObj = demoQuestions[nextIndex - 1];
+        const followup = prevQObj.followup;
         const nextQ = demoQuestions[nextIndex].q;
+
         setDemoMessages(prev => [
           ...prev,
           { role: 'agent', text: followup },
@@ -238,14 +328,20 @@ const RecruiterDashboard = () => {
         ]);
         setDemoQuestionIndex(nextIndex);
         setDemoTyping(false);
-        speakText(followup + ' ' + nextQ);
+
+        // Automatically start listening after the agent finishes speaking the next question
+        speakText(followup + " ... " + nextQ, () => {
+          startListening();
+        });
       } else {
-        const closing = "That's all for now! You've completed the demo interview. Let me compile your results...";
+        const closing = "Excellent. That completes our demo interview! You've done a great job. Let me compile your performance results now...";
         setDemoMessages(prev => [...prev, { role: 'agent', text: closing }]);
         setDemoTyping(false);
-        speakText(closing, () => setTimeout(() => setDemoStep(2), 1200));
+        speakText(closing, () => {
+          setTimeout(() => setDemoStep(2), 1500);
+        });
       }
-    }, 1000);
+    }, 1500); // 1.5s thinking time
   };
 
   const startDemoExperience = () => {
@@ -273,7 +369,10 @@ const RecruiterDashboard = () => {
       const firstQ = demoQuestions[0].q;
       setDemoMessages([{ role: 'agent', text: firstQ }]);
       setDemoTyping(false);
-      speakText(firstQ);
+      // Automatically start listening after the agent finishes speaking the first question
+      speakText(firstQ, () => {
+        startListening();
+      });
     }, 800);
   };
 
@@ -281,7 +380,7 @@ const RecruiterDashboard = () => {
     if (demoMessagesEndRef.current) {
       demoMessagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
-  }, [demoMessages, demoTyping]);
+  }, [demoMessages, demoTyping, voiceTranscript]); // Added voiceTranscript to ensure scroll during speech
 
   useEffect(() => {
     return () => {
@@ -1352,306 +1451,382 @@ Expiry: `}<strong className="text-white font-bold">{(parseInt(linkExpiry))} hour
             exit={{ opacity: 0 }}
             style={{
               position: 'fixed', inset: 0, zIndex: 30000,
-              background: '#000000',
+              background: '#05060b', // Deep dark background
               display: 'flex', flexDirection: 'column',
-              fontFamily: 'inherit'
+              fontFamily: 'inherit',
+              color: '#f8fafc', // Light slate text
+              overflow: 'hidden' // Remove any scrollbars
             }}
           >
-            {/* Top Bar */}
+            {/* Top Bar - Dark Premium Design */}
             <div style={{
               display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              padding: '16px 28px',
+              padding: '12px 32px',
               borderBottom: '1px solid rgba(255,255,255,0.06)',
               background: 'rgba(255,255,255,0.02)',
-              backdropFilter: 'blur(10px)'
+              backdropFilter: 'blur(10px)',
+              boxShadow: '0 4px 20px rgba(0,0,0,0.2)'
             }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#9448C4', boxShadow: '0 0 10px #9448C4' }}></div>
-                <span style={{ color: 'white', fontWeight: '900', fontSize: '14px', letterSpacing: '-0.02em' }}>KIA Agent — Demo Interview</span>
-                {demoStep === 1 && (
-                  <span style={{ background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.3)', color: '#f87171', fontSize: '9px', fontWeight: '900', padding: '2px 8px', borderRadius: '20px', letterSpacing: '0.08em' }}>
-                    ● LIVE SESSION
-                  </span>
-                )}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: '#2563eb', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white' }}>
+                  <Sparkles size={20} fill="currentColor" />
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  <span style={{ fontWeight: '900', fontSize: '13px', color: '#f8fafc', letterSpacing: '-0.01em', textTransform: 'uppercase' }}>AI Interviewer</span>
+                  <span style={{ fontSize: '10px', fontWeight: '700', color: '#3b82f6', textTransform: 'uppercase' }}>Session Active</span>
+                </div>
               </div>
-              <button
-                onClick={() => { setShowDemoExperience(false); setDemoStep(0); setDemoMessages([]); }}
-                style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#94a3b8', borderRadius: '8px', padding: '6px 14px', cursor: 'pointer', fontSize: '12px', fontWeight: '700', transition: 'all 0.2s' }}
-              >
-                ✕ Exit Demo
-              </button>
+
+              {/* Progress Bar - Dark Variant */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flex: 1, maxWidth: '400px', margin: '0 40px' }}>
+                <span style={{ fontSize: '11px', fontWeight: '600', color: '#94a3b8' }}>Progress</span>
+                <div style={{ flex: 1, height: '6px', background: 'rgba(255,255,255,0.05)', borderRadius: '10px', overflow: 'hidden' }}>
+                  <div style={{
+                    height: '100%',
+                    width: `${(Math.min(demoQuestionIndex, demoQuestions.length) / demoQuestions.length) * 100}%`,
+                    background: '#3b82f6',
+                    borderRadius: '10px',
+                    transition: 'width 0.8s'
+                  }}></div>
+                </div>
+                <span style={{ fontSize: '11px', fontWeight: '800', color: '#f8fafc' }}>{Math.min(demoQuestionIndex, demoQuestions.length)} / {demoQuestions.length}</span>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+                <button style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer' }}>
+                  <Settings size={22} />
+                </button>
+                <Button
+                  onClick={() => { setShowDemoExperience(false); setDemoStep(0); setDemoMessages([]); }}
+                  variant="outline"
+                  className="rounded-xl border-red-500/30 bg-red-500/10 text-red-400 hover:bg-red-500/20 font-black text-xs uppercase px-6"
+                >
+                  <X className="mr-2 h-3 w-3" /> End Interview
+                </Button>
+              </div>
             </div>
 
-            {/* Step 0 — Intro */}
+            {/* Step 0 — New Design Intro (Compact Version) */}
             {demoStep === 0 && (
               <motion.div
                 initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}
-                style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '32px', padding: '40px 24px' }}
+                style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '24px', padding: '24px', background: '#05060b', overflow: 'hidden' }}
               >
-                {/* Robot */}
-                <div style={{ position: 'relative' }}>
-                  <div style={{ position: 'absolute', inset: '-30px', background: 'radial-gradient(circle, rgba(148,72,196,0.2) 0%, transparent 70%)', borderRadius: '50%' }}></div>
-                  {/* Head */}
-                  <div style={{ position: 'relative', marginBottom: '8px' }}>
-                    <div style={{ width: '100px', height: '92px', background: 'linear-gradient(145deg, #eaeaea, #c8c8c8)', borderRadius: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 8px 32px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.5)', position: 'relative', margin: '0 auto' }}>
-                      <div style={{ width: '72px', height: '62px', background: '#080812', borderRadius: '16px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '10px', boxShadow: 'inset 0 2px 10px rgba(0,0,0,0.9)' }}>
-                        <div style={{ display: 'flex', gap: '16px' }}>
-                          <div style={{ width: '14px', height: '8px', background: '#00e5ff', borderRadius: '4px', boxShadow: '0 0 10px #00e5ff, 0 0 20px #00e5ff' }}></div>
-                          <div style={{ width: '14px', height: '8px', background: '#00e5ff', borderRadius: '4px', boxShadow: '0 0 10px #00e5ff, 0 0 20px #00e5ff' }}></div>
-                        </div>
-                        <div style={{ width: '28px', height: '6px', background: '#00e5ff', borderRadius: '4px', boxShadow: '0 0 8px #00e5ff' }}></div>
-                      </div>
-                      <div style={{ position: 'absolute', left: '-8px', top: '50%', transform: 'translateY(-50%)', width: '10px', height: '26px', background: 'linear-gradient(145deg, #d0d0d0, #aaa)', borderRadius: '5px' }}></div>
-                      <div style={{ position: 'absolute', right: '-8px', top: '50%', transform: 'translateY(-50%)', width: '10px', height: '26px', background: 'linear-gradient(145deg, #d0d0d0, #aaa)', borderRadius: '5px' }}></div>
-                    </div>
-                    <div style={{ width: '28px', height: '14px', background: 'linear-gradient(145deg, #d0d0d0, #b0b0b0)', margin: '0 auto', borderRadius: '3px' }}></div>
-                  </div>
-                  {/* Body */}
-                  <div style={{ width: '120px', height: '90px', background: 'linear-gradient(145deg, #e2e2e2, #b8b8b8)', borderRadius: '60px 60px 48px 48px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 6px 24px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.4)', position: 'relative', margin: '0 auto' }}>
-                    <div style={{ width: '36px', height: '10px', background: 'rgba(0,229,255,0.9)', borderRadius: '5px', boxShadow: '0 0 14px #00e5ff' }}></div>
-                    <div style={{ position: 'absolute', left: '-28px', top: '10px', width: '20px', height: '56px', background: 'linear-gradient(145deg, #d8d8d8, #b0b0b0)', borderRadius: '10px', transform: 'rotate(8deg)' }}></div>
-                    <div style={{ position: 'absolute', right: '-28px', top: '10px', width: '20px', height: '56px', background: 'linear-gradient(145deg, #d8d8d8, #b0b0b0)', borderRadius: '10px', transform: 'rotate(-8deg)' }}></div>
+                {/* Wave animation for intro - Scaled down */}
+                <div style={{ position: 'relative', width: '130px', height: '130px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(circle, rgba(59, 130, 246, 0.1) 0%, transparent 70%)', borderRadius: '50%' }}></div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    {[15, 35, 25, 50, 30, 40, 20].map((h, i) => (
+                      <div key={i} style={{
+                        width: '6px',
+                        height: `${h}px`,
+                        background: 'linear-gradient(180deg, #3b82f6, #1d4ed8)',
+                        borderRadius: '10px',
+                        animation: `modern-wave 0.8s ease-in-out ${i * 0.1}s infinite alternate`,
+                        boxShadow: '0 0 10px rgba(59, 130, 246, 0.3)'
+                      }}></div>
+                    ))}
                   </div>
                 </div>
 
-                <div style={{ textAlign: 'center', maxWidth: '480px' }}>
-                  <h2 style={{ color: 'white', fontSize: '32px', fontWeight: '900', fontStyle: 'italic', letterSpacing: '-0.03em', margin: '0 0 12px' }}>Meet Your AI Interviewer</h2>
-                  <p style={{ color: '#64748b', fontSize: '15px', lineHeight: '1.6', margin: '0 0 8px' }}>This is a live demo of KIA — our AI interview agent. It will ask you 4 real interview questions and evaluate your responses in real time.</p>
-                  <p style={{ color: '#9448C4', fontSize: '13px', fontWeight: '700', margin: 0 }}>⏱ Takes about 3 minutes</p>
+                <div style={{ textAlign: 'center', maxWidth: '500px' }}>
+                  <h2 style={{ color: '#f8fafc', fontSize: '32px', fontWeight: '900', letterSpacing: '-0.04em', margin: '0 0 10px', lineHeight: '1.1' }}>AI-Powered Interview Simulation</h2>
+                  <p style={{ color: '#94a3b8', fontSize: '14px', lineHeight: '1.5', margin: '0 0 16px', fontWeight: '500' }}>Experience the future of talent evaluation with our deep-learning voice agent.</p>
+
+                  <div style={{ display: 'flex', justifyContent: 'center', gap: '24px', marginBottom: '4px' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                      <span style={{ fontSize: '18px', fontWeight: '900', color: '#f8fafc' }}>100%</span>
+                      <span style={{ fontSize: '9px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase' }}>AI Driven</span>
+                    </div>
+                    <div style={{ borderLeft: '1px solid rgba(255,255,255,0.1)', height: '24px' }}></div>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                      <span style={{ fontSize: '18px', fontWeight: '900', color: '#f8fafc' }}>~3m</span>
+                      <span style={{ fontSize: '9px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase' }}>Duration</span>
+                    </div>
+                  </div>
                 </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', alignItems: 'center', width: '100%', maxWidth: '360px' }}>
-                  <button
+                  <Button
                     onClick={startDemoInterview}
-                    style={{ width: '100%', padding: '16px', background: 'linear-gradient(135deg, #9448C4, #5D2A91)', color: 'white', border: 'none', borderRadius: '16px', fontSize: '14px', fontWeight: '900', cursor: 'pointer', letterSpacing: '0.05em', textTransform: 'uppercase', boxShadow: '0 10px 30px rgba(148,72,196,0.4)', transition: 'transform 0.2s' }}
+                    size="lg"
+                    className="w-full h-14 bg-blue-600 text-white hover:bg-blue-700 rounded-2xl font-black text-sm uppercase tracking-wider shadow-lg shadow-blue-900/40 transition-all active:scale-95"
                   >
-                    🎤 Start Interview
-                  </button>
+                    🚀 Start Session
+                  </Button>
                   <button
                     onClick={() => { setShowDemoExperience(false); setDemoStep(0); }}
-                    style={{ width: '100%', padding: '14px', background: 'rgba(255,255,255,0.04)', color: '#64748b', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '16px', fontSize: '13px', fontWeight: '700', cursor: 'pointer' }}
+                    style={{ fontSize: '12px', fontWeight: '700', color: '#475569', background: 'none', border: 'none', cursor: 'pointer' }}
                   >
-                    Maybe Later
+                    Back to Dashboard
                   </button>
                 </div>
               </motion.div>
             )}
 
-            {/* Step 1 — Interview Chat */}
+            {/* Step 1 — Dark Modern Interview UI */}
             {demoStep === 1 && (
-              <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
-                {/* Left — Robot Panel */}
-                <div style={{ width: '300px', minWidth: '300px', borderRight: '1px solid rgba(255,255,255,0.06)', background: 'linear-gradient(180deg, #080812 0%, #110a20 100%)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '20px', padding: '24px', position: 'relative' }}>
-                  <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(circle at 50% 40%, rgba(148,72,196,0.12) 0%, transparent 60%)' }}></div>
-                  {/* Small robot */}
-                  <div style={{ position: 'relative', zIndex: 2 }}>
-                    <div style={{ marginBottom: '6px' }}>
-                      <div style={{ width: '80px', height: '74px', background: 'linear-gradient(145deg, #eaeaea, #c8c8c8)', borderRadius: '22px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 24px rgba(0,0,0,0.5)', position: 'relative', margin: '0 auto' }}>
-                        <div style={{ width: '58px', height: '50px', background: '#080812', borderRadius: '12px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
-                          <div style={{ display: 'flex', gap: '12px' }}>
-                            <div style={{ width: '11px', height: '7px', background: '#00e5ff', borderRadius: '3px', boxShadow: '0 0 8px #00e5ff, 0 0 16px #00e5ff', animation: demoTyping ? 'pulse 0.8s infinite' : 'none' }}></div>
-                            <div style={{ width: '11px', height: '7px', background: '#00e5ff', borderRadius: '3px', boxShadow: '0 0 8px #00e5ff, 0 0 16px #00e5ff', animation: demoTyping ? 'pulse 0.8s 0.2s infinite' : 'none' }}></div>
-                          </div>
-                          <div style={{ width: '22px', height: '5px', background: '#00e5ff', borderRadius: '3px', boxShadow: '0 0 6px #00e5ff' }}></div>
-                        </div>
-                        <div style={{ position: 'absolute', left: '-6px', top: '50%', transform: 'translateY(-50%)', width: '8px', height: '20px', background: '#c8c8c8', borderRadius: '4px' }}></div>
-                        <div style={{ position: 'absolute', right: '-6px', top: '50%', transform: 'translateY(-50%)', width: '8px', height: '20px', background: '#c8c8c8', borderRadius: '4px' }}></div>
-                      </div>
-                      <div style={{ width: '18px', height: '8px', background: '#c8c8c8', margin: '0 auto', borderRadius: '2px' }}></div>
-                    </div>
-                    <div style={{ width: '96px', height: '74px', background: 'linear-gradient(145deg, #e2e2e2, #b8b8b8)', borderRadius: '48px 48px 36px 36px', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', margin: '0 auto', boxShadow: '0 4px 20px rgba(0,0,0,0.4)' }}>
-                      <div style={{ width: '28px', height: '8px', background: 'rgba(0,229,255,0.9)', borderRadius: '4px', boxShadow: '0 0 10px #00e5ff' }}></div>
-                      <div style={{ position: 'absolute', left: '-22px', top: '8px', width: '16px', height: '44px', background: '#ccc', borderRadius: '8px', transform: 'rotate(8deg)' }}></div>
-                      <div style={{ position: 'absolute', right: '-22px', top: '8px', width: '16px', height: '44px', background: '#ccc', borderRadius: '8px', transform: 'rotate(-8deg)' }}></div>
-                    </div>
+              <div style={{ flex: 1, display: 'flex', overflow: 'hidden', position: 'relative', background: '#05060b' }}>
+                {/* Background Glows for Dark Mode */}
+                <div style={{ position: 'absolute', top: '20%', left: '50%', transform: 'translate(-50%, -50%)', width: '600px', height: '600px', background: 'radial-gradient(circle, rgba(59, 130, 246, 0.05) 0%, transparent 70%)', zIndex: 0 }}></div>
+                <div style={{ position: 'absolute', bottom: '0', left: '0', width: '300px', height: '300px', background: 'radial-gradient(circle, rgba(148, 72, 196, 0.05) 0%, transparent 70%)', zIndex: 0 }}></div>
+
+                {/* Main Interaction Area - DARK & NO OVERLAP */}
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', position: 'relative', zIndex: 1, padding: '20px' }}>
+
+                  {/* Status Badge */}
+                  <div style={{
+                    background: 'rgba(59, 130, 246, 0.1)',
+                    border: '1px solid rgba(59, 130, 246, 0.2)',
+                    borderRadius: '20px',
+                    padding: '6px 16px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    marginBottom: '20px'
+                  }}>
+                    <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#3b82f6', animation: 'pulse 1.5s infinite' }}></div>
+                    <span style={{ color: '#3b82f6', fontSize: '10px', fontWeight: '900', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+                      {isListening ? 'Mic is Active' : isAgentSpeaking ? 'Agent is Speaking' : 'Waiting...'}
+                    </span>
                   </div>
 
-                  <div style={{ textAlign: 'center', zIndex: 2 }}>
-                    <p style={{ color: 'white', fontWeight: '900', fontSize: '15px', margin: '0 0 4px' }}>KIA Agent</p>
-                    <p style={{ color: isAgentSpeaking ? '#00e5ff' : '#9448C4', fontSize: '11px', fontWeight: '700', margin: 0, transition: 'color 0.3s' }}>
-                      {isAgentSpeaking ? '● Speaking...' : demoTyping ? '● Thinking...' : '● Ready'}
-                    </p>
-                  </div>
-
-                  {/* Waveform */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '3px', zIndex: 2 }}>
-                    {[5, 9, 13, 8, 15, 10, 6, 12, 9, 5, 11, 8, 14, 7].map((h, i) => (
-                      <div key={i} style={{ width: '3px', height: `${h}px`, background: isAgentSpeaking ? '#00e5ff' : isListening ? '#ef4444' : 'rgba(148,72,196,0.3)', borderRadius: '2px', transition: 'all 0.3s', animation: (isAgentSpeaking || isListening) ? `wave-bar 0.8s ease-in-out ${i * 0.06}s infinite alternate` : 'none', boxShadow: isAgentSpeaking ? '0 0 4px #00e5ff' : 'none' }}></div>
-                    ))}
-                  </div>
-
-                  {/* Progress */}
-                  <div style={{ width: '100%', zIndex: 2 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
-                      <span style={{ color: '#64748b', fontSize: '10px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Progress</span>
-                      <span style={{ color: '#9448C4', fontSize: '10px', fontWeight: '900' }}>{Math.min(demoQuestionIndex, demoQuestions.length)}/{demoQuestions.length}</span>
-                    </div>
-                    <div style={{ height: '4px', background: 'rgba(255,255,255,0.05)', borderRadius: '2px', overflow: 'hidden' }}>
-                      <div style={{ height: '100%', width: `${(Math.min(demoQuestionIndex, demoQuestions.length) / demoQuestions.length) * 100}%`, background: 'linear-gradient(90deg, #9448C4, #c084fc)', borderRadius: '2px', transition: 'width 0.5s ease' }}></div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Right — Chat */}
-                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', background: '#050810' }}>
-                  {/* Messages area */}
-                  <div style={{ flex: 1, overflowY: 'auto', padding: '28px 32px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                    {demoMessages.map((msg, i) => (
-                      <motion.div
-                        key={i}
-                        initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}
-                        style={{ display: 'flex', justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start', gap: '10px', alignItems: 'flex-end' }}
-                      >
-                        {msg.role === 'agent' && (
-                          <div style={{ width: '28px', height: '28px', background: 'linear-gradient(135deg, #9448C4, #5D2A91)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: '12px' }}>🤖</div>
-                        )}
-                        <div style={{
-                          maxWidth: '65%', padding: '12px 16px', borderRadius: msg.role === 'user' ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
-                          background: msg.role === 'user' ? 'linear-gradient(135deg, #9448C4, #5D2A91)' : 'rgba(255,255,255,0.05)',
-                          border: msg.role === 'agent' ? '1px solid rgba(255,255,255,0.07)' : 'none',
-                          color: 'white', fontSize: '14px', lineHeight: '1.6', fontWeight: msg.role === 'agent' ? '500' : '600'
-                        }}>
-                          {msg.text}
-                        </div>
-                        {msg.role === 'user' && (
-                          <div style={{ width: '28px', height: '28px', background: 'rgba(255,255,255,0.08)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: '12px' }}>👤</div>
-                        )}
-                      </motion.div>
-                    ))}
-                    {demoTyping && (
-                      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ display: 'flex', alignItems: 'flex-end', gap: '10px' }}>
-                        <div style={{ width: '28px', height: '28px', background: 'linear-gradient(135deg, #9448C4, #5D2A91)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px' }}>🤖</div>
-                        <div style={{ padding: '12px 18px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '18px 18px 18px 4px', display: 'flex', gap: '5px', alignItems: 'center' }}>
-                          {[0, 1, 2].map(i => (
-                            <div key={i} style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#9448C4', animation: `pulse 1s ${i * 0.2}s infinite` }}></div>
-                          ))}
-                        </div>
-                      </motion.div>
+                  {/* Central Waveform Component - Dark Variant */}
+                  <div style={{
+                    width: '160px',
+                    height: '160px',
+                    background: 'rgba(255,255,255,0.03)',
+                    borderRadius: '50%',
+                    border: '1px solid rgba(255,255,255,0.06)',
+                    boxShadow: '0 20px 50px rgba(0,0,0,0.3), inset 0 2px 10px rgba(255,255,255,0.02)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    marginBottom: '24px',
+                    position: 'relative'
+                  }}>
+                    {isListening && (
+                      <div style={{ position: 'absolute', inset: '-15px', borderRadius: '50%', border: '2px solid rgba(59, 130, 246, 0.2)', animation: 'ping 2s infinite' }}></div>
                     )}
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                      {[4, 10, 24, 14, 30, 18, 12, 22, 16, 8].map((h, i) => (
+                        <div key={i} style={{
+                          width: '5px',
+                          height: `${h * (isListening || isAgentSpeaking ? 1.2 : 0.6)}px`,
+                          background: '#3b82f6',
+                          borderRadius: '10px',
+                          transition: 'height 0.15s ease-out',
+                          animation: (isListening || isAgentSpeaking) ? `modern-wave 0.6s ease-in-out ${i * 0.05}s infinite alternate` : 'none',
+                          boxShadow: '0 0 10px rgba(59, 130, 246, 0.5)'
+                        }}></div>
+                      ))}
+                    </div>
                   </div>
 
-                  {/* Voice Input Bar */}
-                  <div style={{ padding: '20px 32px', borderTop: '1px solid rgba(255,255,255,0.06)', background: 'rgba(255,255,255,0.02)', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                    {/* Transcript preview */}
-                    <div style={{ minHeight: '40px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '12px', padding: '10px 16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      {isListening && (
-                        <div style={{ display: 'flex', gap: '3px', alignItems: 'center', flexShrink: 0 }}>
-                          {[6, 10, 7, 13, 8].map((h, i) => (
-                            <div key={i} style={{ width: '3px', height: `${h}px`, background: '#ef4444', borderRadius: '2px', animation: `wave-bar 0.5s ease-in-out ${i * 0.1}s infinite alternate` }}></div>
-                          ))}
-                        </div>
-                      )}
-                      <span style={{ color: voiceTranscript ? 'white' : '#475569', fontSize: '14px', fontStyle: voiceTranscript ? 'normal' : 'italic', flex: 1 }}>
-                        {voiceTranscript || (isListening ? 'Listening...' : isAgentSpeaking ? 'Agent is speaking...' : demoMessages.length === 0 ? 'Waiting for agent...' : 'Press the mic button to answer')}
+                  {/* Question Display - Dark Variant */}
+                  <div style={{ textAlign: 'center', maxWidth: '600px', padding: '0 20px' }}>
+                    <p style={{ fontSize: '10px', fontWeight: '900', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: '8px' }}>Current Question</p>
+                    <h2 style={{ fontSize: '28px', fontWeight: '800', color: '#f8fafc', lineHeight: '1.2', letterSpacing: '-0.02em', marginBottom: '16px' }}>
+                      "{demoMessages.filter(m => m.role === 'agent').pop()?.text || "Preparing your first question..."}"
+                    </h2>
+
+                    <p style={{ fontSize: '13px', color: '#94a3b8', fontWeight: '500', marginBottom: '8px' }}>
+                      {isListening ? "AI is listening... Speak your answer now." : "Agent is speaking... Please listen carefully."}
+                    </p>
+
+                    <span style={{
+                      background: 'rgba(255,255,255,0.04)',
+                      color: '#64748b',
+                      fontSize: '8px',
+                      fontWeight: '800',
+                      padding: '4px 12px',
+                      borderRadius: '20px',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.05em',
+                      border: '1px solid rgba(255,255,255,0.08)'
+                    }}>
+                      STAR Method Recommended
+                    </span>
+                  </div>
+
+                  {/* Explicit Submit Action if they have spoken */}
+                  {voiceTranscript.trim().length > 3 && !isAgentSpeaking && (
+                    <motion.button
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      onClick={stopListeningAndSubmit}
+                      style={{
+                        marginTop: '24px',
+                        background: '#3b82f6',
+                        color: 'white',
+                        padding: '10px 24px',
+                        borderRadius: '30px',
+                        fontWeight: '800',
+                        fontSize: '12px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '10px',
+                        border: 'none',
+                        cursor: 'pointer',
+                        boxShadow: '0 10px 20px rgba(59, 130, 246, 0.3)',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.05em'
+                      }}
+                    >
+                      <Send size={16} />
+                      Next Question
+                    </motion.button>
+                  )}
+
+                  {/* Footer Controls - MOVED UP TO PREVENT OVERLAP */}
+                  <div style={{ marginTop: '40px', display: 'flex', gap: '32px' }}>
+                    {/* Mute/Mic Control */}
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+                      <button
+                        onClick={() => {
+                          if (isListening) stopListeningAndSubmit();
+                          else startListening();
+                        }}
+                        style={{
+                          width: '48px', height: '48px', borderRadius: '50%',
+                          border: isListening ? 'none' : '1px solid rgba(255,255,255,0.1)',
+                          background: isListening ? '#3b82f6' : 'rgba(255,255,255,0.03)',
+                          color: isListening ? 'white' : '#94a3b8',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
+                          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                          boxShadow: isListening ? '0 0 20px rgba(59, 130, 246, 0.4)' : 'none'
+                        }}
+                      >
+                        {isListening ? <Mic size={22} /> : <MicOff size={22} />}
+                      </button>
+                      <span style={{ fontSize: '10px', fontWeight: '900', color: isListening ? '#3b82f6' : '#64748b', letterSpacing: '0.05em' }}>
+                        {isListening ? 'LISTENING' : 'MIC OFF'}
                       </span>
                     </div>
-                    {/* Controls */}
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '16px' }}>
-                      {/* Mic Button */}
-                      <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        {isListening && (
-                          <>
-                            <div style={{ position: 'absolute', width: '80px', height: '80px', borderRadius: '50%', border: '2px solid rgba(239,68,68,0.4)', animation: 'ping 1s cubic-bezier(0,0,0.2,1) infinite' }}></div>
-                            <div style={{ position: 'absolute', width: '96px', height: '96px', borderRadius: '50%', border: '2px solid rgba(239,68,68,0.2)', animation: 'ping 1.3s cubic-bezier(0,0,0.2,1) 0.3s infinite' }}></div>
-                          </>
-                        )}
-                        <button
-                          onClick={isListening ? stopListeningAndSubmit : startListening}
-                          disabled={!isListening && (demoTyping || isAgentSpeaking || demoMessages.length === 0)}
-                          style={{
-                            width: '64px', height: '64px', borderRadius: '50%',
-                            background: isListening ? 'linear-gradient(135deg, #ef4444, #b91c1c)' : (demoTyping || isAgentSpeaking || demoMessages.length === 0 ? 'rgba(255,255,255,0.05)' : 'linear-gradient(135deg, #9448C4, #5D2A91)'),
-                            border: 'none', cursor: (demoTyping || isAgentSpeaking || demoMessages.length === 0) ? 'not-allowed' : 'pointer',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px',
-                            boxShadow: isListening ? '0 0 30px rgba(239,68,68,0.5)' : '0 8px 24px rgba(148,72,196,0.4)',
-                            transition: 'all 0.3s', position: 'relative', zIndex: 1
-                          }}
-                        >
-                          {isListening ? '⏹' : '🎤'}
-                        </button>
-                      </div>
-                      <div style={{ textAlign: 'center' }}>
-                        <p style={{ color: isListening ? '#f87171' : isAgentSpeaking ? '#9448C4' : '#475569', fontSize: '12px', fontWeight: '700', margin: 0, transition: 'color 0.3s' }}>
-                          {isListening ? '● Recording — tap to submit' : isAgentSpeaking ? '● Agent speaking...' : '● Tap mic to answer'}
-                        </p>
-                      </div>
+
+                    {/* Speaker Control */}
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+                      <button
+                        onClick={() => setIsSpeakerOff(!isSpeakerOff)}
+                        style={{
+                          width: '48px', height: '48px', borderRadius: '50%',
+                          border: '1px solid rgba(255,255,255,0.1)',
+                          background: isSpeakerOff ? 'rgba(239, 68, 68, 0.1)' : 'rgba(255,255,255,0.03)',
+                          color: isSpeakerOff ? '#ef4444' : '#94a3b8',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
+                          transition: 'all 0.2s'
+                        }}
+                      >
+                        {isSpeakerOff ? <VolumeX size={22} /> : <Video size={22} />}
+                      </button>
+                      <span style={{ fontSize: '10px', fontWeight: '900', color: isSpeakerOff ? '#ef4444' : '#64748b', letterSpacing: '0.05em' }}>
+                        SPEAKER
+                      </span>
+                    </div>
+
+                    {/* Captions Control */}
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+                      <button
+                        onClick={() => setShowCaptions(!showCaptions)}
+                        style={{
+                          width: '48px', height: '48px', borderRadius: '50%',
+                          border: '1px solid rgba(255,255,255,0.1)',
+                          background: showCaptions ? 'rgba(59, 130, 246, 0.1)' : 'rgba(255,255,255,0.03)',
+                          color: showCaptions ? '#3b82f6' : '#94a3b8',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
+                          transition: 'all 0.2s'
+                        }}
+                      >
+                        {showCaptions ? <FileText size={22} /> : <EyeOff size={22} />}
+                      </button>
+                      <span style={{ fontSize: '10px', fontWeight: '900', color: showCaptions ? '#3b82f6' : '#64748b', letterSpacing: '0.05em' }}>
+                        CAPTIONS
+                      </span>
                     </div>
                   </div>
+
+                  {/* Live Transcript / Response preview - AT THE VERY BOTTOM */}
+                  <div style={{ position: 'absolute', bottom: '24px', width: '100%', textAlign: 'center', pointerEvents: 'none', display: showCaptions ? 'block' : 'none' }}>
+                    <p style={{ fontStyle: 'italic', color: '#475569', fontSize: '13px', fontWeight: '500', maxWidth: '500px', margin: '0 auto', opacity: isListening ? 1 : 0 }}>
+                      {voiceTranscript ? `"${voiceTranscript}..."` : "..."}
+                    </p>
+                  </div>
                 </div>
+
               </div>
             )}
 
-            {/* Step 2 — Results */}
+            {/* Step 2 — New Dark Design Results */}
             {demoStep === 2 && (
               <motion.div
-                initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.5 }}
-                style={{ flex: 1, overflowY: 'auto', padding: '40px 24px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '28px' }}
+                initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.5 }}
+                style={{ flex: 1, overflowY: 'auto', padding: '32px 24px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px', background: '#05060b' }}
               >
                 {/* Header */}
                 <div style={{ textAlign: 'center' }}>
-                  <div style={{ width: '64px', height: '64px', background: 'linear-gradient(135deg, #9448C4, #5D2A91)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', boxShadow: '0 0 40px rgba(148,72,196,0.5)', fontSize: '28px' }}>
-                    ✓
+                  <div style={{ width: '60px', height: '60px', background: 'rgba(34, 197, 94, 0.1)', border: '1px solid rgba(34, 197, 94, 0.2)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', boxShadow: '0 0 20px rgba(34, 197, 94, 0.1)', color: '#22c55e', fontSize: '24px' }}>
+                    <CheckCircle2 size={30} />
                   </div>
-                  <h2 style={{ color: 'white', fontSize: '28px', fontWeight: '900', fontStyle: 'italic', margin: '0 0 8px', letterSpacing: '-0.02em' }}>Interview Complete!</h2>
-                  <p style={{ color: '#64748b', fontSize: '14px', margin: 0 }}>Here's how you performed in the demo session</p>
+                  <h2 style={{ color: '#f8fafc', fontSize: '28px', fontWeight: '900', margin: '0 0 8px', letterSpacing: '-0.02em' }}>Assessment Complete</h2>
+                  <p style={{ color: '#94a3b8', fontSize: '14px', fontWeight: '500', margin: 0 }}>Performance metrics analyzed by AI.</p>
                 </div>
 
                 {/* Score Cards */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px', width: '100%', maxWidth: '680px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px', width: '100%', maxWidth: '740px' }}>
                   {[
-                    { label: 'Overall Score', value: '84%', color: '#9448C4', icon: '⭐' },
-                    { label: 'Communication', value: '91%', color: '#3b82f6', icon: '💬' },
-                    { label: 'Confidence', value: '78%', color: '#10b981', icon: '🎯' },
+                    { label: 'Technical Accuracy', value: '88%', color: '#3b82f6', icon: <FileText size={18} /> },
+                    { label: 'Communication', value: '92%', color: '#8b5cf6', icon: <Mic size={18} /> },
+                    { label: 'Overall Match', value: '85%', color: '#10b981', icon: <CheckCircle2 size={18} /> },
                   ].map((s, i) => (
-                    <motion.div key={i} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.15 }}
-                      style={{ background: 'rgba(255,255,255,0.04)', border: `1px solid ${s.color}30`, borderRadius: '20px', padding: '24px 16px', textAlign: 'center' }}
+                    <motion.div key={i} initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}
+                      style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '20px', padding: '20px 12px', textAlign: 'center' }}
                     >
-                      <div style={{ fontSize: '24px', marginBottom: '8px' }}>{s.icon}</div>
-                      <div style={{ fontSize: '32px', fontWeight: '900', color: s.color, marginBottom: '4px' }}>{s.value}</div>
-                      <div style={{ fontSize: '11px', color: '#64748b', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{s.label}</div>
+                      <div style={{ color: s.color, marginBottom: '8px', display: 'flex', justifyContent: 'center' }}>{s.icon}</div>
+                      <div style={{ fontSize: '28px', fontWeight: '900', color: '#f8fafc', marginBottom: '2px' }}>{s.value}</div>
+                      <div style={{ fontSize: '10px', color: '#64748b', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{s.label}</div>
                     </motion.div>
                   ))}
                 </div>
 
-                {/* Skill Tags */}
-                <div style={{ width: '100%', maxWidth: '680px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '20px', padding: '24px' }}>
-                  <p style={{ color: '#64748b', fontSize: '11px', fontWeight: '900', textTransform: 'uppercase', letterSpacing: '0.1em', margin: '0 0 14px' }}>Detected Strengths</p>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                    {['Problem Solving', 'Clear Communication', 'Team Leadership', 'Adaptability', 'Technical Depth', 'Growth Mindset'].map((tag, i) => (
-                      <span key={i} style={{ background: 'rgba(148,72,196,0.15)', border: '1px solid rgba(148,72,196,0.3)', color: '#c084fc', padding: '5px 14px', borderRadius: '20px', fontSize: '12px', fontWeight: '700' }}>{tag}</span>
-                    ))}
+                {/* Detail Analysis */}
+                <div style={{ width: '100%', maxWidth: '740px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                  <div style={{ background: 'rgba(255,255,255,0.01)', border: '1px solid rgba(255,255,255,0.04)', borderRadius: '20px', padding: '20px' }}>
+                    <p style={{ color: '#f8fafc', fontSize: '11px', fontWeight: '900', textTransform: 'uppercase', letterSpacing: '0.1em', margin: '0 0 12px' }}>Strengths Detected</p>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                      {['Structured Answers', 'Problem Solving', 'Confidence'].map((tag, i) => (
+                        <span key={i} style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', color: '#94a3b8', padding: '4px 10px', borderRadius: '10px', fontSize: '11px', fontWeight: '700' }}>{tag}</span>
+                      ))}
+                    </div>
+                  </div>
+                  <div style={{ background: 'rgba(255,255,255,0.01)', border: '1px solid rgba(255,255,255,0.04)', borderRadius: '20px', padding: '20px' }}>
+                    <p style={{ color: '#f8fafc', fontSize: '11px', fontWeight: '900', textTransform: 'uppercase', letterSpacing: '0.1em', margin: '0 0 12px' }}>Next Step</p>
+                    <p style={{ color: '#94a3b8', fontSize: '11px', lineHeight: '1.5', margin: 0 }}>Review full report for feedback.</p>
                   </div>
                 </div>
 
-                {/* Feedback */}
-                <div style={{ width: '100%', maxWidth: '680px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '20px', padding: '24px' }}>
-                  <p style={{ color: '#64748b', fontSize: '11px', fontWeight: '900', textTransform: 'uppercase', letterSpacing: '0.1em', margin: '0 0 10px' }}>AI Feedback</p>
-                  <p style={{ color: '#cbd5e1', fontSize: '14px', lineHeight: '1.7', margin: 0 }}>
-                    You showed strong communication skills and a clear understanding of your past experiences. Your answers were structured and concise. To improve further, try quantifying your achievements (e.g., "reduced load time by 40%") for a stronger impact.
-                  </p>
-                </div>
-
                 {/* CTAs */}
-                <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', justifyContent: 'center' }}>
-                  <button
-                    onClick={() => { setDemoStep(0); setDemoMessages([]); setDemoQuestionIndex(0); setVoiceTranscript(''); accumulatedTranscriptRef.current = ''; manuallyStoppedRef.current = true; }}
-                    style={{ padding: '14px 32px', background: 'linear-gradient(135deg, #9448C4, #5D2A91)', color: 'white', border: 'none', borderRadius: '14px', fontSize: '13px', fontWeight: '900', cursor: 'pointer', letterSpacing: '0.04em', textTransform: 'uppercase', boxShadow: '0 8px 24px rgba(148,72,196,0.35)' }}
+                <div style={{ display: 'flex', gap: '12px', marginTop: '10px' }}>
+                  <Button
+                    onClick={() => { setDemoStep(0); setDemoMessages([]); setDemoQuestionIndex(0); setVoiceTranscript(''); manuallyStoppedRef.current = true; }}
+                    className="h-12 px-8 bg-blue-600 text-white hover:bg-blue-700 rounded-2xl font-black text-xs uppercase tracking-widest transition-all active:scale-95"
                   >
-                    🔁 Try Again
-                  </button>
-                  <button
+                    Retake Interview
+                  </Button>
+                  <Button
                     onClick={() => { setShowDemoExperience(false); setDemoStep(0); setDemoMessages([]); }}
-                    style={{ padding: '14px 32px', background: 'rgba(255,255,255,0.06)', color: 'white', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '14px', fontSize: '13px', fontWeight: '900', cursor: 'pointer', letterSpacing: '0.04em', textTransform: 'uppercase' }}
+                    variant="outline"
+                    className="h-12 px-8 border-slate-800 text-slate-400 hover:bg-slate-900 rounded-2xl font-black text-xs uppercase tracking-widest transition-all active:scale-95"
                   >
-                    Close
-                  </button>
+                    Close & Finish
+                  </Button>
                 </div>
               </motion.div>
             )}
           </motion.div>
         )}
       </AnimatePresence>
-    </div>
+    </div >
   );
 };
 

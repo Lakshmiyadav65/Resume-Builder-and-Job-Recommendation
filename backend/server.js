@@ -11,12 +11,20 @@ const app = express();
 // Using Groq API (Llama 3.3-70B) for AI-powered resume analysis
 
 
-app.use(cors());
+app.use(cors({
+  origin: process.env.FRONTEND_URL || '*',
+  credentials: true
+}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 
-mongoose.connect(process.env.MONGODB_URI)
+const mongoUri = process.env.MONGODB_URI;
+if (!mongoUri || mongoUri.includes('localhost')) {
+  console.warn('⚠️  WARNING: MONGODB_URI is not set or pointing to localhost. This will fail on Vercel! Set a MongoDB Atlas URI in your environment variables.');
+}
+
+mongoose.connect(mongoUri)
   .then(() => console.log('✅ MongoDB Connected'))
   .catch(err => console.error('❌ MongoDB Connection Error:', err));
 
@@ -55,8 +63,13 @@ app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, '../frontend/build', 'index.html'));
 });
 
-const PORT = process.env.PORT || 5000;
+// Export the app for Vercel serverless deployment
+module.exports = app;
 
-app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
-});
+// Start server only when running locally (not in Vercel serverless environment)
+if (process.env.NODE_ENV !== 'production' || process.env.VERCEL !== '1') {
+  const PORT = process.env.PORT || 5000;
+  app.listen(PORT, () => {
+    console.log(`🚀 Server running on port ${PORT}`);
+  });
+}
