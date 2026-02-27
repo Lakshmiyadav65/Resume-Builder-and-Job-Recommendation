@@ -1807,72 +1807,246 @@ Expiry: `}<strong className="text-white font-bold">{(parseInt(linkExpiry))} hour
               </div>
             )}
 
-            {/* Step 2 — New Dark Design Results */}
-            {demoStep === 2 && (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.5 }}
-                style={{ flex: 1, overflowY: 'auto', padding: '32px 24px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px', background: '#05060b' }}
-              >
-                {/* Header */}
-                <div style={{ textAlign: 'center' }}>
-                  <div style={{ width: '60px', height: '60px', background: 'rgba(34, 197, 94, 0.1)', border: '1px solid rgba(34, 197, 94, 0.2)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', boxShadow: '0 0 20px rgba(34, 197, 94, 0.1)', color: '#22c55e', fontSize: '24px' }}>
-                    <CheckCircle2 size={30} />
-                  </div>
-                  <h2 style={{ color: '#f8fafc', fontSize: '28px', fontWeight: '900', margin: '0 0 8px', letterSpacing: '-0.02em' }}>Assessment Complete</h2>
-                  <p style={{ color: '#94a3b8', fontSize: '14px', fontWeight: '500', margin: 0 }}>Performance metrics analyzed by AI.</p>
-                </div>
+            {/* Step 2 — Premium AI Interview Report */}
+            {demoStep === 2 && (() => {
+              // Derive dynamic data from messages collected
+              const userAnswers = demoMessages.filter(m => m.role === 'user').map(m => m.text);
+              const firstAnswer = userAnswers[0] || '';
+              const avgLen = userAnswers.reduce((a, b) => a + b.length, 0) / (userAnswers.length || 1);
+              const commScore = Math.min(9.8, 7.5 + (avgLen > 80 ? 1.5 : avgLen > 40 ? 0.8 : 0));
+              const techScore = Math.min(9.5, 7.2 + (firstAnswer.toLowerCase().includes('react') || firstAnswer.toLowerCase().includes('node') || firstAnswer.toLowerCase().includes('mongodb') ? 1.3 : 0.5));
+              const confScore = Math.min(9.2, 7.0 + (avgLen > 60 ? 1.2 : 0.5));
+              const depthScore = Math.min(9.6, 7.4 + (avgLen > 100 ? 1.8 : avgLen > 50 ? 1.0 : 0.3));
+              const overallPct = Math.round((commScore + techScore + confScore + depthScore) / 4 * 10);
+              const recommendation = overallPct >= 80 ? 'Highly Recommended' : overallPct >= 65 ? 'Recommended' : 'Needs Review';
+              const recommendationColor = overallPct >= 80 ? '#22c55e' : overallPct >= 65 ? '#f59e0b' : '#ef4444';
+              const transcriptSnippet = userAnswers[0] ? (userAnswers[0].length > 160 ? userAnswers[0].slice(0, 160) + '...' : userAnswers[0]) : 'No answer recorded.';
+              const nowStr = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+              const interviewId = '#INT-' + Math.floor(Math.random() * 9000 + 1000);
+              const circumference = 2 * Math.PI * 44;
+              const dashOffset = circumference - (overallPct / 100) * circumference;
 
-                {/* Score Cards */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px', width: '100%', maxWidth: '740px' }}>
-                  {[
-                    { label: 'Technical Accuracy', value: '88%', color: '#3b82f6', icon: <FileText size={18} /> },
-                    { label: 'Communication', value: '92%', color: '#8b5cf6', icon: <Mic size={18} /> },
-                    { label: 'Overall Match', value: '85%', color: '#10b981', icon: <CheckCircle2 size={18} /> },
-                  ].map((s, i) => (
-                    <motion.div key={i} initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}
-                      style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '20px', padding: '20px 12px', textAlign: 'center' }}
-                    >
-                      <div style={{ color: s.color, marginBottom: '8px', display: 'flex', justifyContent: 'center' }}>{s.icon}</div>
-                      <div style={{ fontSize: '28px', fontWeight: '900', color: '#f8fafc', marginBottom: '2px' }}>{s.value}</div>
-                      <div style={{ fontSize: '10px', color: '#64748b', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{s.label}</div>
-                    </motion.div>
-                  ))}
-                </div>
+              return (
+                <motion.div
+                  initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.4 }}
+                  style={{ flex: 1, overflowY: 'auto', background: '#f1f5f9', padding: '28px 24px', color: '#1e293b' }}
+                >
+                  {/* Report Container */}
+                  <div style={{ maxWidth: '860px', margin: '0 auto', background: 'white', borderRadius: '16px', boxShadow: '0 4px 40px rgba(0,0,0,0.12)', overflow: 'hidden' }}>
 
-                {/* Detail Analysis */}
-                <div style={{ width: '100%', maxWidth: '740px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                  <div style={{ background: 'rgba(255,255,255,0.01)', border: '1px solid rgba(255,255,255,0.04)', borderRadius: '20px', padding: '20px' }}>
-                    <p style={{ color: '#f8fafc', fontSize: '11px', fontWeight: '900', textTransform: 'uppercase', letterSpacing: '0.1em', margin: '0 0 12px' }}>Strengths Detected</p>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                      {['Structured Answers', 'Problem Solving', 'Confidence'].map((tag, i) => (
-                        <span key={i} style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', color: '#94a3b8', padding: '4px 10px', borderRadius: '10px', fontSize: '11px', fontWeight: '700' }}>{tag}</span>
-                      ))}
+                    {/* Report Header */}
+                    <div style={{ padding: '20px 28px', borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'white' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                        <div style={{ width: '40px', height: '40px', background: '#2563eb', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <FileText size={20} color="white" />
+                        </div>
+                        <div>
+                          <h2 style={{ margin: 0, fontSize: '17px', fontWeight: '900', color: '#0f172a' }}>AI Interview Report</h2>
+                          <p style={{ margin: 0, fontSize: '11px', color: '#94a3b8', fontWeight: '500' }}>Generated on {nowStr} • ID: {interviewId}</p>
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', gap: '10px' }}>
+                        <button style={{ padding: '8px 16px', borderRadius: '8px', border: '1px solid #e2e8f0', background: 'white', fontSize: '12px', fontWeight: '700', color: '#475569', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <Send size={13} /> Share with Team
+                        </button>
+                        <button style={{ padding: '8px 16px', borderRadius: '8px', border: 'none', background: '#2563eb', fontSize: '12px', fontWeight: '700', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <Copy size={13} /> Download PDF
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Report Body */}
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 280px', gap: 0 }}>
+
+                      {/* LEFT COLUMN */}
+                      <div style={{ padding: '24px 28px', borderRight: '1px solid #e2e8f0' }}>
+
+                        {/* Candidate Info */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '16px', background: '#f8fafc', borderRadius: '12px', marginBottom: '24px', border: '1px solid #e2e8f0' }}>
+                          <div style={{ width: '60px', height: '60px', borderRadius: '50%', background: 'linear-gradient(135deg, #2563eb, #7c3aed)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '22px', fontWeight: '900', flexShrink: 0 }}>
+                            {String.fromCharCode(65 + Math.floor(Math.random() * 26))}
+                          </div>
+                          <div style={{ flex: 1 }}>
+                            <p style={{ margin: '0 0 2px', fontWeight: '900', fontSize: '15px', color: '#0f172a' }}>Demo Candidate</p>
+                            <p style={{ margin: '0 0 6px', fontSize: '12px', color: '#2563eb', fontWeight: '700' }}>Full Stack Engineer Candidate</p>
+                            <div style={{ display: 'flex', gap: '12px' }}>
+                              {['2+ Yrs Exp', 'Remote', 'English (Native)'].map((tag, i) => (
+                                <span key={i} style={{ fontSize: '10px', color: '#64748b', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                  <span style={{ width: '5px', height: '5px', borderRadius: '50%', background: '#94a3b8', display: 'inline-block' }} />{tag}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                          <div style={{ background: '#dcfce7', border: '1px solid #bbf7d0', borderRadius: '20px', padding: '4px 12px', fontSize: '11px', fontWeight: '800', color: '#16a34a' }}>✓ Verified</div>
+                        </div>
+
+                        {/* Competency Breakdown */}
+                        <div style={{ marginBottom: '24px' }}>
+                          <p style={{ margin: '0 0 14px', fontWeight: '900', fontSize: '13px', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <span style={{ fontSize: '16px' }}>📊</span> Competency Breakdown
+                          </p>
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                            {[
+                              { label: 'Communication Clarity', score: commScore, color: '#2563eb' },
+                              { label: 'Technical Accuracy', score: techScore, color: '#2563eb' },
+                              { label: 'Confidence Level', score: confScore, color: '#2563eb' },
+                              { label: 'Answer Depth', score: depthScore, color: '#2563eb' },
+                            ].map((item, i) => (
+                              <motion.div key={i} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.1 + i * 0.08 }}
+                                style={{ background: '#f8fafc', borderRadius: '10px', padding: '12px 14px', border: '1px solid #e2e8f0' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                                  <span style={{ fontSize: '11px', fontWeight: '700', color: '#475569' }}>{item.label}</span>
+                                  <span style={{ fontSize: '13px', fontWeight: '900', color: item.color }}>{item.score.toFixed(1)}/10</span>
+                                </div>
+                                <div style={{ height: '5px', background: '#e2e8f0', borderRadius: '10px', overflow: 'hidden' }}>
+                                  <motion.div
+                                    initial={{ width: 0 }} animate={{ width: `${item.score * 10}%` }} transition={{ delay: 0.3 + i * 0.08, duration: 0.8 }}
+                                    style={{ height: '100%', background: item.color, borderRadius: '10px' }}
+                                  />
+                                </div>
+                              </motion.div>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Sentiment Analysis */}
+                        <div style={{ marginBottom: '24px', background: '#f8fafc', borderRadius: '12px', padding: '16px', border: '1px solid #e2e8f0' }}>
+                          <p style={{ margin: '0 0 12px', fontWeight: '900', fontSize: '13px', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <span style={{ fontSize: '16px' }}>😊</span> Sentiment & Tone Analysis
+                          </p>
+                          <div style={{ display: 'flex', height: '10px', borderRadius: '10px', overflow: 'hidden', marginBottom: '8px' }}>
+                            <div style={{ width: '15%', background: '#ef4444' }} />
+                            <div style={{ width: '25%', background: '#94a3b8' }} />
+                            <div style={{ width: '60%', background: '#22c55e' }} />
+                          </div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
+                            {[['Negative', '15%', '#ef4444'], ['Neutral', '25%', '#94a3b8'], ['Positive', '60%', '#22c55e']].map(([label, pct, color], i) => (
+                              <span key={i} style={{ fontSize: '10px', fontWeight: '700', color }}>{label} ({pct})</span>
+                            ))}
+                          </div>
+                          <p style={{ margin: 0, fontSize: '11px', color: '#64748b', lineHeight: 1.6, fontStyle: 'italic' }}>
+                            "The candidate displayed strong enthusiasm and structured communication throughout the interview, with particularly positive tone when discussing technical problem-solving."
+                          </p>
+                        </div>
+
+                        {/* Key Transcript Snippet */}
+                        <div style={{ background: '#f8fafc', borderRadius: '12px', padding: '16px', border: '1px solid #e2e8f0' }}>
+                          <p style={{ margin: '0 0 12px', fontWeight: '900', fontSize: '13px', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <User size={14} /> Key Transcript Snippet
+                          </p>
+                          <div style={{ borderLeft: '3px solid #2563eb', paddingLeft: '12px' }}>
+                            <p style={{ margin: '0 0 8px', fontSize: '10px', fontWeight: '900', color: '#2563eb', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                              Q: {demoQuestions[0]?.q || 'Tell me about your background'}
+                            </p>
+                            <p style={{ margin: '0 0 10px', fontSize: '12px', color: '#334155', lineHeight: 1.7 }}>
+                              "{transcriptSnippet}"
+                            </p>
+                            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                              <span style={{ background: '#dbeafe', color: '#1d4ed8', fontSize: '9px', fontWeight: '900', padding: '3px 8px', borderRadius: '6px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>AI Highlight</span>
+                              <span style={{ fontSize: '10px', color: '#94a3b8', fontWeight: '600' }}>Question 1 of {demoQuestions.length}</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* RIGHT COLUMN */}
+                      <div style={{ padding: '24px 20px', background: '#fafbff' }}>
+
+                        {/* Overall Score Circle */}
+                        <div style={{ textAlign: 'center', marginBottom: '28px', padding: '20px 10px', background: 'white', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+                          <p style={{ margin: '0 0 14px', fontSize: '10px', fontWeight: '900', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Overall Score</p>
+                          <div style={{ position: 'relative', width: '110px', height: '110px', margin: '0 auto 12px' }}>
+                            <svg width="110" height="110" viewBox="0 0 110 110">
+                              <circle cx="55" cy="55" r="44" fill="none" stroke="#e2e8f0" strokeWidth="9" />
+                              <motion.circle
+                                cx="55" cy="55" r="44" fill="none"
+                                stroke="#2563eb" strokeWidth="9"
+                                strokeLinecap="round"
+                                strokeDasharray={circumference}
+                                initial={{ strokeDashoffset: circumference }}
+                                animate={{ strokeDashoffset: dashOffset }}
+                                transition={{ duration: 1.2, delay: 0.3 }}
+                                transform="rotate(-90 55 55)"
+                              />
+                            </svg>
+                            <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                              <span style={{ fontSize: '26px', fontWeight: '900', color: '#0f172a', lineHeight: 1 }}>{overallPct}</span>
+                              <span style={{ fontSize: '9px', color: '#94a3b8', fontWeight: '700', textTransform: 'uppercase' }}>out of 100</span>
+                            </div>
+                          </div>
+                          <p style={{ margin: 0, fontSize: '12px', fontWeight: '800', color: recommendationColor, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px' }}>
+                            <span>↗</span> {recommendation}
+                          </p>
+                        </div>
+
+                        {/* AI Insights */}
+                        <div style={{ background: 'white', borderRadius: '12px', padding: '16px', border: '1px solid #e2e8f0', marginBottom: '16px' }}>
+                          <p style={{ margin: '0 0 14px', fontWeight: '900', fontSize: '12px', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '7px' }}>
+                            <span style={{ fontSize: '14px' }}>💡</span> AI Insights
+                          </p>
+
+                          <p style={{ margin: '0 0 8px', fontSize: '10px', fontWeight: '900', color: '#16a34a', textTransform: 'uppercase', letterSpacing: '0.07em' }}>Key Strengths</p>
+                          {[
+                            'Structured and clear technical communication',
+                            'Strong hands-on project experience with React & Node.js',
+                            'Thoughtful problem-solving approach under pressure',
+                          ].map((s, i) => (
+                            <div key={i} style={{ display: 'flex', gap: '8px', alignItems: 'flex-start', marginBottom: '7px' }}>
+                              <span style={{ color: '#16a34a', marginTop: '1px', flexShrink: 0, fontSize: '13px' }}>✓</span>
+                              <p style={{ margin: 0, fontSize: '11px', color: '#334155', lineHeight: 1.5 }}>{s}</p>
+                            </div>
+                          ))}
+
+                          <div style={{ borderTop: '1px solid #f1f5f9', margin: '12px 0' }} />
+
+                          <p style={{ margin: '0 0 8px', fontSize: '10px', fontWeight: '900', color: '#d97706', textTransform: 'uppercase', letterSpacing: '0.07em' }}>Areas for Growth</p>
+                          {[
+                            'Could provide more specific performance metrics in answers',
+                            'System design depth could be further demonstrated',
+                          ].map((s, i) => (
+                            <div key={i} style={{ display: 'flex', gap: '8px', alignItems: 'flex-start', marginBottom: '7px' }}>
+                              <span style={{ color: '#d97706', marginTop: '1px', flexShrink: 0, fontSize: '13px' }}>↗</span>
+                              <p style={{ margin: 0, fontSize: '11px', color: '#334155', lineHeight: 1.5 }}>{s}</p>
+                            </div>
+                          ))}
+
+                          <div style={{ borderTop: '1px solid #f1f5f9', margin: '12px 0' }} />
+
+                          <p style={{ margin: '0 0 8px', fontSize: '10px', fontWeight: '900', color: '#6366f1', textTransform: 'uppercase', letterSpacing: '0.07em' }}>Suggested Next Steps</p>
+                          <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
+                            <span style={{ color: '#6366f1', flexShrink: 0, fontSize: '13px' }}>→</span>
+                            <p style={{ margin: 0, fontSize: '11px', color: '#334155', lineHeight: 1.5 }}>Invite for a <strong>Technical Deep Dive</strong> focusing on system design and API architecture experience.</p>
+                          </div>
+                        </div>
+
+                        {/* Action Buttons */}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                          <button
+                            onClick={() => { setDemoStep(0); setDemoMessages([]); setDemoQuestionIndex(0); setVoiceTranscript(''); manuallyStoppedRef.current = true; }}
+                            style={{ padding: '10px', borderRadius: '10px', border: 'none', background: '#2563eb', color: 'white', fontWeight: '800', fontSize: '12px', cursor: 'pointer', textTransform: 'uppercase', letterSpacing: '0.04em' }}
+                          >
+                            Retake Interview
+                          </button>
+                          <button
+                            onClick={() => { setShowDemoExperience(false); setDemoStep(0); setDemoMessages([]); }}
+                            style={{ padding: '10px', borderRadius: '10px', border: '1px solid #e2e8f0', background: 'white', color: '#475569', fontWeight: '800', fontSize: '12px', cursor: 'pointer', textTransform: 'uppercase', letterSpacing: '0.04em' }}
+                          >
+                            Close & Finish
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Footer */}
+                    <div style={{ padding: '12px 28px', borderTop: '1px solid #e2e8f0', background: '#f8fafc', textAlign: 'center' }}>
+                      <p style={{ margin: 0, fontSize: '10px', color: '#94a3b8', fontWeight: '500' }}>
+                        This report was generated by AI analysis. Human oversight is recommended for final hiring decisions.
+                      </p>
                     </div>
                   </div>
-                  <div style={{ background: 'rgba(255,255,255,0.01)', border: '1px solid rgba(255,255,255,0.04)', borderRadius: '20px', padding: '20px' }}>
-                    <p style={{ color: '#f8fafc', fontSize: '11px', fontWeight: '900', textTransform: 'uppercase', letterSpacing: '0.1em', margin: '0 0 12px' }}>Next Step</p>
-                    <p style={{ color: '#94a3b8', fontSize: '11px', lineHeight: '1.5', margin: 0 }}>Review full report for feedback.</p>
-                  </div>
-                </div>
-
-                {/* CTAs */}
-                <div style={{ display: 'flex', gap: '12px', marginTop: '10px' }}>
-                  <Button
-                    onClick={() => { setDemoStep(0); setDemoMessages([]); setDemoQuestionIndex(0); setVoiceTranscript(''); manuallyStoppedRef.current = true; }}
-                    className="h-12 px-8 bg-blue-600 text-white hover:bg-blue-700 rounded-2xl font-black text-xs uppercase tracking-widest transition-all active:scale-95"
-                  >
-                    Retake Interview
-                  </Button>
-                  <Button
-                    onClick={() => { setShowDemoExperience(false); setDemoStep(0); setDemoMessages([]); }}
-                    variant="outline"
-                    className="h-12 px-8 border-slate-800 text-slate-400 hover:bg-slate-900 rounded-2xl font-black text-xs uppercase tracking-widest transition-all active:scale-95"
-                  >
-                    Close & Finish
-                  </Button>
-                </div>
-              </motion.div>
-            )}
+                </motion.div>
+              );
+            })()}
           </motion.div>
         )}
       </AnimatePresence>
