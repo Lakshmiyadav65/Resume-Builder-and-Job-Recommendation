@@ -1,19 +1,15 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   FcBarChart,
   FcVoicePresentation,
   FcSearch,
   FcCalendar,
-  FcNightPortrait,
   FcTodoList,
   FcVip,
-  FcCollaboration,
-  FcSurvey
 } from 'react-icons/fc';
-import { Button } from './ui/button';
-import { Switch } from './ui/switch';
+import { ChevronRight } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import './Sidebar.css';
 
@@ -21,14 +17,13 @@ const Sidebar = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { userRole, setUserRole } = useApp();
-  const [darkMode, setDarkMode] = useState(true);
+  const [isOpen, setIsOpen] = useState(false);
 
   // Determine role based on current route if userRole is not set
   React.useEffect(() => {
     if (!userRole) {
       const recruiterRoutes = ['/recruiter-dashboard', '/recruiter-ranking', '/assignment-generator'];
       const isRecruiterRoute = recruiterRoutes.some(route => location.pathname.startsWith(route));
-
       if (isRecruiterRoute) {
         setUserRole('recruiter');
       } else if (location.pathname !== '/' && !location.pathname.startsWith('/hr-dashboard')) {
@@ -54,36 +49,81 @@ const Sidebar = () => {
   if (userRole === 'recruiter') menuItems = recruiterMenuItems;
 
   return (
-    <div className="sidebar">
-      <div className="sidebar-header">
-        <img src="/logo.png" alt="ATSCRIBE" className="sidebar-logo cursor-pointer" onClick={() => navigate('/')} />
-      </div>
-
-      {menuItems.map((item) => {
-        const isActive = (location.pathname + location.search) === item.path;
-        return (
-          <Button
-            key={item.path}
-            variant={isActive ? "secondary" : "ghost"}
-            className={`w-full justify-start gap-4 text-left font-normal h-12 ${isActive ? 'bg-slate-800 text-white' : 'text-slate-400 hover:text-white hover:bg-slate-800/50'}`}
-            onClick={() => navigate(item.path)}
-          >
-            <item.icon className="text-2xl" />
-            <span className="text-sm font-medium">{item.label}</span>
-          </Button>
-        );
-      })}
-
-      <div className="sidebar-footer p-4 border-t border-slate-800 mt-auto">
-        <div className="dark-mode-toggle flex items-center justify-between w-full">
-          <div className="flex items-center gap-2 text-slate-400">
-            <FcNightPortrait className="text-2xl" />
-            <span className="text-sm font-medium">Dark Mode</span>
-          </div>
-          <Switch checked={darkMode} onCheckedChange={setDarkMode} />
+    <>
+      {/* Collapsed sidebar — strip with toggle button */}
+      <div className={`sidebar-collapsed ${isOpen ? 'sidebar-hidden' : ''}`}>
+        {/* Logo icon */}
+        <div className="sidebar-collapsed-logo" onClick={() => navigate('/')}>
+          <img src="/logo.png" alt="ATScribe" style={{ width: '36px', height: '36px', objectFit: 'contain', borderRadius: '8px' }} />
         </div>
+
+        {/* Nav icons */}
+        <div className="sidebar-collapsed-nav">
+          {menuItems.map((item) => {
+            const isActive = (location.pathname + location.search) === item.path;
+            return (
+              <button
+                key={item.path}
+                onClick={() => navigate(item.path)}
+                className={`sidebar-icon-btn ${isActive ? 'active' : ''}`}
+                title={item.label}
+              >
+                <item.icon style={{ fontSize: '22px' }} />
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Open arrow */}
+        <button className="sidebar-toggle-btn" onClick={() => setIsOpen(true)} title="Open Sidebar">
+          <ChevronRight size={18} />
+        </button>
       </div>
-    </div>
+
+      {/* Expanded sidebar overlay */}
+      <AnimatePresence>
+        {isOpen && (
+          <>
+            {/* Backdrop */}
+            <motion.div
+              className="sidebar-backdrop"
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              onClick={() => setIsOpen(false)}
+            />
+
+            {/* Expanded sidebar panel */}
+            <motion.div
+              className="sidebar-expanded"
+              initial={{ x: -280 }} animate={{ x: 0 }} exit={{ x: -280 }}
+              transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+            >
+              {/* Header */}
+              <div className="sidebar-expanded-header">
+                <img src="/logo.png" alt="ATScribe" className="sidebar-logo cursor-pointer" onClick={() => { navigate('/'); setIsOpen(false); }} />
+                <button className="sidebar-close-btn" onClick={() => setIsOpen(false)}>✕</button>
+              </div>
+
+              {/* Nav items */}
+              <div className="sidebar-expanded-nav">
+                {menuItems.map((item) => {
+                  const isActive = (location.pathname + location.search) === item.path;
+                  return (
+                    <button
+                      key={item.path}
+                      className={`sidebar-expanded-item ${isActive ? 'active' : ''}`}
+                      onClick={() => { navigate(item.path); setIsOpen(false); }}
+                    >
+                      <item.icon style={{ fontSize: '22px', flexShrink: 0 }} />
+                      <span>{item.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+    </>
   );
 };
 

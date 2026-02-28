@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useMemo } from 'react';
+﻿import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FcUpload, FcRedo, FcDocument, FcBusinessman, FcGraduationCap, FcVip } from 'react-icons/fc';
@@ -28,7 +28,7 @@ import { rankResumes } from '../services/api';
 import Sidebar from '../components/Sidebar';
 import './RecruiterDashboard.css';
 
-import { Search, MapPin, FileText, Eye, Send, User, ChevronLeft, ChevronRight, X, Mic, MicOff, Video, VolumeX, EyeOff, Clock, Edit3, CheckCircle2, Copy, Briefcase, Mail, Sparkles, Play, Settings } from 'lucide-react';
+import { Search, MapPin, FileText, Eye, Send, User, ChevronLeft, ChevronRight, X, Mic, MicOff, Video, VolumeX, EyeOff, Clock, Edit3, CheckCircle2, Copy, Briefcase, Mail, Sparkles, Play, Settings, AlertCircle } from 'lucide-react';
 import { Avatar, AvatarImage, AvatarFallback } from '../components/ui/avatar';
 import { toast } from 'sonner';
 import { inviteToInterview } from '../services/api';
@@ -74,6 +74,14 @@ const RecruiterDashboard = () => {
   const [showCaptions, setShowCaptions] = useState(true);
   const recognitionRef = useRef(null);
   const demoMessagesEndRef = useRef(null);
+  const cameraStreamRef = useRef(null);
+  const cameraPreviewRef = useRef(null);
+  const [demoIntroPhase, setDemoIntroPhase] = useState(0); // 0=welcome, 1=hardware check
+  const [cameraDetected, setCameraDetected] = useState(false);
+  const [micDetected, setMicDetected] = useState(false);
+  const [micLevel, setMicLevel] = useState(0); // 0-10 scale for animated dots
+  const [isFaceVisible, setIsFaceVisible] = useState(false);
+  const [faceScore, setFaceScore] = useState(0);
 
   const demoQuestions = [
     {
@@ -111,7 +119,7 @@ const RecruiterDashboard = () => {
     setIsListening(false);
 
     if (!window.speechSynthesis || isSpeakerOff) {
-      console.log('[KIA] Speaker OFF — skipping audio, gen', myGen);
+      console.log('[KIA] Speaker OFF â€” skipping audio, gen', myGen);
       setIsAgentSpeaking(true);
       setTimeout(() => {
         if (speakGenRef.current !== myGen) return;
@@ -154,15 +162,15 @@ const RecruiterDashboard = () => {
           console.log('[KIA] Stale utterance onend ignored, gen', myGen);
           return;
         }
-        console.log('[KIA] Utterance ended — triggering onEnd, gen', myGen);
+        console.log('[KIA] Utterance ended â€” triggering onEnd, gen', myGen);
         safeOnEnd();
       };
 
       utter.onerror = (e) => {
         if (speakGenRef.current !== myGen) return;
-        console.warn('[KIA] Utterance error:', e.error, '— gen', myGen);
+        console.warn('[KIA] Utterance error:', e.error, 'â€” gen', myGen);
         // 'interrupted' and 'canceled' happen in Brave/Firefox when the browser
-        // interrupts speech internally — we STILL need to call onEnd so the mic activates.
+        // interrupts speech internally â€” we STILL need to call onEnd so the mic activates.
         // Only ignore them if a NEWER speakText() call already started (checked above via gen).
         safeOnEnd();
       };
@@ -175,19 +183,19 @@ const RecruiterDashboard = () => {
       setTimeout(() => {
         if (speakGenRef.current !== myGen) return;
         if (!onEndCalled) {
-          console.warn('[KIA] Safety timeout triggered — speech events never fired, gen', myGen);
+          console.warn('[KIA] Safety timeout triggered â€” speech events never fired, gen', myGen);
           safeOnEnd();
         }
       }, estimatedMs);
     };
 
-    // Chrome/Brave sometimes have an empty voices list on first call — wait for it
+    // Chrome/Brave sometimes have an empty voices list on first call â€” wait for it
     if (window.speechSynthesis.getVoices().length === 0) {
       window.speechSynthesis.onvoiceschanged = () => {
         window.speechSynthesis.onvoiceschanged = null;
         trySpeak();
       };
-      // Brave sometimes never fires onvoiceschanged — fallback after 500ms
+      // Brave sometimes never fires onvoiceschanged â€” fallback after 500ms
       setTimeout(() => {
         if (!onEndCalled && speakGenRef.current === myGen) trySpeak();
       }, 500);
@@ -322,8 +330,8 @@ const RecruiterDashboard = () => {
     }
     setIsListening(false);
 
-    // ALWAYS read from the ref — the React state 'voiceTranscript' can be stale in closures
-    const finalAnswer = accumulatedTranscriptRef.current.trim();
+    // Using current state to ensure we capture the most recent interim text as well
+    const finalAnswer = (voiceTranscript || accumulatedTranscriptRef.current).trim();
     console.log('[KIA] Submit answer:', finalAnswer);
 
     setVoiceTranscript('');
@@ -384,24 +392,97 @@ const RecruiterDashboard = () => {
   const startDemoExperience = () => {
     setShowDemoModal(false);
     setDemoStep(0);
+    setDemoIntroPhase(0);
+    setCameraDetected(false);
+    setMicDetected(false);
     setDemoMessages([]);
     setVoiceTranscript('');
     setDemoQuestionIndex(0);
     setIsListening(false);
     setIsAgentSpeaking(false);
-    manuallyStoppedRef.current = true; // stop any active recognition
+    manuallyStoppedRef.current = true;
     accumulatedTranscriptRef.current = '';
     if (recognitionRef.current) {
       try { recognitionRef.current.onend = null; recognitionRef.current.stop(); } catch (_) { }
       recognitionRef.current = null;
     }
-    // Cancel speech without triggering safeOnEnd — increment generation first
+    // Stop camera if it was left open from a previous session
+    if (cameraStreamRef.current) {
+      cameraStreamRef.current.getTracks().forEach(t => t.stop());
+      cameraStreamRef.current = null;
+    }
+    // Cancel speech without triggering safeOnEnd â€” increment generation first
     ++speakGenRef.current;
     window.speechSynthesis && window.speechSynthesis.cancel();
     setShowDemoExperience(true);
   };
 
+  const requestPermissionsAndCheck = async () => {
+    setDemoIntroPhase(1);
+    setCameraDetected(false);
+    setMicDetected(false);
+    setMicLevel(0);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      cameraStreamRef.current = stream;
+      // Attach to the video element
+      setTimeout(() => {
+        if (cameraPreviewRef.current) {
+          cameraPreviewRef.current.srcObject = stream;
+          cameraPreviewRef.current.play().catch(() => { });
+        }
+      }, 200);
+      setCameraDetected(true);
+      setMicDetected(true);
+      // Simulate mic level animation
+      const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const analyser = audioCtx.createAnalyser();
+      const source = audioCtx.createMediaStreamSource(stream);
+      source.connect(analyser);
+      analyser.fftSize = 256;
+      const data = new Uint8Array(analyser.frequencyBinCount);
+      const tick = () => {
+        analyser.getByteFrequencyData(data);
+        const avg = data.reduce((a, b) => a + b, 0) / data.length;
+        setMicLevel(Math.min(10, Math.round(avg / 12)));
+        if (demoStep === 0 && showDemoExperience) requestAnimationFrame(tick);
+      };
+      tick();
+
+      // Camera Visibility/Face Detection Check (Security Feature)
+      const detectVisibility = () => {
+        if (!cameraPreviewRef.current || demoStep !== 0 || !showDemoExperience) return;
+        const canvas = document.createElement('canvas');
+        canvas.width = 40; canvas.height = 30;
+        const ctx = canvas.getContext('2d');
+        try {
+          ctx.drawImage(cameraPreviewRef.current, 0, 0, 40, 30);
+          const pixels = ctx.getImageData(0, 0, 40, 30).data;
+          let brightness = 0;
+          for (let i = 0; i < pixels.length; i += 4) {
+            brightness += (pixels[i] + pixels[i + 1] + pixels[i + 2]) / 3;
+          }
+          const avg = brightness / (pixels.length / 4);
+          // Environment-aware threshold: 22 is safe for low light but blocks blackouts
+          const score = Math.min(100, Math.round((avg / 120) * 100));
+          setFaceScore(score);
+          setIsFaceVisible(avg > 22);
+        } catch (_) { }
+        if (demoIntroPhase === 1) requestAnimationFrame(detectVisibility);
+      };
+      detectVisibility();
+    } catch (err) {
+      console.warn('[KIA] Permission denied or no device:', err);
+      // Partial detection
+      try {
+        await navigator.mediaDevices.getUserMedia({ audio: true });
+        setMicDetected(true);
+      } catch (_) { }
+    }
+  };
+
   const startDemoInterview = () => {
+    // Keep camera stream ACTIVE to show student in a separate card during interview
     setDemoStep(1);
     setDemoTyping(true);
     setTimeout(() => {
@@ -415,6 +496,13 @@ const RecruiterDashboard = () => {
     }, 800);
   };
 
+  // Auto-attach camera stream when switching steps
+  useEffect(() => {
+    if (demoStep === 1 && cameraStreamRef.current && cameraPreviewRef.current) {
+      cameraPreviewRef.current.srcObject = cameraStreamRef.current;
+      cameraPreviewRef.current.play().catch(() => { });
+    }
+  }, [demoStep]);
   useEffect(() => {
     if (demoMessagesEndRef.current) {
       demoMessagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
@@ -713,53 +801,6 @@ const RecruiterDashboard = () => {
       <Sidebar />
 
       <div className="recruiter-dashboard-main">
-        <motion.div
-          className="recruiter-dashboard-header"
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-        >
-          <div className="header-left">
-            <div className="mode-selector">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="mode-badge gap-2 bg-slate-800 text-slate-200 border-slate-700 hover:bg-slate-700 hover:text-white">
-                    <FcBusinessman style={{ fontSize: '1.3rem' }} />
-                    Recruiter Mode
-                    <FaChevronDown className="ml-2 h-4 w-4 opacity-50" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-56 bg-slate-900 border-slate-700 text-slate-200">
-                  <DropdownMenuLabel>Select Mode</DropdownMenuLabel>
-                  <DropdownMenuSeparator className="bg-slate-700" />
-                  <DropdownMenuItem className="cursor-pointer focus:bg-slate-800 focus:text-white" onClick={() => handleModeSwitch('recruiter')}>
-                    <FcBusinessman className="mr-2 h-4 w-4" />
-                    <div className="flex flex-col">
-                      <span className="font-medium">Recruiter Mode</span>
-                      <span className="text-xs text-slate-400">Rank & evaluate</span>
-                    </div>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem className="cursor-pointer focus:bg-slate-800 focus:text-white" onClick={() => handleModeSwitch('student')}>
-                    <FcGraduationCap className="mr-2 h-4 w-4" />
-                    <div className="flex flex-col">
-                      <span className="font-medium">Student Mode</span>
-                      <span className="text-xs text-slate-400">Analyze & prepare</span>
-                    </div>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          </div>
-          <div className="header-right">
-            <motion.button
-              className="share-button"
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              Share
-            </motion.button>
-          </div>
-        </motion.div>
 
         <motion.div
           className="recruiter-dashboard-content"
@@ -816,7 +857,7 @@ const RecruiterDashboard = () => {
                         onClick={removeJobDescFile}
                         disabled={analysisComplete}
                       >
-                        ×
+                        Ã—
                       </Button>
                     </div>
                   ) : (
@@ -860,13 +901,13 @@ const RecruiterDashboard = () => {
                     <FcUpload className="upload-icon mx-auto mb-4" style={{ fontSize: '3.5rem' }} />
                     {resumeFiles.length > 0 ? (
                       <>
-                        <p className="upload-text success text-green-400 font-medium">✓ {resumeFiles.length} resume(s) uploaded</p>
+                        <p className="upload-text success text-green-400 font-medium">âœ“ {resumeFiles.length} resume(s) uploaded</p>
                         <p className="upload-hint text-xs text-slate-400">Click to add more resumes</p>
                       </>
                     ) : (
                       <>
                         <p className="upload-text font-medium text-slate-300">Drag and drop multiple resumes here</p>
-                        <p className="upload-hint text-xs text-slate-400">Limit 200MB per file • PDF • Multiple files supported</p>
+                        <p className="upload-hint text-xs text-slate-400">Limit 200MB per file â€¢ PDF â€¢ Multiple files supported</p>
                       </>
                     )}
                   </div>
@@ -903,7 +944,7 @@ const RecruiterDashboard = () => {
                   initial={{ opacity: 0, y: -10 }}
                   animate={{ opacity: 1, y: 0 }}
                 >
-                  ⚠️ {error}
+                  âš ï¸ {error}
                 </motion.div>
               )}
 
@@ -1026,7 +1067,7 @@ const RecruiterDashboard = () => {
                                     disabled={inviting === candidate.name || candidate.fitScore < 60}
                                   >
                                     <span className="text-sm font-bold">
-                                      {candidate.fitScore < 60 ? "✕ Low Match Score" : "➤ Invite to Interview"}
+                                      {candidate.fitScore < 60 ? "âœ• Low Match Score" : "âž¤ Invite to Interview"}
                                     </span>
                                   </Button>
                                   <Button variant="ghost" className="view-resume-ghost text-slate-500 hover:text-white hover:bg-transparent flex items-center gap-2 text-sm font-medium">
@@ -1378,7 +1419,7 @@ Expiry: `}<strong className="text-white font-bold">{(parseInt(linkExpiry))} hour
 
                     {/* Speech bubble */}
                     <div style={{ position: 'absolute', top: '30px', right: '18px', background: 'white', borderRadius: '12px 12px 12px 3px', padding: '7px 11px', boxShadow: '0 4px 15px rgba(0,0,0,0.3)' }}>
-                      <p style={{ margin: 0, fontSize: '10px', fontWeight: '700', color: '#1a1a2e', whiteSpace: 'nowrap' }}>Tell me about yourself 👋</p>
+                      <p style={{ margin: 0, fontSize: '10px', fontWeight: '700', color: '#1a1a2e', whiteSpace: 'nowrap' }}>Tell me about yourself ðŸ‘‹</p>
                     </div>
 
                     {/* Robot Head */}
@@ -1536,7 +1577,15 @@ Expiry: `}<strong className="text-white font-bold">{(parseInt(linkExpiry))} hour
                   <Settings size={22} />
                 </button>
                 <Button
-                  onClick={() => { setShowDemoExperience(false); setDemoStep(0); setDemoMessages([]); }}
+                  onClick={() => {
+                    if (cameraStreamRef.current) {
+                      cameraStreamRef.current.getTracks().forEach(t => t.stop());
+                      cameraStreamRef.current = null;
+                    }
+                    setShowDemoExperience(false);
+                    setDemoStep(0);
+                    setDemoMessages([]);
+                  }}
                   variant="outline"
                   className="rounded-xl border-red-500/30 bg-red-500/10 text-red-400 hover:bg-red-500/20 font-black text-xs uppercase px-6"
                 >
@@ -1545,511 +1594,726 @@ Expiry: `}<strong className="text-white font-bold">{(parseInt(linkExpiry))} hour
               </div>
             </div>
 
-            {/* Step 0 — New Design Intro (Compact Version) */}
+            {/* Step 0 â€” Minimalist Interview Welcome */}
             {demoStep === 0 && (
               <motion.div
-                initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}
-                style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '24px', padding: '24px', background: '#05060b', overflow: 'hidden' }}
+                key={demoIntroPhase}
+                initial={{ opacity: 0, backdropFilter: "blur(0px)" }}
+                animate={{ opacity: 1, backdropFilter: "blur(20px)" }}
+                transition={{ duration: 1 }}
+                style={{
+                  flex: 1, height: '100%', overflow: 'hidden',
+                  background: '#04050a',
+                  display: 'flex', flexDirection: 'column',
+                  fontFamily: "'Inter', -apple-system, sans-serif",
+                  color: '#f1f5f9',
+                  position: 'relative'
+                }}
               >
-                {/* Wave animation for intro - Scaled down */}
-                <div style={{ position: 'relative', width: '130px', height: '130px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(circle, rgba(59, 130, 246, 0.1) 0%, transparent 70%)', borderRadius: '50%' }}></div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    {[15, 35, 25, 50, 30, 40, 20].map((h, i) => (
-                      <div key={i} style={{
-                        width: '6px',
-                        height: `${h}px`,
-                        background: 'linear-gradient(180deg, #3b82f6, #1d4ed8)',
-                        borderRadius: '10px',
-                        animation: `modern-wave 0.8s ease-in-out ${i * 0.1}s infinite alternate`,
-                        boxShadow: '0 0 10px rgba(59, 130, 246, 0.3)'
-                      }}></div>
-                    ))}
-                  </div>
-                </div>
+                {/* Decorative Background Orbs */}
+                <div style={{ position: 'fixed', top: '10%', right: '5%', width: '25vw', height: '25vw', background: 'radial-gradient(circle, rgba(99, 102, 241, 0.08) 0%, transparent 70%)', zIndex: 0, pointerEvents: 'none' }} />
+                <div style={{ position: 'fixed', bottom: '15%', left: '12%', width: '30vw', height: '30vw', background: 'radial-gradient(circle, rgba(168, 85, 247, 0.05) 0%, transparent 70%)', zIndex: 0, pointerEvents: 'none' }} />
 
-                <div style={{ textAlign: 'center', maxWidth: '500px' }}>
-                  <h2 style={{ color: '#f8fafc', fontSize: '32px', fontWeight: '900', letterSpacing: '-0.04em', margin: '0 0 10px', lineHeight: '1.1' }}>AI-Powered Interview Simulation</h2>
-                  <p style={{ color: '#94a3b8', fontSize: '14px', lineHeight: '1.5', margin: '0 0 16px', fontWeight: '500' }}>Experience the future of talent evaluation with our deep-learning voice agent.</p>
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '20px', zIndex: 1, boxSizing: 'border-box', height: '100%', overflowY: 'hidden' }}>
+                  <div style={{ maxWidth: '1000px', width: '100%', height: '100%', display: 'flex', flexDirection: 'column', gap: '15px' }}>
 
-                  <div style={{ display: 'flex', justifyContent: 'center', gap: '24px', marginBottom: '4px' }}>
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                      <span style={{ fontSize: '18px', fontWeight: '900', color: '#f8fafc' }}>100%</span>
-                      <span style={{ fontSize: '9px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase' }}>AI Driven</span>
+                    <div style={{ textAlign: 'center' }}>
+                      <h1 style={{ margin: '0 0 8px', fontSize: '32px', fontWeight: '900', lineHeight: 1.1, letterSpacing: '-0.05em', color: '#fff' }}>
+                        Welcome to your AI Interview for <br />
+                        <span style={{ background: 'linear-gradient(135deg, #818cf8 0%, #c084fc 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Full Stack Engineer</span>
+                      </h1>
+                      <p style={{ margin: '0 auto', fontSize: '13px', color: '#94a3b8', fontWeight: '400', lineHeight: 1.5, maxWidth: '580px' }}>
+                        Experience our precision-engineered KIA Assessment. We'll evaluate your technical mindset through contextual challenges.
+                      </p>
                     </div>
-                    <div style={{ borderLeft: '1px solid rgba(255,255,255,0.1)', height: '24px' }}></div>
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                      <span style={{ fontSize: '18px', fontWeight: '900', color: '#f8fafc' }}>~3m</span>
-                      <span style={{ fontSize: '9px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase' }}>Duration</span>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.5fr) minmax(0, 1fr)', gap: '20px', flex: 1, minHeight: 0 }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', minHeight: 0 }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', padding: '18px 40px', background: 'rgba(255,255,255,0.02)', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)', backdropFilter: 'blur(30px)', flexShrink: 0 }}>
+                          {[
+                            { label: 'Time', val: '~10 mins' },
+                            { label: 'Entity', val: 'AI Demo Lab' },
+                            { label: 'Focus', val: 'Architecture' }
+                          ].map((item, i) => (
+                            <React.Fragment key={i}>
+                              <div style={{ textAlign: 'center' }}>
+                                <p style={{ margin: '0 0 2px', fontSize: '9px', fontWeight: '900', color: '#818cf8', textTransform: 'uppercase', letterSpacing: '0.12em' }}>{item.label}</p>
+                                <p style={{ margin: 0, fontSize: '15px', fontWeight: '800' }}>{item.val}</p>
+                              </div>
+                              {i < 2 && <div style={{ width: '1px', background: 'rgba(255,255,255,0.1)', alignSelf: 'stretch' }} />}
+                            </React.Fragment>
+                          ))}
+                        </div>
+
+                        <div style={{ padding: '20px 24px', background: 'rgba(255,255,255,0.01)', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.05)', flex: 1, minHeight: 0, overflowY: 'hidden' }}>
+                          {demoIntroPhase === 0 ? (
+                            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                              <h3 style={{ margin: '0 0 16px', fontSize: '16px', fontWeight: '900' }}>Process Overview</h3>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                                {[
+                                  { icon: <Video size={16} />, title: "Calibrated Environment", desc: "First, we synchronize your audio/video feed for a seamless experience." },
+                                  { icon: <Mic size={16} />, title: "Voice Assessments", desc: "Talk naturally with our AI. It explores depth beyond your code." },
+                                  { icon: <CheckCircle2 size={16} />, title: "Competency Report", desc: "Get an exhaustive evaluation of your technical mindset immediately." }
+                                ].map((s, i) => (
+                                  <div key={i} style={{ display: 'flex', gap: '14px', alignItems: 'flex-start' }}>
+                                    <div style={{ padding: '8px', background: 'rgba(129, 140, 248, 0.1)', borderRadius: '10px', color: '#818cf8', flexShrink: 0 }}>{s.icon}</div>
+                                    <div style={{ paddingTop: '2px' }}>
+                                      <p style={{ margin: '0 0 2px', fontSize: '13px', fontWeight: '800' }}>{s.title}</p>
+                                      <p style={{ margin: 0, fontSize: '11px', color: '#64748b', lineHeight: 1.4 }}>{s.desc}</p>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </motion.div>
+                          ) : (
+                            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                              <h3 style={{ margin: '0 0 14px', fontSize: '16px', fontWeight: '900' }}>Hardware Calibration</h3>
+                              <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.2fr) minmax(0, 1fr)', gap: '16px' }}>
+                                <div style={{ background: '#000', borderRadius: '12px', aspectRatio: '16/10', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.1)', position: 'relative' }}>
+                                  {cameraDetected ? (
+                                    <video ref={cameraPreviewRef} autoPlay muted playsInline style={{ width: '100%', height: '100%', objectFit: 'cover', transform: 'scaleX(-1)' }} />
+                                  ) : <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Video size={24} color="#1e293b" /></div>}
+                                </div>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                  <div style={{ background: 'rgba(255,255,255,0.02)', padding: '12px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.04)' }}>
+                                    <p style={{ margin: '0 0 6px', fontSize: '8px', fontWeight: '800', color: '#818cf8' }}>AUDIO STATUS</p>
+                                    <div style={{ display: 'flex', gap: '3px', height: '18px', alignItems: 'center' }}>
+                                      {Array.from({ length: 18 }).map((_, i) => <motion.div key={i} animate={{ height: micDetected ? [6, 18, 6] : 3 }} transition={{ repeat: Infinity, duration: 0.6 + i * 0.05 }} style={{ flex: 1, background: micDetected ? '#6366f1' : '#1e293b', borderRadius: '1.5px' }} />)}
+                                    </div>
+                                  </div>
+                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                    {[["Optical Stream", cameraDetected], ["Voice Stream", micDetected]].map(([l, ok], i) => (
+                                      <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px', background: 'rgba(255,255,255,0.02)', borderRadius: '10px' }}>
+                                        <span style={{ fontSize: '11px', fontWeight: '500', color: ok ? '#fff' : '#334155' }}>{l}</span>
+                                        {ok ? <CheckCircle2 size={12} color="#10b981" /> : <div style={{ width: '4px', height: '4px', borderRadius: '50%', background: '#1e293b' }} />}
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              </div>
+                            </motion.div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Right: Prep Guide & CTA */}
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', minHeight: 0 }}>
+                        <div style={{ padding: '20px', background: 'rgba(99, 102, 241, 0.02)', border: '1px solid rgba(99, 102, 241, 0.1)', borderRadius: '20px', flex: 1, minHeight: 0, overflowY: 'hidden' }}>
+                          <h4 style={{ margin: '0 0 16px', fontSize: '16px', fontWeight: '900' }}>Preparation</h4>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                            {[
+                              "Find a bright, quiet space",
+                              "Stable internet required",
+                              "Think aloud during assessment",
+                              "Elaborate on architectural choices",
+                              "Keep camera centered at eye level",
+                              "No external aid or browsers permitted",
+                              "Relax and speak naturally"
+                            ].map((t, i) => (
+                              <div key={i} style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                                <div style={{ width: '20px', height: '20px', borderRadius: '50%', background: 'rgba(99, 102, 241, 0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', color: '#818cf8', fontWeight: '800' }}>{i + 1}</div>
+                                <span style={{ fontSize: '12px', color: '#94a3b8', fontWeight: '500' }}>{t}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', flexShrink: 0 }}>
+                          {demoIntroPhase === 1 && (
+                            <motion.div
+                              initial={{ opacity: 0, y: 10 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              style={{
+                                padding: '12px 18px',
+                                background: 'rgba(255,255,255,0.02)',
+                                borderRadius: '14px',
+                                border: '1px solid rgba(255,255,255,0.05)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                                marginBottom: '5px'
+                              }}
+                            >
+                              <div>
+                                <p style={{ margin: '0 0 2px', fontSize: '9px', fontWeight: '900', color: isFaceVisible ? '#10b981' : '#f43f5e', textTransform: 'uppercase' }}>Security Verification</p>
+                                <p style={{ margin: 0, fontSize: '11px', color: '#94a3b8' }}>
+                                  {isFaceVisible ? 'Biometrics Verified' : faceScore < 10 ? 'Verify: Clean Lens / Poor Lighting' : 'Adjust lighting for better visibility'}
+                                </p>
+                              </div>
+                              <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: isFaceVisible ? 'rgba(16,185,129,0.1)' : 'rgba(244,63,94,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: isFaceVisible ? '#10b981' : '#f43f5e' }}>
+                                {isFaceVisible ? <CheckCircle2 size={20} /> : <AlertCircle size={20} />}
+                              </div>
+                            </motion.div>
+                          )}
+
+                          {demoIntroPhase === 0 ? (
+                            <motion.button whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }} onClick={requestPermissionsAndCheck} style={{ width: '100%', padding: '14px', borderRadius: '14px', border: 'none', background: 'linear-gradient(135deg, #6366f1, #4f46e5)', color: '#fff', fontWeight: '900', fontSize: '14px', cursor: 'pointer', boxShadow: '0 8px 16px rgba(99, 102, 241, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
+                              Excellent, Begin My Interview <ChevronRight size={16} />
+                            </motion.button>
+                          ) : (
+                            <motion.button
+                              whileHover={(cameraDetected && micDetected && isFaceVisible) ? { scale: 1.01 } : {}}
+                              whileTap={(cameraDetected && micDetected && isFaceVisible) ? { scale: 0.99 } : {}}
+                              onClick={startDemoInterview}
+                              disabled={!cameraDetected || !micDetected || !isFaceVisible}
+                              style={{
+                                width: '100%', padding: '16px', borderRadius: '14px', border: 'none',
+                                background: (cameraDetected && micDetected && isFaceVisible) ? 'linear-gradient(135deg, #6366f1, #a855f7)' : 'rgba(255,255,255,0.03)',
+                                color: (cameraDetected && micDetected && isFaceVisible) ? '#fff' : '#475569',
+                                fontWeight: '900', fontSize: '15px',
+                                cursor: (cameraDetected && micDetected && isFaceVisible) ? 'pointer' : 'not-allowed',
+                                boxShadow: (cameraDetected && micDetected && isFaceVisible) ? '0 8px 16px rgba(124,58,237,0.2)' : 'none',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px'
+                              }}
+                            >
+                              Enter Evaluation Room {(cameraDetected && micDetected && isFaceVisible) && <Sparkles size={14} />}
+                            </motion.button>
+                          )}
+                          <p style={{ margin: 0, textAlign: 'center', fontSize: '8px', color: '#94a3b8', fontWeight: '800', letterSpacing: '0.1em' }}>🔒 ENCRYPTED SESSION ACTIVE</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div style={{ marginTop: '15px', textAlign: 'center', flexShrink: 0 }}>
+                      <p style={{ fontSize: '10px', color: '#64748b', opacity: 0.8 }}>Data is processed locally for evaluation and discarded upon exit.</p>
                     </div>
                   </div>
-                </div>
-
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', alignItems: 'center', width: '100%', maxWidth: '360px' }}>
-                  <Button
-                    onClick={startDemoInterview}
-                    size="lg"
-                    className="w-full h-14 bg-blue-600 text-white hover:bg-blue-700 rounded-2xl font-black text-sm uppercase tracking-wider shadow-lg shadow-blue-900/40 transition-all active:scale-95"
-                  >
-                    🚀 Start Session
-                  </Button>
-                  <button
-                    onClick={() => { setShowDemoExperience(false); setDemoStep(0); }}
-                    style={{ fontSize: '12px', fontWeight: '700', color: '#475569', background: 'none', border: 'none', cursor: 'pointer' }}
-                  >
-                    Back to Dashboard
-                  </button>
                 </div>
               </motion.div>
             )}
+            {/* Step 1 â€” Dark Modern Interview UI */}
+            {
+              demoStep === 1 && (
+                <div style={{ flex: 1, display: 'flex', overflow: 'hidden', position: 'relative', background: '#05060b' }}>
+                  {/* Background Glows for Dark Mode */}
+                  <div style={{ position: 'absolute', top: '20%', left: '50%', transform: 'translate(-50%, -50%)', width: '600px', height: '600px', background: 'radial-gradient(circle, rgba(59, 130, 246, 0.05) 0%, transparent 70%)', zIndex: 0 }}></div>
+                  <div style={{ position: 'absolute', bottom: '0', left: '0', width: '300px', height: '300px', background: 'radial-gradient(circle, rgba(148, 72, 196, 0.05) 0%, transparent 70%)', zIndex: 0 }}></div>
 
-            {/* Step 1 — Dark Modern Interview UI */}
-            {demoStep === 1 && (
-              <div style={{ flex: 1, display: 'flex', overflow: 'hidden', position: 'relative', background: '#05060b' }}>
-                {/* Background Glows for Dark Mode */}
-                <div style={{ position: 'absolute', top: '20%', left: '50%', transform: 'translate(-50%, -50%)', width: '600px', height: '600px', background: 'radial-gradient(circle, rgba(59, 130, 246, 0.05) 0%, transparent 70%)', zIndex: 0 }}></div>
-                <div style={{ position: 'absolute', bottom: '0', left: '0', width: '300px', height: '300px', background: 'radial-gradient(circle, rgba(148, 72, 196, 0.05) 0%, transparent 70%)', zIndex: 0 }}></div>
+                  {/* Main Interaction Area - DARK & NO OVERLAP */}
+                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', position: 'relative', zIndex: 1, padding: '20px' }}>
 
-                {/* Main Interaction Area - DARK & NO OVERLAP */}
-                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', position: 'relative', zIndex: 1, padding: '20px' }}>
+                    {/* Status Badge */}
+                    <div style={{
+                      background: 'rgba(59, 130, 246, 0.1)',
+                      border: '1px solid rgba(59, 130, 246, 0.2)',
+                      borderRadius: '20px',
+                      padding: '6px 16px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      marginBottom: '20px'
+                    }}>
+                      <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#3b82f6', animation: 'pulse 1.5s infinite' }}></div>
+                      <span style={{ color: '#3b82f6', fontSize: '10px', fontWeight: '900', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+                        {isListening ? 'Mic is Active' : isAgentSpeaking ? 'Agent is Speaking' : 'Waiting...'}
+                      </span>
+                    </div>
 
-                  {/* Status Badge */}
-                  <div style={{
-                    background: 'rgba(59, 130, 246, 0.1)',
-                    border: '1px solid rgba(59, 130, 246, 0.2)',
-                    borderRadius: '20px',
-                    padding: '6px 16px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px',
-                    marginBottom: '20px'
-                  }}>
-                    <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#3b82f6', animation: 'pulse 1.5s infinite' }}></div>
-                    <span style={{ color: '#3b82f6', fontSize: '10px', fontWeight: '900', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
-                      {isListening ? 'Mic is Active' : isAgentSpeaking ? 'Agent is Speaking' : 'Waiting...'}
-                    </span>
-                  </div>
+                    {/* Central Waveform Component - Dark Variant */}
+                    <div style={{
+                      width: '160px',
+                      height: '160px',
+                      background: isListening
+                        ? 'radial-gradient(circle, rgba(59,130,246,0.12) 0%, rgba(0,0,0,0) 70%)'
+                        : isAgentSpeaking
+                          ? 'radial-gradient(circle, rgba(139,92,246,0.1) 0%, rgba(0,0,0,0) 70%)'
+                          : 'rgba(255,255,255,0.02)',
+                      borderRadius: '50%',
+                      border: isListening
+                        ? '1.5px solid rgba(59, 130, 246, 0.35)'
+                        : isAgentSpeaking
+                          ? '1.5px solid rgba(139, 92, 246, 0.25)'
+                          : '1px solid rgba(255,255,255,0.04)',
+                      boxShadow: isListening
+                        ? '0 0 30px rgba(59,130,246,0.15), 0 20px 50px rgba(0,0,0,0.3)'
+                        : '0 20px 50px rgba(0,0,0,0.3)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      marginBottom: '24px',
+                      position: 'relative',
+                      transition: 'all 0.4s ease'
+                    }}>
+                      {isListening && (
+                        <div style={{ position: 'absolute', inset: '-8px', borderRadius: '50%', border: '1.5px solid rgba(59, 130, 246, 0.15)', animation: 'ping 2s ease-out infinite' }}></div>
+                      )}
 
-                  {/* Central Waveform Component - Dark Variant */}
-                  <div style={{
-                    width: '160px',
-                    height: '160px',
-                    background: isListening
-                      ? 'radial-gradient(circle, rgba(59,130,246,0.12) 0%, rgba(0,0,0,0) 70%)'
-                      : isAgentSpeaking
-                        ? 'radial-gradient(circle, rgba(139,92,246,0.1) 0%, rgba(0,0,0,0) 70%)'
-                        : 'rgba(255,255,255,0.02)',
-                    borderRadius: '50%',
-                    border: isListening
-                      ? '1.5px solid rgba(59, 130, 246, 0.35)'
-                      : isAgentSpeaking
-                        ? '1.5px solid rgba(139, 92, 246, 0.25)'
-                        : '1px solid rgba(255,255,255,0.04)',
-                    boxShadow: isListening
-                      ? '0 0 30px rgba(59,130,246,0.15), 0 20px 50px rgba(0,0,0,0.3)'
-                      : '0 20px 50px rgba(0,0,0,0.3)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    marginBottom: '24px',
-                    position: 'relative',
-                    transition: 'all 0.4s ease'
-                  }}>
-                    {isListening && (
-                      <div style={{ position: 'absolute', inset: '-8px', borderRadius: '50%', border: '1.5px solid rgba(59, 130, 246, 0.15)', animation: 'ping 2s ease-out infinite' }}></div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                        {[4, 10, 24, 14, 30, 18, 12, 22, 16, 8].map((h, i) => (
+                          <div key={i} style={{
+                            width: '5px',
+                            height: `${h * (isListening || isAgentSpeaking ? 1.2 : 0.6)}px`,
+                            background: '#3b82f6',
+                            borderRadius: '10px',
+                            transformOrigin: 'bottom',
+                            animation: (isListening || isAgentSpeaking) ? `modern-wave 0.6s ease-in-out ${i * 0.05}s infinite alternate` : 'none',
+                            boxShadow: '0 0 10px rgba(59, 130, 246, 0.5)'
+                          }}></div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Question Display - Dark Variant */}
+                    <div style={{ textAlign: 'center', maxWidth: '600px', padding: '0 20px' }}>
+                      <p style={{ fontSize: '10px', fontWeight: '900', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: '8px' }}>Current Question</p>
+                      <h2 style={{ fontSize: '28px', fontWeight: '800', color: '#f8fafc', lineHeight: '1.2', letterSpacing: '-0.02em', marginBottom: '16px' }}>
+                        "{demoMessages.filter(m => m.role === 'agent').pop()?.text || "Preparing your first question..."}"
+                      </h2>
+
+                      <p style={{ fontSize: '13px', color: '#94a3b8', fontWeight: '500', marginBottom: '8px' }}>
+                        {isListening ? "AI is listening... Speak your answer now." : "Agent is speaking... Please listen carefully."}
+                      </p>
+
+                      <span style={{
+                        background: 'rgba(255,255,255,0.04)',
+                        color: '#64748b',
+                        fontSize: '8px',
+                        fontWeight: '800',
+                        padding: '4px 12px',
+                        borderRadius: '20px',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.05em',
+                        border: '1px solid rgba(255,255,255,0.08)'
+                      }}>
+                        STAR Method Recommended
+                      </span>
+                    </div>
+
+                    {/* Live Captions Bar - Dark Glassmorphism */}
+                    <AnimatePresence>
+                      {showCaptions && voiceTranscript && (
+                        <motion.div
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: 10 }}
+                          style={{
+                            marginTop: '24px',
+                            background: 'rgba(13,18,31,0.6)',
+                            backdropFilter: 'blur(20px)',
+                            padding: '16px 32px',
+                            borderRadius: '24px',
+                            border: '1px solid rgba(255,255,255,0.06)',
+                            maxWidth: '700px',
+                            textAlign: 'center',
+                            boxShadow: '0 20px 50px rgba(0,0,0,0.5)',
+                            zIndex: 10
+                          }}
+                        >
+                          <p style={{ margin: 0, fontSize: '15px', fontWeight: '600', color: '#f1f5f9', fontStyle: 'italic', letterSpacing: '0.01em', lineHeight: 1.5 }}>
+                            "{voiceTranscript}"
+                            <motion.span animate={{ opacity: [1, 0] }} transition={{ repeat: Infinity, duration: 0.5 }} style={{ display: 'inline-block', width: '2px', height: '16px', background: '#3b82f6', marginLeft: '4px', verticalAlign: 'middle' }} />
+                          </p>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+
+                    {/* Explicit Submit Action â€” only show after student has given a real answer */}
+                    {voiceTranscript.trim().length > 5 && isListening && (
+                      <motion.button
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        onClick={stopListeningAndSubmit}
+                        style={{
+                          marginTop: '24px',
+                          background: '#3b82f6',
+                          color: 'white',
+                          padding: '10px 24px',
+                          borderRadius: '30px',
+                          fontWeight: '800',
+                          fontSize: '12px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '10px',
+                          border: 'none',
+                          cursor: 'pointer',
+                          boxShadow: '0 10px 20px rgba(59, 130, 246, 0.3)',
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.05em'
+                        }}
+                      >
+                        <Send size={16} />
+                        Next Question
+                      </motion.button>
                     )}
 
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                      {[4, 10, 24, 14, 30, 18, 12, 22, 16, 8].map((h, i) => (
-                        <div key={i} style={{
-                          width: '5px',
-                          height: `${h * (isListening || isAgentSpeaking ? 1.2 : 0.6)}px`,
-                          background: '#3b82f6',
-                          borderRadius: '10px',
-                          transition: 'height 0.15s ease-out',
-                          animation: (isListening || isAgentSpeaking) ? `modern-wave 0.6s ease-in-out ${i * 0.05}s infinite alternate` : 'none',
-                          boxShadow: '0 0 10px rgba(59, 130, 246, 0.5)'
-                        }}></div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Question Display - Dark Variant */}
-                  <div style={{ textAlign: 'center', maxWidth: '600px', padding: '0 20px' }}>
-                    <p style={{ fontSize: '10px', fontWeight: '900', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: '8px' }}>Current Question</p>
-                    <h2 style={{ fontSize: '28px', fontWeight: '800', color: '#f8fafc', lineHeight: '1.2', letterSpacing: '-0.02em', marginBottom: '16px' }}>
-                      "{demoMessages.filter(m => m.role === 'agent').pop()?.text || "Preparing your first question..."}"
-                    </h2>
-
-                    <p style={{ fontSize: '13px', color: '#94a3b8', fontWeight: '500', marginBottom: '8px' }}>
-                      {isListening ? "AI is listening... Speak your answer now." : "Agent is speaking... Please listen carefully."}
-                    </p>
-
-                    <span style={{
-                      background: 'rgba(255,255,255,0.04)',
-                      color: '#64748b',
-                      fontSize: '8px',
-                      fontWeight: '800',
-                      padding: '4px 12px',
-                      borderRadius: '20px',
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.05em',
-                      border: '1px solid rgba(255,255,255,0.08)'
-                    }}>
-                      STAR Method Recommended
-                    </span>
-                  </div>
-
-                  {/* Explicit Submit Action — only show after student has given a real answer */}
-                  {voiceTranscript.trim().length > 20 && isListening && (
-                    <motion.button
-                      initial={{ opacity: 0, scale: 0.9 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      onClick={stopListeningAndSubmit}
+                    {/* Student Camera Card - Floating Glassmorphism */}
+                    <motion.div
+                      initial={{ opacity: 0, x: 20, scale: 0.9 }}
+                      animate={{ opacity: 1, x: 0, scale: 1 }}
+                      transition={{ delay: 0.5, duration: 0.8 }}
                       style={{
-                        marginTop: '24px',
-                        background: '#3b82f6',
-                        color: 'white',
-                        padding: '10px 24px',
-                        borderRadius: '30px',
-                        fontWeight: '800',
-                        fontSize: '12px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '10px',
-                        border: 'none',
-                        cursor: 'pointer',
-                        boxShadow: '0 10px 20px rgba(59, 130, 246, 0.3)',
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.05em'
+                        position: 'absolute',
+                        bottom: '40px',
+                        right: '40px',
+                        width: '180px',
+                        aspectRatio: '4/3',
+                        background: 'rgba(13, 18, 31, 0.4)',
+                        backdropFilter: 'blur(10px)',
+                        borderRadius: '20px',
+                        border: '1px solid rgba(255, 255, 255, 0.1)',
+                        boxShadow: '0 10px 30px rgba(0,0,0,0.4)',
+                        overflow: 'hidden',
+                        zIndex: 10
                       }}
                     >
-                      <Send size={16} />
-                      Next Question
-                    </motion.button>
-                  )}
+                      {cameraDetected ? (
+                        <video
+                          ref={cameraPreviewRef}
+                          autoPlay
+                          muted
+                          playsInline
+                          style={{
+                            width: '100%',
+                            height: '100%',
+                            objectFit: 'cover',
+                            transform: 'scaleX(-1)', // Mirror effect
+                          }}
+                        />
+                      ) : (
+                        <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#000' }}>
+                          <Video size={32} color="#1e293b" />
+                        </div>
+                      )}
 
-                  {/* Footer Controls - MOVED UP TO PREVENT OVERLAP */}
-                  <div style={{ marginTop: '40px', display: 'flex', gap: '32px' }}>
-                    {/* Mute/Mic Control */}
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
-                      <button
-                        onClick={() => {
-                          if (isListening) stopListeningAndSubmit();
-                          else startListening();
-                        }}
-                        style={{
-                          width: '48px', height: '48px', borderRadius: '50%',
-                          border: isListening ? 'none' : '1px solid rgba(255,255,255,0.1)',
-                          background: isListening ? '#3b82f6' : 'rgba(255,255,255,0.03)',
-                          color: isListening ? 'white' : '#94a3b8',
-                          display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
-                          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                          boxShadow: isListening ? '0 0 20px rgba(59, 130, 246, 0.4)' : 'none'
-                        }}
-                      >
-                        {isListening ? <Mic size={22} /> : <MicOff size={22} />}
-                      </button>
-                      <span style={{ fontSize: '10px', fontWeight: '900', color: isListening ? '#3b82f6' : '#64748b', letterSpacing: '0.05em' }}>
-                        {isListening ? 'LISTENING' : 'MIC OFF'}
-                      </span>
+                      {/* Label Overlay */}
+                      <div style={{
+                        position: 'absolute',
+                        top: '12px',
+                        left: '12px',
+                        background: 'rgba(0,0,0,0.5)',
+                        backdropFilter: 'blur(4px)',
+                        padding: '4px 10px',
+                        borderRadius: '20px',
+                        border: '1px solid rgba(255,255,255,0.1)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px'
+                      }}>
+                        <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#10b981', boxShadow: '0 0 8px #10b981' }}></div>
+                        <span style={{ fontSize: '9px', fontWeight: '800', color: '#fff', letterSpacing: '0.05em', textTransform: 'uppercase' }}>YOU</span>
+                      </div>
+                    </motion.div>
+
+                    {/* Footer Controls - MOVED UP TO PREVENT OVERLAP */}
+                    <div style={{ marginTop: '40px', display: 'flex', gap: '32px' }}>
+                      {/* Mute/Mic Control */}
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+                        <button
+                          onClick={() => {
+                            if (isListening) stopListeningAndSubmit();
+                            else startListening();
+                          }}
+                          style={{
+                            width: '48px', height: '48px', borderRadius: '50%',
+                            border: isListening ? 'none' : '1px solid rgba(255,255,255,0.1)',
+                            background: isListening ? '#3b82f6' : 'rgba(255,255,255,0.03)',
+                            color: isListening ? 'white' : '#94a3b8',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
+                            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                            boxShadow: isListening ? '0 0 20px rgba(59, 130, 246, 0.4)' : 'none'
+                          }}
+                        >
+                          {isListening ? <Mic size={22} /> : <MicOff size={22} />}
+                        </button>
+                        <span style={{ fontSize: '10px', fontWeight: '900', color: isListening ? '#3b82f6' : '#64748b', letterSpacing: '0.05em' }}>
+                          {isListening ? 'LISTENING' : 'MIC OFF'}
+                        </span>
+                      </div>
+
+                      {/* Speaker Control */}
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+                        <button
+                          onClick={() => setIsSpeakerOff(!isSpeakerOff)}
+                          style={{
+                            width: '48px', height: '48px', borderRadius: '50%',
+                            border: '1px solid rgba(255,255,255,0.1)',
+                            background: isSpeakerOff ? 'rgba(239, 68, 68, 0.1)' : 'rgba(255,255,255,0.03)',
+                            color: isSpeakerOff ? '#ef4444' : '#94a3b8',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
+                            transition: 'all 0.2s'
+                          }}
+                        >
+                          {isSpeakerOff ? <VolumeX size={22} /> : <Video size={22} />}
+                        </button>
+                        <span style={{ fontSize: '10px', fontWeight: '900', color: isSpeakerOff ? '#ef4444' : '#64748b', letterSpacing: '0.05em' }}>
+                          SPEAKER
+                        </span>
+                      </div>
+
+                      {/* Captions Control */}
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+                        <button
+                          onClick={() => setShowCaptions(!showCaptions)}
+                          style={{
+                            width: '48px', height: '48px', borderRadius: '50%',
+                            border: '1px solid rgba(255,255,255,0.1)',
+                            background: showCaptions ? 'rgba(59, 130, 246, 0.1)' : 'rgba(255,255,255,0.03)',
+                            color: showCaptions ? '#3b82f6' : '#94a3b8',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
+                            transition: 'all 0.2s'
+                          }}
+                        >
+                          {showCaptions ? <FileText size={22} /> : <EyeOff size={22} />}
+                        </button>
+                        <span style={{ fontSize: '10px', fontWeight: '900', color: showCaptions ? '#3b82f6' : '#64748b', letterSpacing: '0.05em' }}>
+                          CAPTIONS
+                        </span>
+                      </div>
                     </div>
 
-                    {/* Speaker Control */}
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
-                      <button
-                        onClick={() => setIsSpeakerOff(!isSpeakerOff)}
-                        style={{
-                          width: '48px', height: '48px', borderRadius: '50%',
-                          border: '1px solid rgba(255,255,255,0.1)',
-                          background: isSpeakerOff ? 'rgba(239, 68, 68, 0.1)' : 'rgba(255,255,255,0.03)',
-                          color: isSpeakerOff ? '#ef4444' : '#94a3b8',
-                          display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
-                          transition: 'all 0.2s'
-                        }}
-                      >
-                        {isSpeakerOff ? <VolumeX size={22} /> : <Video size={22} />}
-                      </button>
-                      <span style={{ fontSize: '10px', fontWeight: '900', color: isSpeakerOff ? '#ef4444' : '#64748b', letterSpacing: '0.05em' }}>
-                        SPEAKER
-                      </span>
-                    </div>
-
-                    {/* Captions Control */}
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
-                      <button
-                        onClick={() => setShowCaptions(!showCaptions)}
-                        style={{
-                          width: '48px', height: '48px', borderRadius: '50%',
-                          border: '1px solid rgba(255,255,255,0.1)',
-                          background: showCaptions ? 'rgba(59, 130, 246, 0.1)' : 'rgba(255,255,255,0.03)',
-                          color: showCaptions ? '#3b82f6' : '#94a3b8',
-                          display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
-                          transition: 'all 0.2s'
-                        }}
-                      >
-                        {showCaptions ? <FileText size={22} /> : <EyeOff size={22} />}
-                      </button>
-                      <span style={{ fontSize: '10px', fontWeight: '900', color: showCaptions ? '#3b82f6' : '#64748b', letterSpacing: '0.05em' }}>
-                        CAPTIONS
-                      </span>
-                    </div>
+                    {/* Live Transcript Removed from here since it's above now */}
                   </div>
 
-                  {/* Live Transcript / Response preview - AT THE VERY BOTTOM */}
-                  <div style={{ position: 'absolute', bottom: '24px', width: '100%', textAlign: 'center', pointerEvents: 'none', display: showCaptions ? 'block' : 'none' }}>
-                    <p style={{ fontStyle: 'italic', color: '#475569', fontSize: '13px', fontWeight: '500', maxWidth: '500px', margin: '0 auto', opacity: isListening ? 1 : 0 }}>
-                      {voiceTranscript ? `"${voiceTranscript}..."` : "..."}
-                    </p>
-                  </div>
                 </div>
+              )
+            }
 
-              </div>
-            )}
+            {/* Step 2 â€” Premium AI Interview Report */}
+            {
+              demoStep === 2 && (() => {
+                // Derive dynamic data from messages collected
+                const userAnswers = demoMessages.filter(m => m.role === 'user').map(m => m.text);
+                const firstAnswer = userAnswers[0] || '';
+                const avgLen = userAnswers.reduce((a, b) => a + b.length, 0) / (userAnswers.length || 1);
+                const commScore = Math.min(9.8, 7.5 + (avgLen > 80 ? 1.5 : avgLen > 40 ? 0.8 : 0));
+                const techScore = Math.min(9.5, 7.2 + (firstAnswer.toLowerCase().includes('react') || firstAnswer.toLowerCase().includes('node') || firstAnswer.toLowerCase().includes('mongodb') ? 1.3 : 0.5));
+                const confScore = Math.min(9.2, 7.0 + (avgLen > 60 ? 1.2 : 0.5));
+                const depthScore = Math.min(9.6, 7.4 + (avgLen > 100 ? 1.8 : avgLen > 50 ? 1.0 : 0.3));
+                const overallPct = Math.round((commScore + techScore + confScore + depthScore) / 4 * 10);
+                const recommendation = overallPct >= 80 ? 'Highly Recommended' : overallPct >= 65 ? 'Recommended' : 'Needs Review';
+                const recommendationColor = overallPct >= 80 ? '#22c55e' : overallPct >= 65 ? '#f59e0b' : '#ef4444';
+                const transcriptSnippet = userAnswers[0] ? (userAnswers[0].length > 160 ? userAnswers[0].slice(0, 160) + '...' : userAnswers[0]) : 'No answer recorded.';
+                const nowStr = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                const interviewId = '#INT-' + Math.floor(Math.random() * 9000 + 1000);
+                const circumference = 2 * Math.PI * 44;
+                const dashOffset = circumference - (overallPct / 100) * circumference;
 
-            {/* Step 2 — Premium AI Interview Report */}
-            {demoStep === 2 && (() => {
-              // Derive dynamic data from messages collected
-              const userAnswers = demoMessages.filter(m => m.role === 'user').map(m => m.text);
-              const firstAnswer = userAnswers[0] || '';
-              const avgLen = userAnswers.reduce((a, b) => a + b.length, 0) / (userAnswers.length || 1);
-              const commScore = Math.min(9.8, 7.5 + (avgLen > 80 ? 1.5 : avgLen > 40 ? 0.8 : 0));
-              const techScore = Math.min(9.5, 7.2 + (firstAnswer.toLowerCase().includes('react') || firstAnswer.toLowerCase().includes('node') || firstAnswer.toLowerCase().includes('mongodb') ? 1.3 : 0.5));
-              const confScore = Math.min(9.2, 7.0 + (avgLen > 60 ? 1.2 : 0.5));
-              const depthScore = Math.min(9.6, 7.4 + (avgLen > 100 ? 1.8 : avgLen > 50 ? 1.0 : 0.3));
-              const overallPct = Math.round((commScore + techScore + confScore + depthScore) / 4 * 10);
-              const recommendation = overallPct >= 80 ? 'Highly Recommended' : overallPct >= 65 ? 'Recommended' : 'Needs Review';
-              const recommendationColor = overallPct >= 80 ? '#22c55e' : overallPct >= 65 ? '#f59e0b' : '#ef4444';
-              const transcriptSnippet = userAnswers[0] ? (userAnswers[0].length > 160 ? userAnswers[0].slice(0, 160) + '...' : userAnswers[0]) : 'No answer recorded.';
-              const nowStr = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-              const interviewId = '#INT-' + Math.floor(Math.random() * 9000 + 1000);
-              const circumference = 2 * Math.PI * 44;
-              const dashOffset = circumference - (overallPct / 100) * circumference;
+                return (
+                  <motion.div
+                    initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.4 }}
+                    style={{ flex: 1, overflowY: 'auto', background: '#f1f5f9', padding: '28px 24px', color: '#1e293b' }}
+                  >
+                    {/* Report Container */}
+                    <div style={{ maxWidth: '860px', margin: '0 auto', background: 'white', borderRadius: '16px', boxShadow: '0 4px 40px rgba(0,0,0,0.12)', overflow: 'hidden' }}>
 
-              return (
-                <motion.div
-                  initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.4 }}
-                  style={{ flex: 1, overflowY: 'auto', background: '#f1f5f9', padding: '28px 24px', color: '#1e293b' }}
-                >
-                  {/* Report Container */}
-                  <div style={{ maxWidth: '860px', margin: '0 auto', background: 'white', borderRadius: '16px', boxShadow: '0 4px 40px rgba(0,0,0,0.12)', overflow: 'hidden' }}>
-
-                    {/* Report Header */}
-                    <div style={{ padding: '20px 28px', borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'white' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-                        <div style={{ width: '40px', height: '40px', background: '#2563eb', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                          <FileText size={20} color="white" />
-                        </div>
-                        <div>
-                          <h2 style={{ margin: 0, fontSize: '17px', fontWeight: '900', color: '#0f172a' }}>AI Interview Report</h2>
-                          <p style={{ margin: 0, fontSize: '11px', color: '#94a3b8', fontWeight: '500' }}>Generated on {nowStr} • ID: {interviewId}</p>
-                        </div>
-                      </div>
-                      <div style={{ display: 'flex', gap: '10px' }}>
-                        <button style={{ padding: '8px 16px', borderRadius: '8px', border: '1px solid #e2e8f0', background: 'white', fontSize: '12px', fontWeight: '700', color: '#475569', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <Send size={13} /> Share with Team
-                        </button>
-                        <button style={{ padding: '8px 16px', borderRadius: '8px', border: 'none', background: '#2563eb', fontSize: '12px', fontWeight: '700', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <Copy size={13} /> Download PDF
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Report Body */}
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 280px', gap: 0 }}>
-
-                      {/* LEFT COLUMN */}
-                      <div style={{ padding: '24px 28px', borderRight: '1px solid #e2e8f0' }}>
-
-                        {/* Candidate Info */}
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '16px', background: '#f8fafc', borderRadius: '12px', marginBottom: '24px', border: '1px solid #e2e8f0' }}>
-                          <div style={{ width: '60px', height: '60px', borderRadius: '50%', background: 'linear-gradient(135deg, #2563eb, #7c3aed)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '22px', fontWeight: '900', flexShrink: 0 }}>
-                            {String.fromCharCode(65 + Math.floor(Math.random() * 26))}
+                      {/* Report Header */}
+                      <div style={{ padding: '20px 28px', borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'white' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                          <div style={{ width: '40px', height: '40px', background: '#2563eb', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <FileText size={20} color="white" />
                           </div>
-                          <div style={{ flex: 1 }}>
-                            <p style={{ margin: '0 0 2px', fontWeight: '900', fontSize: '15px', color: '#0f172a' }}>Demo Candidate</p>
-                            <p style={{ margin: '0 0 6px', fontSize: '12px', color: '#2563eb', fontWeight: '700' }}>Full Stack Engineer Candidate</p>
-                            <div style={{ display: 'flex', gap: '12px' }}>
-                              {['2+ Yrs Exp', 'Remote', 'English (Native)'].map((tag, i) => (
-                                <span key={i} style={{ fontSize: '10px', color: '#64748b', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                  <span style={{ width: '5px', height: '5px', borderRadius: '50%', background: '#94a3b8', display: 'inline-block' }} />{tag}
-                                </span>
+                          <div>
+                            <h2 style={{ margin: 0, fontSize: '17px', fontWeight: '900', color: '#0f172a' }}>AI Interview Report</h2>
+                            <p style={{ margin: 0, fontSize: '11px', color: '#94a3b8', fontWeight: '500' }}>Generated on {nowStr} â€¢ ID: {interviewId}</p>
+                          </div>
+                        </div>
+                        <div style={{ display: 'flex', gap: '10px' }}>
+                          <button style={{ padding: '8px 16px', borderRadius: '8px', border: '1px solid #e2e8f0', background: 'white', fontSize: '12px', fontWeight: '700', color: '#475569', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <Send size={13} /> Share with Team
+                          </button>
+                          <button style={{ padding: '8px 16px', borderRadius: '8px', border: 'none', background: '#2563eb', fontSize: '12px', fontWeight: '700', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <Copy size={13} /> Download PDF
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Report Body */}
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 280px', gap: 0 }}>
+
+                        {/* LEFT COLUMN */}
+                        <div style={{ padding: '24px 28px', borderRight: '1px solid #e2e8f0' }}>
+
+                          {/* Candidate Info */}
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '16px', background: '#f8fafc', borderRadius: '12px', marginBottom: '24px', border: '1px solid #e2e8f0' }}>
+                            <div style={{ width: '60px', height: '60px', borderRadius: '50%', background: 'linear-gradient(135deg, #2563eb, #7c3aed)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '22px', fontWeight: '900', flexShrink: 0 }}>
+                              {String.fromCharCode(65 + Math.floor(Math.random() * 26))}
+                            </div>
+                            <div style={{ flex: 1 }}>
+                              <p style={{ margin: '0 0 2px', fontWeight: '900', fontSize: '15px', color: '#0f172a' }}>Demo Candidate</p>
+                              <p style={{ margin: '0 0 6px', fontSize: '12px', color: '#2563eb', fontWeight: '700' }}>Full Stack Engineer Candidate</p>
+                              <div style={{ display: 'flex', gap: '12px' }}>
+                                {['2+ Yrs Exp', 'Remote', 'English (Native)'].map((tag, i) => (
+                                  <span key={i} style={{ fontSize: '10px', color: '#64748b', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                    <span style={{ width: '5px', height: '5px', borderRadius: '50%', background: '#94a3b8', display: 'inline-block' }} />{tag}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                            <div style={{ background: '#dcfce7', border: '1px solid #bbf7d0', borderRadius: '20px', padding: '4px 12px', fontSize: '11px', fontWeight: '800', color: '#16a34a' }}>âœ“ Verified</div>
+                          </div>
+
+                          {/* Competency Breakdown */}
+                          <div style={{ marginBottom: '24px' }}>
+                            <p style={{ margin: '0 0 14px', fontWeight: '900', fontSize: '13px', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <span style={{ fontSize: '16px' }}>ðŸ“Š</span> Competency Breakdown
+                            </p>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                              {[
+                                { label: 'Communication Clarity', score: commScore, color: '#2563eb' },
+                                { label: 'Technical Accuracy', score: techScore, color: '#2563eb' },
+                                { label: 'Confidence Level', score: confScore, color: '#2563eb' },
+                                { label: 'Answer Depth', score: depthScore, color: '#2563eb' },
+                              ].map((item, i) => (
+                                <motion.div key={i} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.1 + i * 0.08 }}
+                                  style={{ background: '#f8fafc', borderRadius: '10px', padding: '12px 14px', border: '1px solid #e2e8f0' }}>
+                                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                                    <span style={{ fontSize: '11px', fontWeight: '700', color: '#475569' }}>{item.label}</span>
+                                    <span style={{ fontSize: '13px', fontWeight: '900', color: item.color }}>{item.score.toFixed(1)}/10</span>
+                                  </div>
+                                  <div style={{ height: '5px', background: '#e2e8f0', borderRadius: '10px', overflow: 'hidden' }}>
+                                    <motion.div
+                                      initial={{ width: 0 }} animate={{ width: `${item.score * 10}%` }} transition={{ delay: 0.3 + i * 0.08, duration: 0.8 }}
+                                      style={{ height: '100%', background: item.color, borderRadius: '10px' }}
+                                    />
+                                  </div>
+                                </motion.div>
                               ))}
                             </div>
                           </div>
-                          <div style={{ background: '#dcfce7', border: '1px solid #bbf7d0', borderRadius: '20px', padding: '4px 12px', fontSize: '11px', fontWeight: '800', color: '#16a34a' }}>✓ Verified</div>
+
+                          {/* Sentiment Analysis */}
+                          <div style={{ marginBottom: '24px', background: '#f8fafc', borderRadius: '12px', padding: '16px', border: '1px solid #e2e8f0' }}>
+                            <p style={{ margin: '0 0 12px', fontWeight: '900', fontSize: '13px', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <span style={{ fontSize: '16px' }}>ðŸ˜Š</span> Sentiment & Tone Analysis
+                            </p>
+                            <div style={{ display: 'flex', height: '10px', borderRadius: '10px', overflow: 'hidden', marginBottom: '8px' }}>
+                              <div style={{ width: '15%', background: '#ef4444' }} />
+                              <div style={{ width: '25%', background: '#94a3b8' }} />
+                              <div style={{ width: '60%', background: '#22c55e' }} />
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
+                              {[['Negative', '15%', '#ef4444'], ['Neutral', '25%', '#94a3b8'], ['Positive', '60%', '#22c55e']].map(([label, pct, color], i) => (
+                                <span key={i} style={{ fontSize: '10px', fontWeight: '700', color }}>{label} ({pct})</span>
+                              ))}
+                            </div>
+                            <p style={{ margin: 0, fontSize: '11px', color: '#64748b', lineHeight: 1.6, fontStyle: 'italic' }}>
+                              "The candidate displayed strong enthusiasm and structured communication throughout the interview, with particularly positive tone when discussing technical problem-solving."
+                            </p>
+                          </div>
+
+                          {/* Key Transcript Snippet */}
+                          <div style={{ background: '#f8fafc', borderRadius: '12px', padding: '16px', border: '1px solid #e2e8f0' }}>
+                            <p style={{ margin: '0 0 12px', fontWeight: '900', fontSize: '13px', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <User size={14} /> Key Transcript Snippet
+                            </p>
+                            <div style={{ borderLeft: '3px solid #2563eb', paddingLeft: '12px' }}>
+                              <p style={{ margin: '0 0 8px', fontSize: '10px', fontWeight: '900', color: '#2563eb', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                                Q: {demoQuestions[0]?.q || 'Tell me about your background'}
+                              </p>
+                              <p style={{ margin: '0 0 10px', fontSize: '12px', color: '#334155', lineHeight: 1.7 }}>
+                                "{transcriptSnippet}"
+                              </p>
+                              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                                <span style={{ background: '#dbeafe', color: '#1d4ed8', fontSize: '9px', fontWeight: '900', padding: '3px 8px', borderRadius: '6px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>AI Highlight</span>
+                                <span style={{ fontSize: '10px', color: '#94a3b8', fontWeight: '600' }}>Question 1 of {demoQuestions.length}</span>
+                              </div>
+                            </div>
+                          </div>
                         </div>
 
-                        {/* Competency Breakdown */}
-                        <div style={{ marginBottom: '24px' }}>
-                          <p style={{ margin: '0 0 14px', fontWeight: '900', fontSize: '13px', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <span style={{ fontSize: '16px' }}>📊</span> Competency Breakdown
-                          </p>
-                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                        {/* RIGHT COLUMN */}
+                        <div style={{ padding: '24px 20px', background: '#fafbff' }}>
+
+                          {/* Overall Score Circle */}
+                          <div style={{ textAlign: 'center', marginBottom: '28px', padding: '20px 10px', background: 'white', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+                            <p style={{ margin: '0 0 14px', fontSize: '10px', fontWeight: '900', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Overall Score</p>
+                            <div style={{ position: 'relative', width: '110px', height: '110px', margin: '0 auto 12px' }}>
+                              <svg width="110" height="110" viewBox="0 0 110 110">
+                                <circle cx="55" cy="55" r="44" fill="none" stroke="#e2e8f0" strokeWidth="9" />
+                                <motion.circle
+                                  cx="55" cy="55" r="44" fill="none"
+                                  stroke="#2563eb" strokeWidth="9"
+                                  strokeLinecap="round"
+                                  strokeDasharray={circumference}
+                                  initial={{ strokeDashoffset: circumference }}
+                                  animate={{ strokeDashoffset: dashOffset }}
+                                  transition={{ duration: 1.2, delay: 0.3 }}
+                                  transform="rotate(-90 55 55)"
+                                />
+                              </svg>
+                              <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                                <span style={{ fontSize: '26px', fontWeight: '900', color: '#0f172a', lineHeight: 1 }}>{overallPct}</span>
+                                <span style={{ fontSize: '9px', color: '#94a3b8', fontWeight: '700', textTransform: 'uppercase' }}>out of 100</span>
+                              </div>
+                            </div>
+                            <p style={{ margin: 0, fontSize: '12px', fontWeight: '800', color: recommendationColor, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px' }}>
+                              <span>â†—</span> {recommendation}
+                            </p>
+                          </div>
+
+                          {/* AI Insights */}
+                          <div style={{ background: 'white', borderRadius: '12px', padding: '16px', border: '1px solid #e2e8f0', marginBottom: '16px' }}>
+                            <p style={{ margin: '0 0 14px', fontWeight: '900', fontSize: '12px', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '7px' }}>
+                              <span style={{ fontSize: '14px' }}>ðŸ’¡</span> AI Insights
+                            </p>
+
+                            <p style={{ margin: '0 0 8px', fontSize: '10px', fontWeight: '900', color: '#16a34a', textTransform: 'uppercase', letterSpacing: '0.07em' }}>Key Strengths</p>
                             {[
-                              { label: 'Communication Clarity', score: commScore, color: '#2563eb' },
-                              { label: 'Technical Accuracy', score: techScore, color: '#2563eb' },
-                              { label: 'Confidence Level', score: confScore, color: '#2563eb' },
-                              { label: 'Answer Depth', score: depthScore, color: '#2563eb' },
-                            ].map((item, i) => (
-                              <motion.div key={i} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.1 + i * 0.08 }}
-                                style={{ background: '#f8fafc', borderRadius: '10px', padding: '12px 14px', border: '1px solid #e2e8f0' }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                                  <span style={{ fontSize: '11px', fontWeight: '700', color: '#475569' }}>{item.label}</span>
-                                  <span style={{ fontSize: '13px', fontWeight: '900', color: item.color }}>{item.score.toFixed(1)}/10</span>
-                                </div>
-                                <div style={{ height: '5px', background: '#e2e8f0', borderRadius: '10px', overflow: 'hidden' }}>
-                                  <motion.div
-                                    initial={{ width: 0 }} animate={{ width: `${item.score * 10}%` }} transition={{ delay: 0.3 + i * 0.08, duration: 0.8 }}
-                                    style={{ height: '100%', background: item.color, borderRadius: '10px' }}
-                                  />
-                                </div>
-                              </motion.div>
+                              'Structured and clear technical communication',
+                              'Strong hands-on project experience with React & Node.js',
+                              'Thoughtful problem-solving approach under pressure',
+                            ].map((s, i) => (
+                              <div key={i} style={{ display: 'flex', gap: '8px', alignItems: 'flex-start', marginBottom: '7px' }}>
+                                <span style={{ color: '#16a34a', marginTop: '1px', flexShrink: 0, fontSize: '13px' }}>âœ“</span>
+                                <p style={{ margin: 0, fontSize: '11px', color: '#334155', lineHeight: 1.5 }}>{s}</p>
+                              </div>
                             ))}
-                          </div>
-                        </div>
 
-                        {/* Sentiment Analysis */}
-                        <div style={{ marginBottom: '24px', background: '#f8fafc', borderRadius: '12px', padding: '16px', border: '1px solid #e2e8f0' }}>
-                          <p style={{ margin: '0 0 12px', fontWeight: '900', fontSize: '13px', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <span style={{ fontSize: '16px' }}>😊</span> Sentiment & Tone Analysis
-                          </p>
-                          <div style={{ display: 'flex', height: '10px', borderRadius: '10px', overflow: 'hidden', marginBottom: '8px' }}>
-                            <div style={{ width: '15%', background: '#ef4444' }} />
-                            <div style={{ width: '25%', background: '#94a3b8' }} />
-                            <div style={{ width: '60%', background: '#22c55e' }} />
-                          </div>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
-                            {[['Negative', '15%', '#ef4444'], ['Neutral', '25%', '#94a3b8'], ['Positive', '60%', '#22c55e']].map(([label, pct, color], i) => (
-                              <span key={i} style={{ fontSize: '10px', fontWeight: '700', color }}>{label} ({pct})</span>
+                            <div style={{ borderTop: '1px solid #f1f5f9', margin: '12px 0' }} />
+
+                            <p style={{ margin: '0 0 8px', fontSize: '10px', fontWeight: '900', color: '#d97706', textTransform: 'uppercase', letterSpacing: '0.07em' }}>Areas for Growth</p>
+                            {[
+                              'Could provide more specific performance metrics in answers',
+                              'System design depth could be further demonstrated',
+                            ].map((s, i) => (
+                              <div key={i} style={{ display: 'flex', gap: '8px', alignItems: 'flex-start', marginBottom: '7px' }}>
+                                <span style={{ color: '#d97706', marginTop: '1px', flexShrink: 0, fontSize: '13px' }}>â†—</span>
+                                <p style={{ margin: 0, fontSize: '11px', color: '#334155', lineHeight: 1.5 }}>{s}</p>
+                              </div>
                             ))}
-                          </div>
-                          <p style={{ margin: 0, fontSize: '11px', color: '#64748b', lineHeight: 1.6, fontStyle: 'italic' }}>
-                            "The candidate displayed strong enthusiasm and structured communication throughout the interview, with particularly positive tone when discussing technical problem-solving."
-                          </p>
-                        </div>
 
-                        {/* Key Transcript Snippet */}
-                        <div style={{ background: '#f8fafc', borderRadius: '12px', padding: '16px', border: '1px solid #e2e8f0' }}>
-                          <p style={{ margin: '0 0 12px', fontWeight: '900', fontSize: '13px', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <User size={14} /> Key Transcript Snippet
-                          </p>
-                          <div style={{ borderLeft: '3px solid #2563eb', paddingLeft: '12px' }}>
-                            <p style={{ margin: '0 0 8px', fontSize: '10px', fontWeight: '900', color: '#2563eb', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-                              Q: {demoQuestions[0]?.q || 'Tell me about your background'}
-                            </p>
-                            <p style={{ margin: '0 0 10px', fontSize: '12px', color: '#334155', lineHeight: 1.7 }}>
-                              "{transcriptSnippet}"
-                            </p>
-                            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                              <span style={{ background: '#dbeafe', color: '#1d4ed8', fontSize: '9px', fontWeight: '900', padding: '3px 8px', borderRadius: '6px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>AI Highlight</span>
-                              <span style={{ fontSize: '10px', color: '#94a3b8', fontWeight: '600' }}>Question 1 of {demoQuestions.length}</span>
+                            <div style={{ borderTop: '1px solid #f1f5f9', margin: '12px 0' }} />
+
+                            <p style={{ margin: '0 0 8px', fontSize: '10px', fontWeight: '900', color: '#6366f1', textTransform: 'uppercase', letterSpacing: '0.07em' }}>Suggested Next Steps</p>
+                            <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
+                              <span style={{ color: '#6366f1', flexShrink: 0, fontSize: '13px' }}>â†’</span>
+                              <p style={{ margin: 0, fontSize: '11px', color: '#334155', lineHeight: 1.5 }}>Invite for a <strong>Technical Deep Dive</strong> focusing on system design and API architecture experience.</p>
                             </div>
+                          </div>
+
+                          {/* Action Buttons */}
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                            <button
+                              onClick={() => { setDemoStep(0); setDemoMessages([]); setDemoQuestionIndex(0); setVoiceTranscript(''); manuallyStoppedRef.current = true; }}
+                              style={{ padding: '10px', borderRadius: '10px', border: 'none', background: '#2563eb', color: 'white', fontWeight: '800', fontSize: '12px', cursor: 'pointer', textTransform: 'uppercase', letterSpacing: '0.04em' }}
+                            >
+                              Retake Interview
+                            </button>
+                            <button
+                              onClick={() => { setShowDemoExperience(false); setDemoStep(0); setDemoMessages([]); }}
+                              style={{ padding: '10px', borderRadius: '10px', border: '1px solid #e2e8f0', background: 'white', color: '#475569', fontWeight: '800', fontSize: '12px', cursor: 'pointer', textTransform: 'uppercase', letterSpacing: '0.04em' }}
+                            >
+                              Close & Finish
+                            </button>
                           </div>
                         </div>
                       </div>
 
-                      {/* RIGHT COLUMN */}
-                      <div style={{ padding: '24px 20px', background: '#fafbff' }}>
-
-                        {/* Overall Score Circle */}
-                        <div style={{ textAlign: 'center', marginBottom: '28px', padding: '20px 10px', background: 'white', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
-                          <p style={{ margin: '0 0 14px', fontSize: '10px', fontWeight: '900', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Overall Score</p>
-                          <div style={{ position: 'relative', width: '110px', height: '110px', margin: '0 auto 12px' }}>
-                            <svg width="110" height="110" viewBox="0 0 110 110">
-                              <circle cx="55" cy="55" r="44" fill="none" stroke="#e2e8f0" strokeWidth="9" />
-                              <motion.circle
-                                cx="55" cy="55" r="44" fill="none"
-                                stroke="#2563eb" strokeWidth="9"
-                                strokeLinecap="round"
-                                strokeDasharray={circumference}
-                                initial={{ strokeDashoffset: circumference }}
-                                animate={{ strokeDashoffset: dashOffset }}
-                                transition={{ duration: 1.2, delay: 0.3 }}
-                                transform="rotate(-90 55 55)"
-                              />
-                            </svg>
-                            <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-                              <span style={{ fontSize: '26px', fontWeight: '900', color: '#0f172a', lineHeight: 1 }}>{overallPct}</span>
-                              <span style={{ fontSize: '9px', color: '#94a3b8', fontWeight: '700', textTransform: 'uppercase' }}>out of 100</span>
-                            </div>
-                          </div>
-                          <p style={{ margin: 0, fontSize: '12px', fontWeight: '800', color: recommendationColor, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px' }}>
-                            <span>↗</span> {recommendation}
-                          </p>
-                        </div>
-
-                        {/* AI Insights */}
-                        <div style={{ background: 'white', borderRadius: '12px', padding: '16px', border: '1px solid #e2e8f0', marginBottom: '16px' }}>
-                          <p style={{ margin: '0 0 14px', fontWeight: '900', fontSize: '12px', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '7px' }}>
-                            <span style={{ fontSize: '14px' }}>💡</span> AI Insights
-                          </p>
-
-                          <p style={{ margin: '0 0 8px', fontSize: '10px', fontWeight: '900', color: '#16a34a', textTransform: 'uppercase', letterSpacing: '0.07em' }}>Key Strengths</p>
-                          {[
-                            'Structured and clear technical communication',
-                            'Strong hands-on project experience with React & Node.js',
-                            'Thoughtful problem-solving approach under pressure',
-                          ].map((s, i) => (
-                            <div key={i} style={{ display: 'flex', gap: '8px', alignItems: 'flex-start', marginBottom: '7px' }}>
-                              <span style={{ color: '#16a34a', marginTop: '1px', flexShrink: 0, fontSize: '13px' }}>✓</span>
-                              <p style={{ margin: 0, fontSize: '11px', color: '#334155', lineHeight: 1.5 }}>{s}</p>
-                            </div>
-                          ))}
-
-                          <div style={{ borderTop: '1px solid #f1f5f9', margin: '12px 0' }} />
-
-                          <p style={{ margin: '0 0 8px', fontSize: '10px', fontWeight: '900', color: '#d97706', textTransform: 'uppercase', letterSpacing: '0.07em' }}>Areas for Growth</p>
-                          {[
-                            'Could provide more specific performance metrics in answers',
-                            'System design depth could be further demonstrated',
-                          ].map((s, i) => (
-                            <div key={i} style={{ display: 'flex', gap: '8px', alignItems: 'flex-start', marginBottom: '7px' }}>
-                              <span style={{ color: '#d97706', marginTop: '1px', flexShrink: 0, fontSize: '13px' }}>↗</span>
-                              <p style={{ margin: 0, fontSize: '11px', color: '#334155', lineHeight: 1.5 }}>{s}</p>
-                            </div>
-                          ))}
-
-                          <div style={{ borderTop: '1px solid #f1f5f9', margin: '12px 0' }} />
-
-                          <p style={{ margin: '0 0 8px', fontSize: '10px', fontWeight: '900', color: '#6366f1', textTransform: 'uppercase', letterSpacing: '0.07em' }}>Suggested Next Steps</p>
-                          <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
-                            <span style={{ color: '#6366f1', flexShrink: 0, fontSize: '13px' }}>→</span>
-                            <p style={{ margin: 0, fontSize: '11px', color: '#334155', lineHeight: 1.5 }}>Invite for a <strong>Technical Deep Dive</strong> focusing on system design and API architecture experience.</p>
-                          </div>
-                        </div>
-
-                        {/* Action Buttons */}
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                          <button
-                            onClick={() => { setDemoStep(0); setDemoMessages([]); setDemoQuestionIndex(0); setVoiceTranscript(''); manuallyStoppedRef.current = true; }}
-                            style={{ padding: '10px', borderRadius: '10px', border: 'none', background: '#2563eb', color: 'white', fontWeight: '800', fontSize: '12px', cursor: 'pointer', textTransform: 'uppercase', letterSpacing: '0.04em' }}
-                          >
-                            Retake Interview
-                          </button>
-                          <button
-                            onClick={() => { setShowDemoExperience(false); setDemoStep(0); setDemoMessages([]); }}
-                            style={{ padding: '10px', borderRadius: '10px', border: '1px solid #e2e8f0', background: 'white', color: '#475569', fontWeight: '800', fontSize: '12px', cursor: 'pointer', textTransform: 'uppercase', letterSpacing: '0.04em' }}
-                          >
-                            Close & Finish
-                          </button>
-                        </div>
+                      {/* Footer */}
+                      <div style={{ padding: '12px 28px', borderTop: '1px solid #e2e8f0', background: '#f8fafc', textAlign: 'center' }}>
+                        <p style={{ margin: 0, fontSize: '10px', color: '#94a3b8', fontWeight: '500' }}>
+                          This report was generated by AI analysis. Human oversight is recommended for final hiring decisions.
+                        </p>
                       </div>
                     </div>
-
-                    {/* Footer */}
-                    <div style={{ padding: '12px 28px', borderTop: '1px solid #e2e8f0', background: '#f8fafc', textAlign: 'center' }}>
-                      <p style={{ margin: 0, fontSize: '10px', color: '#94a3b8', fontWeight: '500' }}>
-                        This report was generated by AI analysis. Human oversight is recommended for final hiring decisions.
-                      </p>
-                    </div>
-                  </div>
-                </motion.div>
-              );
-            })()}
-          </motion.div>
-        )}
-      </AnimatePresence>
+                  </motion.div>
+                );
+              })()
+            }
+          </motion.div >
+        )
+        }
+      </AnimatePresence >
     </div >
   );
 };
