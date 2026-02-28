@@ -28,7 +28,7 @@ import { rankResumes } from '../services/api';
 import Sidebar from '../components/Sidebar';
 import './RecruiterDashboard.css';
 
-import { Search, MapPin, FileText, Eye, Send, User, ChevronLeft, ChevronRight, X, Mic, MicOff, Video, VolumeX, EyeOff, Clock, Edit3, CheckCircle2, Copy, Briefcase, Mail, Sparkles, Play, Settings, AlertCircle } from 'lucide-react';
+import { Search, MapPin, FileText, Eye, Send, User, ChevronLeft, ChevronRight, X, Mic, MicOff, Video, VolumeX, EyeOff, Clock, Edit3, CheckCircle2, Copy, Briefcase, Mail, Sparkles, Play, Settings, AlertCircle, Check, ArrowRightUp, ArrowRight, CircleSlash } from 'lucide-react';
 import { Avatar, AvatarImage, AvatarFallback } from '../components/ui/avatar';
 import { toast } from 'sonner';
 import { inviteToInterview } from '../services/api';
@@ -901,7 +901,7 @@ const RecruiterDashboard = () => {
                     <FcUpload className="upload-icon mx-auto mb-4" style={{ fontSize: '3.5rem' }} />
                     {resumeFiles.length > 0 ? (
                       <>
-                        <p className="upload-text success text-green-400 font-medium">✓ {resumeFiles.length} resume(s) uploaded</p>
+                        <p className="upload-text success text-green-400 font-medium flex items-center justify-center gap-2"><CheckCircle2 size={18} /> {resumeFiles.length} resume(s) uploaded</p>
                         <p className="upload-hint text-xs text-slate-400">Click to add more resumes</p>
                       </>
                     ) : (
@@ -1066,8 +1066,8 @@ const RecruiterDashboard = () => {
                                     onClick={() => candidate.fitScore >= 60 && handleInvite(candidate)}
                                     disabled={inviting === candidate.name || candidate.fitScore < 60}
                                   >
-                                    <span className="text-sm font-bold">
-                                      {candidate.fitScore < 60 ? "✕ Low Match Score" : "➤ Invite to Interview"}
+                                    <span className="text-sm font-bold flex items-center gap-2">
+                                      {candidate.fitScore < 60 ? <><CircleSlash size={16} /> Low Match Score</> : <><Send size={16} /> Invite to Interview</>}
                                     </span>
                                   </Button>
                                   <Button variant="ghost" className="view-resume-ghost text-slate-500 hover:text-white hover:bg-transparent flex items-center gap-2 text-sm font-medium">
@@ -2139,7 +2139,7 @@ Expiry: `}<strong className="text-white font-bold">{(parseInt(linkExpiry))} hour
                                 ))}
                               </div>
                             </div>
-                            <div style={{ background: '#dcfce7', border: '1px solid #bbf7d0', borderRadius: '20px', padding: '4px 12px', fontSize: '11px', fontWeight: '800', color: '#16a34a' }}>✓ Verified</div>
+                            <div style={{ background: '#dcfce7', border: '1px solid #bbf7d0', borderRadius: '20px', padding: '4px 12px', fontSize: '11px', fontWeight: '800', color: '#16a34a', display: 'flex', alignItems: 'center', gap: '4px' }}><CheckCircle2 size={12} /> Verified</div>
                           </div>
 
                           {/* Competency Breakdown */}
