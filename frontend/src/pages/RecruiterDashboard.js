@@ -119,7 +119,7 @@ const RecruiterDashboard = () => {
     setIsListening(false);
 
     if (!window.speechSynthesis || isSpeakerOff) {
-      console.log('[KIA] Speaker OFF â€” skipping audio, gen', myGen);
+      console.log('[KIA] Speaker OFF -- skipping audio, gen', myGen);
       setIsAgentSpeaking(true);
       setTimeout(() => {
         if (speakGenRef.current !== myGen) return;
@@ -162,15 +162,15 @@ const RecruiterDashboard = () => {
           console.log('[KIA] Stale utterance onend ignored, gen', myGen);
           return;
         }
-        console.log('[KIA] Utterance ended â€” triggering onEnd, gen', myGen);
+        console.log('[KIA] Utterance ended -- triggering onEnd, gen', myGen);
         safeOnEnd();
       };
 
       utter.onerror = (e) => {
         if (speakGenRef.current !== myGen) return;
-        console.warn('[KIA] Utterance error:', e.error, 'â€” gen', myGen);
+        console.warn('[KIA] Utterance error:', e.error, '-- gen', myGen);
         // 'interrupted' and 'canceled' happen in Brave/Firefox when the browser
-        // interrupts speech internally â€” we STILL need to call onEnd so the mic activates.
+        // interrupts speech internally -- we STILL need to call onEnd so the mic activates.
         // Only ignore them if a NEWER speakText() call already started (checked above via gen).
         safeOnEnd();
       };
@@ -183,19 +183,19 @@ const RecruiterDashboard = () => {
       setTimeout(() => {
         if (speakGenRef.current !== myGen) return;
         if (!onEndCalled) {
-          console.warn('[KIA] Safety timeout triggered â€” speech events never fired, gen', myGen);
+          console.warn('[KIA] Safety timeout triggered -- speech events never fired, gen', myGen);
           safeOnEnd();
         }
       }, estimatedMs);
     };
 
-    // Chrome/Brave sometimes have an empty voices list on first call â€” wait for it
+    // Chrome/Brave sometimes have an empty voices list on first call -- wait for it
     if (window.speechSynthesis.getVoices().length === 0) {
       window.speechSynthesis.onvoiceschanged = () => {
         window.speechSynthesis.onvoiceschanged = null;
         trySpeak();
       };
-      // Brave sometimes never fires onvoiceschanged â€” fallback after 500ms
+      // Brave sometimes never fires onvoiceschanged -- fallback after 500ms
       setTimeout(() => {
         if (!onEndCalled && speakGenRef.current === myGen) trySpeak();
       }, 500);
@@ -411,7 +411,7 @@ const RecruiterDashboard = () => {
       cameraStreamRef.current.getTracks().forEach(t => t.stop());
       cameraStreamRef.current = null;
     }
-    // Cancel speech without triggering safeOnEnd â€” increment generation first
+    // Cancel speech without triggering safeOnEnd -- increment generation first
     ++speakGenRef.current;
     window.speechSynthesis && window.speechSynthesis.cancel();
     setShowDemoExperience(true);
@@ -901,13 +901,13 @@ const RecruiterDashboard = () => {
                     <FcUpload className="upload-icon mx-auto mb-4" style={{ fontSize: '3.5rem' }} />
                     {resumeFiles.length > 0 ? (
                       <>
-                        <p className="upload-text success text-green-400 font-medium">âœ“ {resumeFiles.length} resume(s) uploaded</p>
+                        <p className="upload-text success text-green-400 font-medium">✓ {resumeFiles.length} resume(s) uploaded</p>
                         <p className="upload-hint text-xs text-slate-400">Click to add more resumes</p>
                       </>
                     ) : (
                       <>
                         <p className="upload-text font-medium text-slate-300">Drag and drop multiple resumes here</p>
-                        <p className="upload-hint text-xs text-slate-400">Limit 200MB per file â€¢ PDF â€¢ Multiple files supported</p>
+                        <p className="upload-hint text-xs text-slate-400">Limit 200MB per file • PDF • Multiple files supported</p>
                       </>
                     )}
                   </div>
@@ -1067,7 +1067,7 @@ const RecruiterDashboard = () => {
                                     disabled={inviting === candidate.name || candidate.fitScore < 60}
                                   >
                                     <span className="text-sm font-bold">
-                                      {candidate.fitScore < 60 ? "âœ• Low Match Score" : "âž¤ Invite to Interview"}
+                                      {candidate.fitScore < 60 ? "✕ Low Match Score" : "➤ Invite to Interview"}
                                     </span>
                                   </Button>
                                   <Button variant="ghost" className="view-resume-ghost text-slate-500 hover:text-white hover:bg-transparent flex items-center gap-2 text-sm font-medium">
@@ -1594,7 +1594,7 @@ Expiry: `}<strong className="text-white font-bold">{(parseInt(linkExpiry))} hour
               </div>
             </div>
 
-            {/* Step 0 â€” Minimalist Interview Welcome */}
+            {/* Step 0 -- Minimalist Interview Welcome */}
             {demoStep === 0 && (
               <motion.div
                 key={demoIntroPhase}
@@ -1781,7 +1781,7 @@ Expiry: `}<strong className="text-white font-bold">{(parseInt(linkExpiry))} hour
                 </div>
               </motion.div>
             )}
-            {/* Step 1 â€” Dark Modern Interview UI */}
+            {/* Step 1 -- Dark Modern Interview UI */}
             {
               demoStep === 1 && (
                 <div style={{ flex: 1, display: 'flex', overflow: 'hidden', position: 'relative', background: '#05060b' }}>
@@ -1907,7 +1907,7 @@ Expiry: `}<strong className="text-white font-bold">{(parseInt(linkExpiry))} hour
                       )}
                     </AnimatePresence>
 
-                    {/* Explicit Submit Action â€” only show after student has given a real answer */}
+                    {/* Explicit Submit Action -- only show after student has given a real answer */}
                     {voiceTranscript.trim().length > 5 && isListening && (
                       <motion.button
                         initial={{ opacity: 0, scale: 0.9 }}
@@ -2068,7 +2068,7 @@ Expiry: `}<strong className="text-white font-bold">{(parseInt(linkExpiry))} hour
               )
             }
 
-            {/* Step 2 â€” Premium AI Interview Report */}
+            {/* Step 2 -- Premium AI Interview Report */}
             {
               demoStep === 2 && (() => {
                 // Derive dynamic data from messages collected
@@ -2104,7 +2104,7 @@ Expiry: `}<strong className="text-white font-bold">{(parseInt(linkExpiry))} hour
                           </div>
                           <div>
                             <h2 style={{ margin: 0, fontSize: '17px', fontWeight: '900', color: '#0f172a' }}>AI Interview Report</h2>
-                            <p style={{ margin: 0, fontSize: '11px', color: '#94a3b8', fontWeight: '500' }}>Generated on {nowStr} â€¢ ID: {interviewId}</p>
+                            <p style={{ margin: 0, fontSize: '11px', color: '#94a3b8', fontWeight: '500' }}>Generated on {nowStr} • ID: {interviewId}</p>
                           </div>
                         </div>
                         <div style={{ display: 'flex', gap: '10px' }}>
@@ -2139,7 +2139,7 @@ Expiry: `}<strong className="text-white font-bold">{(parseInt(linkExpiry))} hour
                                 ))}
                               </div>
                             </div>
-                            <div style={{ background: '#dcfce7', border: '1px solid #bbf7d0', borderRadius: '20px', padding: '4px 12px', fontSize: '11px', fontWeight: '800', color: '#16a34a' }}>âœ“ Verified</div>
+                            <div style={{ background: '#dcfce7', border: '1px solid #bbf7d0', borderRadius: '20px', padding: '4px 12px', fontSize: '11px', fontWeight: '800', color: '#16a34a' }}>✓ Verified</div>
                           </div>
 
                           {/* Competency Breakdown */}
@@ -2237,7 +2237,7 @@ Expiry: `}<strong className="text-white font-bold">{(parseInt(linkExpiry))} hour
                               </div>
                             </div>
                             <p style={{ margin: 0, fontSize: '12px', fontWeight: '800', color: recommendationColor, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px' }}>
-                              <span>â†—</span> {recommendation}
+                              <span>↗</span> {recommendation}
                             </p>
                           </div>
 
@@ -2254,7 +2254,7 @@ Expiry: `}<strong className="text-white font-bold">{(parseInt(linkExpiry))} hour
                               'Thoughtful problem-solving approach under pressure',
                             ].map((s, i) => (
                               <div key={i} style={{ display: 'flex', gap: '8px', alignItems: 'flex-start', marginBottom: '7px' }}>
-                                <span style={{ color: '#16a34a', marginTop: '1px', flexShrink: 0, fontSize: '13px' }}>âœ“</span>
+                                <span style={{ color: '#16a34a', marginTop: '1px', flexShrink: 0, fontSize: '13px' }}>✓</span>
                                 <p style={{ margin: 0, fontSize: '11px', color: '#334155', lineHeight: 1.5 }}>{s}</p>
                               </div>
                             ))}
@@ -2267,7 +2267,7 @@ Expiry: `}<strong className="text-white font-bold">{(parseInt(linkExpiry))} hour
                               'System design depth could be further demonstrated',
                             ].map((s, i) => (
                               <div key={i} style={{ display: 'flex', gap: '8px', alignItems: 'flex-start', marginBottom: '7px' }}>
-                                <span style={{ color: '#d97706', marginTop: '1px', flexShrink: 0, fontSize: '13px' }}>â†—</span>
+                                <span style={{ color: '#d97706', marginTop: '1px', flexShrink: 0, fontSize: '13px' }}>↗</span>
                                 <p style={{ margin: 0, fontSize: '11px', color: '#334155', lineHeight: 1.5 }}>{s}</p>
                               </div>
                             ))}
@@ -2276,7 +2276,7 @@ Expiry: `}<strong className="text-white font-bold">{(parseInt(linkExpiry))} hour
 
                             <p style={{ margin: '0 0 8px', fontSize: '10px', fontWeight: '900', color: '#6366f1', textTransform: 'uppercase', letterSpacing: '0.07em' }}>Suggested Next Steps</p>
                             <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
-                              <span style={{ color: '#6366f1', flexShrink: 0, fontSize: '13px' }}>â†’</span>
+                              <span style={{ color: '#6366f1', flexShrink: 0, fontSize: '13px' }}>→</span>
                               <p style={{ margin: 0, fontSize: '11px', color: '#334155', lineHeight: 1.5 }}>Invite for a <strong>Technical Deep Dive</strong> focusing on system design and API architecture experience.</p>
                             </div>
                           </div>
