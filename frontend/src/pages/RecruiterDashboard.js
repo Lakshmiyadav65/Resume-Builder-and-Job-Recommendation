@@ -1742,59 +1742,34 @@ Expiry: `}<strong className="text-white font-bold">{(parseInt(linkExpiry))} hour
                         <div className="demo-column-scroll" style={{ padding: '20px 24px', background: 'rgba(255,255,255,0.01)', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.05)', flex: 1, minHeight: 0, overflowY: 'auto' }}>
                           {demoIntroPhase === 0 ? (
                             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                              <h3 style={{ margin: '0 0 16px', fontSize: '16px', fontWeight: '900', color: '#fff', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                <Sparkles size={16} className="text-indigo-400" /> Assessment Data <span style={{ fontSize: '10px', color: '#64748b', fontWeight: '400', marginLeft: '5px' }}>(Optional)</span>
-                              </h3>
-                              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                                <div style={{ background: 'rgba(255,255,255,0.02)', padding: '16px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.06)', backdropFilter: 'blur(30px)', transition: 'all 0.3s ease' }}>
-                                  <p style={{ margin: '0 0 10px', fontSize: '10px', fontWeight: '900', color: '#818cf8', textTransform: 'uppercase', letterSpacing: '0.12em' }}>UPLOAD YOUR RESUME</p>
-                                  <div style={{ position: 'relative' }}>
-                                    <input
-                                      id="demo-resume-input"
-                                      type="file"
-                                      accept=".pdf"
-                                      onChange={handleFileChange}
-                                      style={{ display: 'none' }}
-                                    />
-                                    <label
-                                      htmlFor="demo-resume-input"
-                                      style={{
-                                        display: 'flex', alignItems: 'center', gap: '10px',
-                                        padding: '12px 16px', background: 'rgba(99, 102, 241, 0.08)',
-                                        border: '1.5px dashed rgba(99, 102, 241, 0.25)', borderRadius: '12px',
-                                        color: resumeFiles.length > 0 ? '#10b981' : '#94a3b8',
-                                        fontSize: '12px', fontWeight: '600', cursor: 'pointer',
-                                        transition: 'all 0.3s ease'
-                                      }}
-                                    >
-                                      <FcDocument size={18} />
-                                      {resumeFiles.length > 0 ? (
-                                        <span style={{ color: '#fff' }}>Selected: {resumeFiles[0].name}</span>
-                                      ) : (
-                                        "Click to select PDF resume..."
-                                      )}
-                                    </label>
+                              <h3 style={{ margin: '0 0 24px', fontSize: '20px', fontWeight: '900', color: '#fff', letterSpacing: '-0.02em' }}>Process Overview</h3>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '28px' }}>
+                                <div style={{ display: 'flex', gap: '18px', alignItems: 'flex-start' }}>
+                                  <div style={{ width: '44px', height: '44px', borderRadius: '12px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94a3b8', flexShrink: 0 }}>
+                                    <Video size={20} />
+                                  </div>
+                                  <div>
+                                    <h4 style={{ margin: '0 0 4px', fontSize: '17px', fontWeight: '800', color: '#f8fafc' }}>Calibrated Environment</h4>
+                                    <p style={{ margin: 0, fontSize: '13px', color: '#64748b', lineHeight: 1.5, fontWeight: '500' }}>First, we synchronize your audio/video feed for a seamless experience.</p>
                                   </div>
                                 </div>
-                                <div style={{ background: 'rgba(255,255,255,0.02)', padding: '16px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.06)', backdropFilter: 'blur(30px)' }}>
-                                  <p style={{ margin: '0 0 10px', fontSize: '10px', fontWeight: '900', color: '#818cf8', textTransform: 'uppercase', letterSpacing: '0.12em' }}>JOB DESCRIPTION</p>
-                                  <textarea
-                                    placeholder="Paste job details here for a personalized session..."
-                                    value={jobDesc}
-                                    onChange={(e) => setJobDesc(e.target.value)}
-                                    style={{
-                                      width: '100%', height: '80px', background: 'rgba(0,0,0,0.2)',
-                                      border: '1px solid rgba(255,255,255,0.04)', borderRadius: '12px',
-                                      padding: '12px', color: '#f8fafc', fontSize: '12px',
-                                      flexShrink: 0,
-                                      lineHeight: 1.5,
-                                      outline: 'none', resize: 'none'
-                                    }}
-                                  />
+                                <div style={{ display: 'flex', gap: '18px', alignItems: 'flex-start' }}>
+                                  <div style={{ width: '44px', height: '44px', borderRadius: '12px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94a3b8', flexShrink: 0 }}>
+                                    <Mic size={20} />
+                                  </div>
+                                  <div>
+                                    <h4 style={{ margin: '0 0 4px', fontSize: '17px', fontWeight: '800', color: '#f8fafc' }}>Voice Assessments</h4>
+                                    <p style={{ margin: 0, fontSize: '13px', color: '#64748b', lineHeight: 1.5, fontWeight: '500' }}>Talk naturally with our AI. It explores depth beyond your code.</p>
+                                  </div>
                                 </div>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '0 4px', opacity: 0.7 }}>
-                                  <AlertCircle size={10} className="text-slate-500" />
-                                  <p style={{ margin: 0, fontSize: '9px', color: '#64748b', fontWeight: '500' }}>If left blank, we'll use a Standard Engineer profile for the demo.</p>
+                                <div style={{ display: 'flex', gap: '18px', alignItems: 'flex-start' }}>
+                                  <div style={{ width: '44px', height: '44px', borderRadius: '12px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94a3b8', flexShrink: 0 }}>
+                                    <CheckCircle2 size={20} />
+                                  </div>
+                                  <div>
+                                    <h4 style={{ margin: '0 0 4px', fontSize: '17px', fontWeight: '800', color: '#f8fafc' }}>Competency Report</h4>
+                                    <p style={{ margin: 0, fontSize: '13px', color: '#64748b', lineHeight: 1.5, fontWeight: '500' }}>Get an exhaustive evaluation of your technical mindset immediately.</p>
+                                  </div>
                                 </div>
                               </div>
                             </motion.div>
