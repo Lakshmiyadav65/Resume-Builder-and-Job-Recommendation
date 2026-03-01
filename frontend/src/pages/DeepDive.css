@@ -9,7 +9,6 @@
   margin-left: 70px;
   padding: 40px;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  background: #05070a;
 }
 
 .no-data {
@@ -70,12 +69,11 @@
 
 .deep-dive-content {
   width: 100%;
-  max-width: 100%;
-  margin: 0;
-  padding-right: 40px;
+  max-width: 1200px;
+  margin: 0 auto;
   display: flex;
   flex-direction: column;
-  gap: 40px;
+  gap: 32px;
 }
 
 .section-title {
@@ -100,13 +98,13 @@
 }
 
 .summary-card {
-  background: rgba(40, 40, 40, 0.8);
+  background: rgba(30, 30, 30, 0.6);
   backdrop-filter: blur(20px);
-  border: 1px solid rgba(60, 60, 60, 0.5);
+  border: 1px solid rgba(60, 60, 60, 0.3);
   border-radius: 16px;
   padding: 20px;
   transition: all 0.3s ease;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
 }
 
 .summary-icon {
@@ -182,13 +180,13 @@
 }
 
 .skill-card {
-  background: rgba(40, 40, 40, 0.8);
+  background: rgba(30, 30, 30, 0.6);
   backdrop-filter: blur(20px);
-  border: 1px solid rgba(60, 60, 60, 0.5);
+  border: 1px solid rgba(60, 60, 60, 0.3);
   border-radius: 16px;
   padding: 20px;
   transition: all 0.3s ease;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
 }
 
 .skill-card h3 {
@@ -266,12 +264,12 @@
 }
 
 .recommendations-section {
-  background: rgba(40, 40, 40, 0.8);
+  background: rgba(30, 30, 30, 0.6);
   backdrop-filter: blur(20px);
-  border: 1px solid rgba(60, 60, 60, 0.5);
-  border-radius: 20px;
+  border: 1px solid rgba(60, 60, 60, 0.3);
+  border-radius: 16px;
   padding: 30px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
 }
 
 .recommendations-list {

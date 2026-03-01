@@ -79,7 +79,7 @@ const PreparationPlan = () => {
           transition={{ delay: 0.2 }}
         >
           {!plan ? (
-            <div className="plan-input-section max-w-2xl mx-auto">
+            <div className="plan-input-section mx-auto">
               <motion.div
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
