@@ -1833,33 +1833,33 @@ Expiry: `}<strong className="text-white font-bold">{(parseInt(linkExpiry))} hour
                             </motion.div>
                           ) : demoIntroPhase === 1 ? (
                             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                              <h3 style={{ margin: '0 0 24px', fontSize: '20px', fontWeight: '900', color: '#fff', letterSpacing: '-0.02em' }}>Process Overview</h3>
-                              <div style={{ display: 'flex', flexDirection: 'column', gap: '28px' }}>
-                                <div style={{ display: 'flex', gap: '18px', alignItems: 'flex-start' }}>
-                                  <div style={{ width: '44px', height: '44px', borderRadius: '12px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94a3b8', flexShrink: 0 }}>
-                                    <Video size={20} />
+                              <h3 style={{ margin: '0 0 16px', fontSize: '18px', fontWeight: '900', color: '#fff', letterSpacing: '-0.02em' }}>Process Overview</h3>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+                                <div style={{ display: 'flex', gap: '14px', alignItems: 'flex-start' }}>
+                                  <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94a3b8', flexShrink: 0 }}>
+                                    <Video size={16} />
                                   </div>
                                   <div>
-                                    <h4 style={{ margin: '0 0 4px', fontSize: '17px', fontWeight: '800', color: '#f8fafc' }}>Calibrated Environment</h4>
-                                    <p style={{ margin: 0, fontSize: '13px', color: '#64748b', lineHeight: 1.5, fontWeight: '500' }}>First, we synchronize your audio/video feed for a seamless experience.</p>
+                                    <h4 style={{ margin: '0 0 2px', fontSize: '15px', fontWeight: '800', color: '#f8fafc' }}>Calibrated Environment</h4>
+                                    <p style={{ margin: 0, fontSize: '11px', color: '#64748b', lineHeight: 1.4, fontWeight: '500' }}>First, we synchronize your audio/video feed for a seamless experience.</p>
                                   </div>
                                 </div>
-                                <div style={{ display: 'flex', gap: '18px', alignItems: 'flex-start' }}>
-                                  <div style={{ width: '44px', height: '44px', borderRadius: '12px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94a3b8', flexShrink: 0 }}>
-                                    <Mic size={20} />
+                                <div style={{ display: 'flex', gap: '14px', alignItems: 'flex-start' }}>
+                                  <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94a3b8', flexShrink: 0 }}>
+                                    <Mic size={16} />
                                   </div>
                                   <div>
-                                    <h4 style={{ margin: '0 0 4px', fontSize: '17px', fontWeight: '800', color: '#f8fafc' }}>Voice Assessments</h4>
-                                    <p style={{ margin: 0, fontSize: '13px', color: '#64748b', lineHeight: 1.5, fontWeight: '500' }}>Talk naturally with our AI. It explores depth beyond your code.</p>
+                                    <h4 style={{ margin: '0 0 2px', fontSize: '15px', fontWeight: '800', color: '#f8fafc' }}>Voice Assessments</h4>
+                                    <p style={{ margin: 0, fontSize: '11px', color: '#64748b', lineHeight: 1.4, fontWeight: '500' }}>Talk naturally with our AI. It explores depth beyond your code.</p>
                                   </div>
                                 </div>
-                                <div style={{ display: 'flex', gap: '18px', alignItems: 'flex-start' }}>
-                                  <div style={{ width: '44px', height: '44px', borderRadius: '12px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94a3b8', flexShrink: 0 }}>
-                                    <CheckCircle2 size={20} />
+                                <div style={{ display: 'flex', gap: '14px', alignItems: 'flex-start' }}>
+                                  <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94a3b8', flexShrink: 0 }}>
+                                    <CheckCircle2 size={16} />
                                   </div>
                                   <div>
-                                    <h4 style={{ margin: '0 0 4px', fontSize: '17px', fontWeight: '800', color: '#f8fafc' }}>Competency Report</h4>
-                                    <p style={{ margin: 0, fontSize: '13px', color: '#64748b', lineHeight: 1.5, fontWeight: '500' }}>Get an exhaustive evaluation of your technical mindset immediately.</p>
+                                    <h4 style={{ margin: '0 0 2px', fontSize: '15px', fontWeight: '800', color: '#f8fafc' }}>Competency Report</h4>
+                                    <p style={{ margin: 0, fontSize: '11px', color: '#64748b', lineHeight: 1.4, fontWeight: '500' }}>Get an exhaustive evaluation of your technical mindset immediately.</p>
                                   </div>
                                 </div>
                               </div>
