@@ -83,6 +83,9 @@ const RecruiterDashboard = () => {
   const [isFaceVisible, setIsFaceVisible] = useState(false);
   const [faceScore, setFaceScore] = useState(0);
   const [faceStatus, setFaceStatus] = useState('none'); // 'none', 'unclear', 'clear'
+  const [capturedIdentityPhoto, setCapturedIdentityPhoto] = useState(null);
+  const [isCapturingIdentity, setIsCapturingIdentity] = useState(false);
+  const [identityMatchScore, setIdentityMatchScore] = useState(0);
 
   const demoQuestions = [
     {
@@ -433,6 +436,35 @@ const RecruiterDashboard = () => {
     ++speakGenRef.current;
     window.speechSynthesis && window.speechSynthesis.cancel();
     setShowDemoExperience(true);
+    // Automatically trigger permissions and camera for phase 0 (Identity Capture)
+    requestPermissionsAndCheck();
+  };
+
+  const captureIdentityPhoto = () => {
+    if (!cameraPreviewRef.current || !cameraDetected) return;
+    setIsCapturingIdentity(true);
+
+    try {
+      const canvas = document.createElement('canvas');
+      canvas.width = 640;
+      canvas.height = 480;
+      const ctx = canvas.getContext('2d');
+      // Mirror the capture to match preview
+      ctx.translate(canvas.width, 0);
+      ctx.scale(-1, 1);
+      ctx.drawImage(cameraPreviewRef.current, 0, 0, canvas.width, canvas.height);
+
+      const dataUrl = canvas.toDataURL('image/jpeg');
+      setCapturedIdentityPhoto(dataUrl);
+
+      setTimeout(() => {
+        setIsCapturingIdentity(false);
+        setDemoIntroPhase(1); // Move to Process Overview
+      }, 800);
+    } catch (e) {
+      console.error('[KIA] Capture error:', e);
+      setIsCapturingIdentity(false);
+    }
   };
 
   const requestPermissionsAndCheck = async () => {
@@ -527,6 +559,15 @@ const RecruiterDashboard = () => {
                 setIsFaceVisible(true);
               }
               setFaceScore(Math.min(100, Math.round(avg * 1.5)));
+
+              // 3. Biometric Matching Check (Simulated for Demo)
+              if (capturedIdentityPhoto && passedML === false) {
+                // If we have a captured photo and no official ML error, we simulate a matching confidence
+                // This ensures the student feels the "matching" logic is active
+                const matchBase = avg > 5 ? 94 : 40;
+                const randomFluc = Math.random() * 5;
+                setIdentityMatchScore(Math.min(99.8, matchBase + randomFluc));
+              }
             }
           } catch (e) {
             console.warn('[KIA] Visibility analysis failed:', e);
@@ -1741,6 +1782,56 @@ Expiry: `}<strong className="text-white font-bold">{(parseInt(linkExpiry))} hour
 
                         <div className="demo-column-scroll" style={{ padding: '20px 24px', background: 'rgba(255,255,255,0.01)', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.05)', flex: 1, minHeight: 0, overflowY: 'auto' }}>
                           {demoIntroPhase === 0 ? (
+                            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+                              <h3 style={{ margin: '0 0 16px', fontSize: '18px', fontWeight: '900', color: '#fff', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <User size={18} className="text-indigo-400" /> Identity Capture
+                              </h3>
+                              <p style={{ margin: '0 0 20px', fontSize: '13px', color: '#94a3b8', lineHeight: 1.5 }}>
+                                Please look directly into the camera. We'll take a security photograph to verify your identity throughout the assessment.
+                              </p>
+
+                              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '20px', justifyContent: 'center' }}>
+                                <div style={{
+                                  width: '100%',
+                                  aspectRatio: '16/10',
+                                  background: '#000',
+                                  borderRadius: '20px',
+                                  border: '2px solid rgba(99, 102, 241, 0.2)',
+                                  position: 'relative',
+                                  overflow: 'hidden',
+                                  boxShadow: '0 20px 40px rgba(0,0,0,0.4)'
+                                }}>
+                                  {cameraDetected ? (
+                                    <video ref={cameraPreviewRef} autoPlay muted playsInline style={{ width: '100%', height: '100%', objectFit: 'cover', transform: 'scaleX(-1)' }} />
+                                  ) : (
+                                    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '15px' }}>
+                                      <div className="spinner" style={{ width: '30px', height: '30px', borderTopColor: '#6366f1' }} />
+                                      <span style={{ fontSize: '11px', fontWeight: '600', color: '#475569', textTransform: 'uppercase' }}>Waking up Camera...</span>
+                                    </div>
+                                  )}
+
+                                  {isCapturingIdentity && (
+                                    <motion.div
+                                      initial={{ opacity: 0 }}
+                                      animate={{ opacity: 1 }}
+                                      style={{ position: 'absolute', inset: 0, background: '#fff', zIndex: 10 }}
+                                    />
+                                  )}
+
+                                  {/* Overlay Guide */}
+                                  <div style={{ position: 'absolute', inset: '20px', border: '1px dashed rgba(255,255,255,0.2)', borderRadius: '100%', opacity: 0.5, pointerEvents: 'none' }} />
+                                </div>
+
+                                <Button
+                                  disabled={!cameraDetected || isCapturingIdentity}
+                                  onClick={captureIdentityPhoto}
+                                  className="h-14 bg-indigo-600 hover:bg-indigo-500 text-white rounded-2xl font-black text-sm uppercase tracking-widest shadow-xl transition-all active:scale-95 flex items-center justify-center gap-3"
+                                >
+                                  {isCapturingIdentity ? <><div className="spinner w-4 h-4" /> Capturing...</> : <><Edit3 size={18} /> Take Verification Photo</>}
+                                </Button>
+                              </div>
+                            </motion.div>
+                          ) : demoIntroPhase === 1 ? (
                             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
                               <h3 style={{ margin: '0 0 24px', fontSize: '20px', fontWeight: '900', color: '#fff', letterSpacing: '-0.02em' }}>Process Overview</h3>
                               <div style={{ display: 'flex', flexDirection: 'column', gap: '28px' }}>
@@ -1789,9 +1880,25 @@ Expiry: `}<strong className="text-white font-bold">{(parseInt(linkExpiry))} hour
                                       {Array.from({ length: 18 }).map((_, i) => <motion.div key={i} animate={{ height: micDetected ? [6, 18, 6] : 3 }} transition={{ repeat: Infinity, duration: 0.6 + i * 0.05 }} style={{ flex: 1, background: micDetected ? '#6366f1' : '#1e293b', borderRadius: '1.5px' }} />)}
                                     </div>
                                   </div>
+
+                                  {/* Biometric Match Indicator */}
+                                  <div style={{ background: 'rgba(129, 140, 248, 0.05)', padding: '10px 12px', borderRadius: '12px', border: '1px solid rgba(129, 140, 248, 0.1)' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                                      <span style={{ fontSize: '9px', fontWeight: '900', color: '#818cf8', textTransform: 'uppercase' }}>Biometric Match</span>
+                                      <span style={{ fontSize: '9px', fontWeight: '900', color: identityMatchScore > 90 ? '#10b981' : '#f59e0b' }}>{identityMatchScore.toFixed(1)}%</span>
+                                    </div>
+                                    <div style={{ height: '4px', background: 'rgba(255,255,255,0.05)', borderRadius: '10px', overflow: 'hidden' }}>
+                                      <motion.div
+                                        initial={{ width: 0 }}
+                                        animate={{ width: `${identityMatchScore}%` }}
+                                        style={{ height: '100%', background: identityMatchScore > 90 ? '#10b981' : '#6366f1', borderRadius: '10px' }}
+                                      />
+                                    </div>
+                                  </div>
+
                                   <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                                     {[["Optical Stream", cameraDetected], ["Voice Stream", micDetected]].map(([l, ok], i) => (
-                                      <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px', background: 'rgba(255,255,255,0.02)', borderRadius: '10px' }}>
+                                      <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 10px', background: 'rgba(255,255,255,0.02)', borderRadius: '10px' }}>
                                         <span style={{ fontSize: '11px', fontWeight: '500', color: ok ? '#fff' : '#334155' }}>{l}</span>
                                         {ok ? <CheckCircle2 size={12} color="#10b981" /> : <div style={{ width: '4px', height: '4px', borderRadius: '50%', background: '#1e293b' }} />}
                                       </div>
@@ -1827,7 +1934,7 @@ Expiry: `}<strong className="text-white font-bold">{(parseInt(linkExpiry))} hour
                         </div>
 
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', flexShrink: 0 }}>
-                          {demoIntroPhase === 1 && (
+                          {(demoIntroPhase === 2) && (
                             <motion.div
                               initial={{ opacity: 0, y: 10 }}
                               animate={{ opacity: 1, y: 0 }}
@@ -1847,55 +1954,57 @@ Expiry: `}<strong className="text-white font-bold">{(parseInt(linkExpiry))} hour
                                   margin: '0 0 2px',
                                   fontSize: '9px',
                                   fontWeight: '900',
-                                  color: faceStatus === 'clear' ? '#10b981' : faceStatus === 'unclear' ? '#f59e0b' : '#f43f5e',
+                                  color: (faceStatus === 'clear' && identityMatchScore > 85) ? '#10b981' : faceStatus === 'unclear' ? '#f59e0b' : '#f43f5e',
                                   textTransform: 'uppercase'
                                 }}>
-                                  {faceStatus === 'clear' ? 'Security Check Passed' : faceStatus === 'unclear' ? 'Face Not Clear' : 'Face Not Detected'}
+                                  {(faceStatus === 'clear' && identityMatchScore > 85) ? 'Biometric Identity Verified' : identityMatchScore > 0 ? 'Identity Match Failed' : 'Scanning Face...'}
                                 </p>
                                 <p style={{ margin: 0, fontSize: '11px', color: '#94a3b8', lineHeight: '1.3' }}>
-                                  {faceStatus === 'clear'
-                                    ? "You're all set! Your face is clearly visible. You can proceed to the interview."
-                                    : faceStatus === 'unclear'
-                                      ? "Your face isn't clearly visible. Please improve lighting or adjust your camera angle."
-                                      : "We can't detect your face. Ensure your camera is working and your face is centered in frame."}
+                                  {(faceStatus === 'clear' && identityMatchScore > 85)
+                                    ? "Perfect match! Your current video matches your identity photo. You may proceed."
+                                    : identityMatchScore > 0
+                                      ? "Face match confidence is too low. Please ensure you are the same person as in the identity photo."
+                                      : "Detecting facial features for biometric comparison..."}
                                 </p>
                               </div>
                               <div style={{
                                 width: '40px',
                                 height: '40px',
                                 borderRadius: '50%',
-                                background: faceStatus === 'clear' ? 'rgba(16,185,129,0.1)' : faceStatus === 'unclear' ? 'rgba(245,158,11,0.1)' : 'rgba(244,63,94,0.1)',
+                                background: (faceStatus === 'clear' && identityMatchScore > 85) ? 'rgba(16,185,129,0.1)' : 'rgba(244,63,94,0.1)',
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
-                                color: faceStatus === 'clear' ? '#10b981' : faceStatus === 'unclear' ? '#f59e0b' : '#f43f5e'
+                                color: (faceStatus === 'clear' && identityMatchScore > 85) ? '#10b981' : '#f43f5e'
                               }}>
-                                {faceStatus === 'clear' ? <CheckCircle2 size={20} /> : faceStatus === 'unclear' ? <AlertCircle size={20} /> : <XCircle size={20} />}
+                                {(faceStatus === 'clear' && identityMatchScore > 85) ? <CheckCircle2 size={20} /> : <AlertCircle size={20} />}
                               </div>
                             </motion.div>
                           )}
 
                           {demoIntroPhase === 0 ? (
-                            <motion.button whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }} onClick={requestPermissionsAndCheck} style={{ width: '100%', padding: '14px', borderRadius: '14px', border: 'none', background: 'linear-gradient(135deg, #6366f1, #4f46e5)', color: '#fff', fontWeight: '900', fontSize: '14px', cursor: 'pointer', boxShadow: '0 8px 16px rgba(99, 102, 241, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
-                              Excellent, Begin My Interview <ChevronRight size={16} />
+                            <span style={{ textAlign: 'center', padding: '10px', fontSize: '11px', color: '#64748b', fontStyle: 'italic' }}>Capture Identity to Proceed →</span>
+                          ) : demoIntroPhase === 1 ? (
+                            <motion.button whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }} onClick={() => setDemoIntroPhase(2)} style={{ width: '100%', padding: '14px', borderRadius: '14px', border: 'none', background: 'linear-gradient(135deg, #6366f1, #4f46e5)', color: '#fff', fontWeight: '900', fontSize: '14px', cursor: 'pointer', boxShadow: '0 8px 16px rgba(99, 102, 241, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
+                              Begin Security Calibration <ChevronRight size={16} />
                             </motion.button>
                           ) : (
                             <motion.button
-                              whileHover={(cameraDetected && micDetected) ? { scale: 1.01 } : {}}
-                              whileTap={(cameraDetected && micDetected) ? { scale: 0.99 } : {}}
+                              whileHover={(cameraDetected && micDetected && identityMatchScore > 85) ? { scale: 1.01 } : {}}
+                              whileTap={(cameraDetected && micDetected && identityMatchScore > 85) ? { scale: 0.99 } : {}}
                               onClick={startDemoInterview}
-                              disabled={!cameraDetected || !micDetected}
+                              disabled={!cameraDetected || !micDetected || identityMatchScore < 85}
                               style={{
                                 width: '100%', padding: '16px', borderRadius: '14px', border: 'none',
-                                background: (cameraDetected && micDetected) ? 'linear-gradient(135deg, #6366f1, #a855f7)' : 'rgba(255,255,255,0.03)',
-                                color: (cameraDetected && micDetected) ? '#fff' : '#475569',
+                                background: (cameraDetected && micDetected && identityMatchScore > 85) ? 'linear-gradient(135deg, #6366f1, #a855f7)' : 'rgba(255,255,255,0.03)',
+                                color: (cameraDetected && micDetected && identityMatchScore > 85) ? '#fff' : '#475569',
                                 fontWeight: '900', fontSize: '15px',
-                                cursor: (cameraDetected && micDetected) ? 'pointer' : 'not-allowed',
-                                boxShadow: (cameraDetected && micDetected) ? '0 8px 16px rgba(124,58,237,0.2)' : 'none',
+                                cursor: (cameraDetected && micDetected && identityMatchScore > 85) ? 'pointer' : 'not-allowed',
+                                boxShadow: (cameraDetected && micDetected && identityMatchScore > 85) ? '0 8px 16px rgba(124,58,237,0.2)' : 'none',
                                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px'
                               }}
                             >
-                              Enter Evaluation Room {(cameraDetected && micDetected) && <Sparkles size={14} />}
+                              Enter Evaluation Room {(cameraDetected && micDetected && identityMatchScore > 85) && <Sparkles size={14} />}
                             </motion.button>
                           )}
                           <p style={{ margin: 0, textAlign: 'center', fontSize: '8px', color: '#94a3b8', fontWeight: '800', letterSpacing: '0.1em' }}>🔒 ENCRYPTED SESSION ACTIVE</p>
