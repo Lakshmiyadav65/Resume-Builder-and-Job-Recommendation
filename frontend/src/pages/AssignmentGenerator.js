@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { FcTodoList, FcIdea } from 'react-icons/fc';
+import { FcTodoList, FcIdea, FcUpload } from 'react-icons/fc';
 import { Button } from '../components/ui/button';
 import { Textarea } from '../components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
@@ -95,52 +95,40 @@ const AssignmentGenerator = () => {
 
       <div className="assignment-generator-main">
         <motion.div
-          className="assignment-generator-header"
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-        >
-          <div className="header-left">
-            <Badge variant="outline" className="mode-badge bg-slate-800 text-slate-300 border-slate-600 gap-2 px-3 py-1 text-sm font-medium">
-              💼 Recruiter Mode
-            </Badge>
-          </div>
-          <div className="header-right">
-            <Button
-              variant="ghost"
-              className="share-button text-slate-400 hover:text-white hover:bg-slate-800"
-            >
-              Share
-            </Button>
-          </div>
-        </motion.div>
-
-        <motion.div
           className="assignment-generator-content"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.2, duration: 0.5 }}
         >
-          <h2 className="section-title">📋 Assignment Idea Generator</h2>
+          <h2 className="section-title">Assignment Idea Generator</h2>
 
           {!generated ? (
-            <div className="input-section max-w-3xl mx-auto">
+            <div className="input-section w-full">
               <motion.div
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: 0.3 }}
+                className="w-full"
               >
-                <Card className="job-desc-card bg-slate-800 border-slate-700">
-                  <CardHeader>
-                    <CardTitle className="text-xl text-white">Enter Job Description</CardTitle>
+                <Card className="job-desc-card bg-[#141824]/80 border-slate-800 w-full overflow-hidden">
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+                    <CardTitle className="text-3xl font-extrabold text-white">Paste the Job Description Here</CardTitle>
+                    <div className="flex gap-4">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="bg-slate-800/50 border-slate-700 hover:bg-slate-700 text-slate-200 gap-2 px-4 py-5"
+                      >
+                        <FcUpload /> Upload PDF
+                      </Button>
+                    </div>
                   </CardHeader>
                   <CardContent>
-                    <p className="description-hint text-slate-400 mb-4 text-sm">
-                      Paste the complete job description to generate skill-based assignment ideas
-                      that help evaluate candidates effectively.
+                    <p className="description-hint text-slate-400 mb-8 text-lg">
+                      Paste the complete job description to generate skill-based assignment ideas that help evaluate candidates effectively.
                     </p>
                     <Textarea
-                      className="job-desc-textarea bg-slate-900 border-slate-600 min-h-[200px] text-slate-200 resize-y"
+                      className="job-desc-textarea bg-slate-900 border-slate-600 min-h-[350px] text-slate-200 resize-y focus:ring-2 focus:ring-indigo-500/20"
                       placeholder="Enter the job description here..."
                       value={jobDesc}
                       onChange={(e) => setJobDesc(e.target.value)}

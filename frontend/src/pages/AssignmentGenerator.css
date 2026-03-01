@@ -6,9 +6,10 @@
 
 .assignment-generator-main {
   flex: 1;
-  margin-left: 280px;
-  padding: 30px;
-  transition: margin-left 0.3s ease;
+  margin-left: 70px;
+  padding: 40px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  background: #05070a;
 }
 
 .assignment-generator-header {
@@ -58,15 +59,17 @@
 }
 
 .assignment-generator-content {
-  max-width: 1200px;
-  margin: 0 auto;
+  width: 100%;
+  max-width: 100%;
+  padding: 0 40px;
 }
 
 .section-title {
-  font-size: 2rem;
-  font-weight: 700;
-  margin-bottom: 30px;
+  font-size: 2.8rem;
+  font-weight: 800;
+  margin-bottom: 50px;
   color: #ffffff;
+  letter-spacing: -0.02em;
 }
 
 .input-section {
@@ -76,12 +79,13 @@
 }
 
 .job-desc-card {
-  background: rgba(40, 40, 40, 0.8);
+  background: rgba(22, 27, 37, 0.7) !important;
   backdrop-filter: blur(20px);
-  border: 1px solid rgba(60, 60, 60, 0.5);
-  border-radius: 20px;
-  padding: 30px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.03);
+  border-radius: 28px;
+  padding: 45px;
+  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.5);
+  width: 100%;
 }
 
 .job-desc-card h3 {
@@ -128,18 +132,28 @@
 }
 
 .generate-button {
-  padding: 18px 48px;
-  background: linear-gradient(180deg, #3b82f6 0%, #1e40af 100%);
+  padding: 20px 60px;
+  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
   color: white;
   border: none;
-  border-radius: 14px;
-  font-size: 1.15rem;
-  font-weight: 700;
+  border-radius: 16px;
+  font-size: 1.25rem;
+  font-weight: 800;
   cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 12px;
-  
+  gap: 15px;
+  box-shadow: 0 10px 25px rgba(79, 70, 229, 0.4);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.generate-button:hover {
+  transform: translateY(-3px) scale(1.02);
+  box-shadow: 0 15px 35px rgba(79, 70, 229, 0.6);
+}
+
+.generate-button:active {
+  transform: translateY(-1px) scale(0.98);
 }
 
 .generate-button:disabled {
@@ -157,7 +171,9 @@
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .error-message {
@@ -201,7 +217,7 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  
+
 }
 
 .assignments-list {

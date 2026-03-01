@@ -114,7 +114,7 @@ const LandingPage = () => {
       {!backgroundLoaded && (
         <div className="loading-overlay">
           <div className="loading-spinner"></div>
-          <p className="loading-text">Loading ATScribe...</p>
+          <p className="loading-text">Loading CVtoCall...</p>
         </div>
       )}
 
@@ -127,7 +127,7 @@ const LandingPage = () => {
       >
         <nav className="hero-nav">
           <div className="logo-container">
-            <img src="/logo.png" alt="ATSCRIBE" className="logo" />
+            <img src="/logo.png" alt="CVtoCall" className="logo" />
           </div>
           <Button
             className="get-started-btn bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-full font-medium transition-all"
@@ -271,18 +271,18 @@ const LandingPage = () => {
           {/* Top Arc Icons */}
           <div className="tools-arc-wrapper">
             <div className="tools-arc">
-              <div className="arc-icon icon-1"><SiZoom /></div>
-              <div className="arc-icon icon-2"><FaSlack /></div>
-              <div className="arc-icon icon-3"><FaMicrosoft /></div>
-              <div className="arc-icon icon-4"><SiGooglemeet /></div>
-              <div className="arc-icon icon-5"><SiCalendly /></div>
-              <div className="arc-icon icon-6"><FaSalesforce /></div>
-              <div className="arc-icon icon-7"><SiNotion /></div>
-              <div className="arc-icon icon-8"><SiHubspot /></div>
-              <div className="arc-icon icon-9"><SiJira /></div>
-              <div className="arc-icon icon-10"><SiAsana /></div>
-              <div className="arc-icon icon-11"><SiGmail /></div>
-              <div className="arc-icon icon-12"><FaTrello /></div>
+              <div className="arc-icon icon-1"><span className="icon-inner"><SiZoom /></span></div>
+              <div className="arc-icon icon-2"><span className="icon-inner"><FaSlack /></span></div>
+              <div className="arc-icon icon-3"><span className="icon-inner"><FaMicrosoft /></span></div>
+              <div className="arc-icon icon-4"><span className="icon-inner"><SiGooglemeet /></span></div>
+              <div className="arc-icon icon-5"><span className="icon-inner"><SiCalendly /></span></div>
+              <div className="arc-icon icon-6"><span className="icon-inner"><FaSalesforce /></span></div>
+              <div className="arc-icon icon-7"><span className="icon-inner"><SiNotion /></span></div>
+              <div className="arc-icon icon-8"><span className="icon-inner"><SiHubspot /></span></div>
+              <div className="arc-icon icon-9"><span className="icon-inner"><SiJira /></span></div>
+              <div className="arc-icon icon-10"><span className="icon-inner"><SiAsana /></span></div>
+              <div className="arc-icon icon-11"><span className="icon-inner"><SiGmail /></span></div>
+              <div className="arc-icon icon-12"><span className="icon-inner"><FaTrello /></span></div>
             </div>
           </div>
 

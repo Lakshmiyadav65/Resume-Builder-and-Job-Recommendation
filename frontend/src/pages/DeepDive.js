@@ -102,15 +102,6 @@ const DeepDive = () => {
 
       <div className="deep-dive-main">
         <motion.div
-          className="deep-dive-header"
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-        >
-          <FcSearch className="header-icon" style={{ fontSize: '3rem' }} />
-          <h1>Deep Dive Report</h1>
-        </motion.div>
-
-        <motion.div
           className="deep-dive-content"
           variants={containerVariants}
           initial="hidden"

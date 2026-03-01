@@ -292,16 +292,30 @@ const Dashboard = () => {
     }
 
     return (
-      <div>
+      <div className="feedback-grid gap-6">
         {formattedContent.map((section, index) => (
-          <div key={index} className="feedback-section-item">
-            <h4 className="feedback-section-title">{section.title}</h4>
-            <div className="feedback-section-content">
+          <motion.div
+            key={index}
+            className="feedback-card"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 + index * 0.1 }}
+          >
+            <div className="feedback-card-header">
+              <span className={`status-dot ${section.title.toLowerCase().replace(/[\/\s]+/g, '-')}`}></span>
+              <h4 className="feedback-card-title">{section.title}</h4>
+            </div>
+            <div className="feedback-card-content mt-4">
               {section.content.split('\n').map((line, i) => (
-                line.trim() && <p key={i}>{line}</p>
+                line.trim() && (
+                  <div key={i} className="feedback-line flex items-start gap-2 mb-3">
+                    <span className="bullet-dot mt-1.5 shrink-0"></span>
+                    <p className="text-slate-300 text-sm leading-relaxed">{line}</p>
+                  </div>
+                )
               ))}
             </div>
-          </div>
+          </motion.div>
         ))}
       </div>
     );
@@ -312,54 +326,6 @@ const Dashboard = () => {
       <Sidebar />
 
       <div className="dashboard-main">
-        <motion.div
-          className="dashboard-header"
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-        >
-          <div className="header-left">
-            <div className="mode-selector">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="mode-badge gap-2 bg-slate-800 text-slate-200 border-slate-700 hover:bg-slate-700 hover:text-white">
-                    <FcGraduationCap style={{ fontSize: '1.3rem' }} />
-                    Student Mode
-                    <FaChevronDown className="ml-2 h-4 w-4 opacity-50" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-56 bg-slate-900 border-slate-700 text-slate-200">
-                  <DropdownMenuLabel>Select Mode</DropdownMenuLabel>
-                  <DropdownMenuSeparator className="bg-slate-700" />
-                  <DropdownMenuItem className="cursor-pointer focus:bg-slate-800 focus:text-white" onClick={() => handleModeSwitch('student')}>
-                    <FcGraduationCap className="mr-2 h-4 w-4" />
-                    <div className="flex flex-col">
-                      <span className="font-medium">Student Mode</span>
-                      <span className="text-xs text-slate-400">Analyze & prepare</span>
-                    </div>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem className="cursor-pointer focus:bg-slate-800 focus:text-white" onClick={() => handleModeSwitch('recruiter')}>
-                    <FcBusinessman className="mr-2 h-4 w-4" />
-                    <div className="flex flex-col">
-                      <span className="font-medium">Recruiter Mode</span>
-                      <span className="text-xs text-slate-400">Rank & evaluate</span>
-                    </div>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          </div>
-          <div className="header-right">
-            <motion.button
-              className="share-button"
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              Share
-            </motion.button>
-          </div>
-        </motion.div>
-
         <motion.div
           className="dashboard-content"
           initial={{ opacity: 0 }}
@@ -545,13 +511,14 @@ const Dashboard = () => {
                 exit={{ opacity: 0, y: -20 }}
               >
                 <div className="results-header">
-                  <h2><FcBarChart style={{ marginRight: '10px', fontSize: '1.8rem' }} />Match Scores</h2>
+                  <h2><FcBarChart style={{ marginRight: '8px', fontSize: '1.5rem' }} />Match Scores</h2>
                   <Button
                     variant="outline"
-                    className="new-analysis-button gap-2 border-slate-600 hover:bg-slate-700"
+                    size="sm"
+                    className="new-analysis-button gap-2 border-slate-700 hover:bg-slate-800 text-xs"
                     onClick={handleNewAnalysis}
                   >
-                    <FcRedo /> New Analysis
+                    <FcRedo style={{ fontSize: '1rem' }} /> New Analysis
                   </Button>
                 </div>
 
@@ -568,18 +535,9 @@ const Dashboard = () => {
                   />
                 </div>
 
-                <Card className="feedback-section bg-slate-800/50 border-slate-700 mt-6">
-                  <CardHeader>
-                    <CardTitle className="flex items-center text-xl">
-                      <FcDocument className="mr-3 text-2xl" /> Qualitative Feedback
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="feedback-content text-slate-300">
-                      {renderFormattedFeedback(analysisData?.feedback)}
-                    </div>
-                  </CardContent>
-                </Card>
+                <div className="feedback-grid-wrapper mt-6">
+                  {renderFormattedFeedback(analysisData?.feedback)}
+                </div>
 
                 <div className="navigation-cards grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
                   <MotionCard

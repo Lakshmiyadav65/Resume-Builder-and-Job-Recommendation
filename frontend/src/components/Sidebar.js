@@ -54,7 +54,7 @@ const Sidebar = () => {
       <div className={`sidebar-collapsed ${isOpen ? 'sidebar-hidden' : ''}`}>
         {/* Logo icon */}
         <div className="sidebar-collapsed-logo" onClick={() => navigate('/')}>
-          <img src="/logo.png" alt="ATScribe" style={{ width: '36px', height: '36px', objectFit: 'contain', borderRadius: '8px' }} />
+          <img src="/logo.png" alt="CVtoCall" className="sidebar-collapsed-image" />
         </div>
 
         {/* Nav icons */}
@@ -99,7 +99,7 @@ const Sidebar = () => {
             >
               {/* Header */}
               <div className="sidebar-expanded-header">
-                <img src="/logo.png" alt="ATScribe" className="sidebar-logo cursor-pointer" onClick={() => { navigate('/'); setIsOpen(false); }} />
+                <img src="/logo.png" alt="CVtoCall" className="sidebar-logo cursor-pointer" onClick={() => { navigate('/'); setIsOpen(false); }} />
                 <button className="sidebar-close-btn" onClick={() => setIsOpen(false)}>✕</button>
               </div>
 

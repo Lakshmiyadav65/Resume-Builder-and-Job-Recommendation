@@ -20,9 +20,9 @@ const CircularGauge = ({ label, value, color }) => {
           styles={buildStyles({
             pathColor: color || '#9448C4',
             textColor: '#ffffff',
-            trailColor: 'rgba(99, 102, 241, 0.1)',
-            pathTransitionDuration: 1.5,
-            textSize: '20px',
+            trailColor: 'rgba(255, 255, 255, 0.05)',
+            pathTransitionDuration: 2,
+            textSize: '22px',
           })}
         />
       </div>

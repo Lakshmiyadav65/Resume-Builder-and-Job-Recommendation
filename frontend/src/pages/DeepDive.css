@@ -6,8 +6,10 @@
 
 .deep-dive-main {
   flex: 1;
-  margin-left: 280px;
-  padding: 30px;
+  margin-left: 70px;
+  padding: 40px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  background: #05070a;
 }
 
 .no-data {
@@ -67,8 +69,10 @@
 }
 
 .deep-dive-content {
-  max-width: 1400px;
-  margin: 0 auto;
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
+  padding-right: 40px;
   display: flex;
   flex-direction: column;
   gap: 40px;

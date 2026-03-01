@@ -1,27 +1,40 @@
 .gauge-container {
-  background: rgba(40, 40, 40, 0.8);
-  backdrop-filter: blur(20px);
-  border: 1px solid rgba(60, 60, 60, 0.5);
-  border-radius: 20px;
-  padding: 40px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 20px;
-  transition: all 0.3s ease;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  gap: 16px;
+  padding: 24px;
+  background: rgba(22, 27, 37, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 20px;
+  backdrop-filter: blur(10px);
+  transition: all 0.4s ease;
+  min-width: 220px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
 }
 
 .gauge-wrapper {
-  width: 200px;
-  height: 200px;
+  width: 130px;
+  height: 130px;
 }
 
 .gauge-label {
-  font-size: 1.3rem;
-  font-weight: 600;
-  color: #ffffff;
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: rgba(255, 255, 255, 0.5);
   text-align: center;
+}
+
+.CircularProgressbar .CircularProgressbar-text {
+  font-weight: 900;
+  filter: drop-shadow(0 0 5px currentColor);
+}
+
+.CircularProgressbar .CircularProgressbar-path {
+  stroke-linecap: round;
+  filter: drop-shadow(0 0 4px rgba(148, 72, 196, 0.3));
 }
 
 @media (max-width: 768px) {

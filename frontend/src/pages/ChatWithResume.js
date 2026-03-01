@@ -164,148 +164,105 @@ Feel free to ask me anything about your resume! I'm here to provide personalized
       <Sidebar />
 
       <div className="chat-main">
-        <motion.div
-          className="chat-header"
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-        >
-          <div className="header-left">
-            <FcSupport className="header-icon" style={{ fontSize: '2.5rem' }} />
-            <div className="header-text">
-              <h1><FcSms style={{ marginRight: '10px' }} />Chat with Your Resume</h1>
-              {resumeFile && (
-                <Badge variant="secondary" className="resume-info-badge gap-2 font-normal text-slate-300 bg-slate-800">
-                  <FcDocument style={{ fontSize: '1rem' }} />
-                  <span className="resume-name">{resumeFile.name}</span>
-                  <span className="resume-size">({(resumeFile.size / 1024).toFixed(1)} KB)</span>
-                </Badge>
-              )}
-            </div>
-          </div>
-          <div className="header-actions flex items-center gap-3">
-            {chatInitialized && (
+        <div className="chat-content-container">
+          {!chatInitialized ? (
+            <motion.div
+              className="chat-welcome"
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+            >
+              <FcSupport className="welcome-icon" style={{ fontSize: '4rem' }} />
+              <h2>Welcome to Resume Chat!</h2>
+              <p>Upload your resume to start asking questions about it.</p>
               <Button
-                variant="ghost"
-                className="clear-button gap-2 text-slate-400 hover:text-red-400 hover:bg-red-900/10"
-                onClick={handleClearChat}
+                size="lg"
+                variant="gradient"
+                className="upload-welcome-button gap-2 mt-4"
+                onClick={() => document.getElementById('chat-file-input').click()}
               >
-                <FaTrash /> Clear Chat
+                <FcDocument style={{ fontSize: '1.2rem' }} /> Upload Resume (PDF)
               </Button>
-            )}
-            <Button
-              variant="outline"
-              className="upload-button gap-2 border-slate-600 hover:bg-slate-700"
-              onClick={() => document.getElementById('chat-file-input').click()}
-            >
-              <FcDocument /> {resumeFile ? 'Change Resume' : 'Upload Resume'}
-            </Button>
-            <input
-              id="chat-file-input"
-              type="file"
-              accept=".pdf"
-              onChange={handleFileChange}
-              style={{ display: 'none' }}
-            />
-          </div>
-        </motion.div>
-
-        {!chatInitialized ? (
-          <motion.div
-            className="chat-welcome"
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-          >
-            <FcSupport className="welcome-icon" style={{ fontSize: '4rem' }} />
-            <h2>Welcome to Resume Chat!</h2>
-            <p>Upload your resume to start asking questions about it.</p>
-            <Button
-              size="lg"
-              variant="gradient"
-              className="upload-welcome-button gap-2 mt-4"
-              onClick={() => document.getElementById('chat-file-input').click()}
-            >
-              <FcDocument style={{ fontSize: '1.2rem' }} /> Upload Resume (PDF)
-            </Button>
-          </motion.div>
-        ) : (
-          <>
-            <div className="chat-messages">
-              <AnimatePresence>
-                {messages.map((message, index) => (
+            </motion.div>
+          ) : (
+            <>
+              <div className="chat-messages">
+                <AnimatePresence>
+                  {messages.map((message, index) => (
+                    <motion.div
+                      key={index}
+                      className={`message ${message.role}`}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -20 }}
+                      transition={{ duration: 0.3 }}
+                    >
+                      <div className="message-avatar">
+                        {message.role === 'user' ? <FcBusinessContact /> : <FcSupport />}
+                      </div>
+                      <div className="message-content">
+                        {message.role === 'assistant' ? (
+                          <ReactMarkdown>{message.content}</ReactMarkdown>
+                        ) : (
+                          <p>{message.content}</p>
+                        )}
+                      </div>
+                    </motion.div>
+                  ))}
+                </AnimatePresence>
+                {loading && (
                   <motion.div
-                    key={index}
-                    className={`message ${message.role}`}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -20 }}
-                    transition={{ duration: 0.3 }}
+                    className="message assistant typing"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
                   >
                     <div className="message-avatar">
-                      {message.role === 'user' ? <FcBusinessContact /> : <FcSupport />}
+                      <FcSupport />
                     </div>
                     <div className="message-content">
-                      {message.role === 'assistant' ? (
-                        <ReactMarkdown>{message.content}</ReactMarkdown>
-                      ) : (
-                        <p>{message.content}</p>
-                      )}
+                      <div className="typing-indicator">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                      </div>
                     </div>
                   </motion.div>
-                ))}
-              </AnimatePresence>
-              {loading && (
+                )}
+                <div ref={messagesEndRef} />
+              </div>
+
+              {error && (
                 <motion.div
-                  className="message assistant typing"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
+                  className="chat-error"
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
                 >
-                  <div className="message-avatar">
-                    <FcSupport />
-                  </div>
-                  <div className="message-content">
-                    <div className="typing-indicator">
-                      <span></span>
-                      <span></span>
-                      <span></span>
-                    </div>
-                  </div>
+                  ⚠️ {error}
                 </motion.div>
               )}
-              <div ref={messagesEndRef} />
-            </div>
 
-            {error && (
-              <motion.div
-                className="chat-error"
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-              >
-                ⚠️ {error}
-              </motion.div>
-            )}
-
-            <div className="chat-input-container">
-              <Textarea
-                className="chat-input bg-slate-800 border-slate-700 min-h-[50px] resize-none"
-                placeholder="Ask something about the resume..."
-                value={inputMessage}
-                onChange={(e) => setInputMessage(e.target.value)}
-                onKeyDown={handleKeyPress}
-                disabled={loading}
-                rows={1}
-              />
-              <Button
-                size="icon"
-                variant="gradient"
-                className="send-button h-12 w-12 shrink-0"
-                onClick={handleSendMessage}
-                disabled={!inputMessage.trim() || loading}
-              >
-                <FaPaperPlane />
-              </Button>
-            </div>
-          </>
-        )}
+              <div className="chat-input-container">
+                <Textarea
+                  className="chat-input bg-slate-800 border-slate-700 min-h-[50px] resize-none"
+                  placeholder="Ask something about the resume..."
+                  value={inputMessage}
+                  onChange={(e) => setInputMessage(e.target.value)}
+                  onKeyDown={handleKeyPress}
+                  disabled={loading}
+                  rows={1}
+                />
+                <Button
+                  size="icon"
+                  variant="gradient"
+                  className="send-button h-12 w-12 shrink-0"
+                  onClick={handleSendMessage}
+                  disabled={!inputMessage.trim() || loading}
+                >
+                  <FaPaperPlane />
+                </Button>
+              </div>
+            </>
+          )}
+        </div>
       </div>
     </div>
   );

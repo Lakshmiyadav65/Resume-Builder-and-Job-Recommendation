@@ -6,9 +6,9 @@
 
 .dashboard-main {
   flex: 1;
-  margin-left: 280px;
-  padding: 30px;
-  transition: margin-left 0.3s ease;
+  margin-left: 70px;
+  padding: 40px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .dashboard-header {
@@ -150,14 +150,15 @@
 }
 
 .dashboard-content {
-  max-width: 1200px;
+  width: 100%;
+  max-width: 1100px;
   margin: 0 auto;
 }
 
 .section-title {
-  font-size: 2rem;
+  font-size: 1.8rem;
   font-weight: 700;
-  margin-bottom: 30px;
+  margin-bottom: 24px;
   color: #ffffff;
 }
 
@@ -185,9 +186,9 @@
 
 .choice-card {
   background: linear-gradient(135deg, rgba(148, 72, 196, 0.1) 0%, rgba(93, 42, 145, 0.1) 100%);
-  border: 2px solid rgba(148, 72, 196, 0.3);
-  border-radius: 16px;
-  padding: 30px;
+  border: 1px solid rgba(148, 72, 196, 0.2);
+  border-radius: 12px;
+  padding: 24px;
   cursor: pointer;
   transition: all 0.3s ease;
   text-align: center;
@@ -258,12 +259,12 @@
 
 .upload-card,
 .job-desc-card {
-  background: rgba(40, 40, 40, 0.8);
+  background: rgba(30, 30, 30, 0.6);
   backdrop-filter: blur(20px);
-  border: 1px solid rgba(60, 60, 60, 0.5);
-  border-radius: 20px;
-  padding: 30px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(60, 60, 60, 0.3);
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
 }
 
 .upload-card h3,
@@ -496,7 +497,7 @@
 .results-section {
   display: flex;
   flex-direction: column;
-  gap: 40px;
+  gap: 24px;
 }
 
 .results-header {
@@ -506,7 +507,7 @@
 }
 
 .results-header h2 {
-  font-size: 2rem;
+  font-size: 1.5rem;
   font-weight: 700;
 }
 
@@ -525,111 +526,128 @@
 }
 
 .gauges-container {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  display: flex;
+  justify-content: center;
   gap: 30px;
-  margin-bottom: 30px;
+  padding: 20px 0;
 }
 
-.feedback-section {
-  background: rgba(40, 40, 40, 0.8);
-  backdrop-filter: blur(20px);
-  border: 1px solid rgba(60, 60, 60, 0.5);
-  border-radius: 20px;
-  padding: 30px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+.feedback-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+  margin-top: 24px;
 }
 
-.feedback-section h3 {
-  font-size: 1.5rem;
-  margin-bottom: 20px;
-  color: #ffffff;
+.feedback-card {
+  background: rgba(22, 27, 37, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 16px;
+  padding: 20px;
+  backdrop-filter: blur(10px);
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
-.feedback-content {
-  color: #cbd5e1;
-  line-height: 1.8;
-  font-size: 1.05rem;
+.feedback-card:hover {
+  transform: translateY(-8px);
+  background: rgba(30, 36, 50, 0.8);
+  border-color: rgba(148, 72, 196, 0.2);
 }
 
-.feedback-section-item {
-  margin-bottom: 28px;
+.feedback-card-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
-.feedback-section-item:last-child {
-  margin-bottom: 0;
+.status-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
 }
 
-.feedback-section-title {
-  font-size: 1.1rem;
+.status-dot.strengths {
+  background: #4ade80;
+  box-shadow: 0 0 10px #4ade80;
+}
+
+.status-dot.weaknesses-gaps {
+  background: #f87171;
+  box-shadow: 0 0 10px #fca5a5;
+}
+
+.status-dot.opportunities {
+  background: #facc15;
+  box-shadow: 0 0 10px #fde047;
+}
+
+.status-dot.recommendations {
+  background: #60a5fa;
+  box-shadow: 0 0 10px #93c5fd;
+}
+
+.feedback-card-title {
+  font-size: 0.85rem;
   font-weight: 700;
-  color: #ffffff;
-  margin-bottom: 12px;
-  letter-spacing: 0.5px;
-  padding-bottom: 6px;
-  border-bottom: 2px solid rgba(148, 72, 196, 0.3);
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+  color: rgba(255, 255, 255, 0.8);
 }
 
-.feedback-section-content {
-  margin-left: 8px;
-}
-
-.feedback-section-content p {
-  margin-bottom: 10px;
-  line-height: 1.7;
-  color: #cbd5e1;
-  padding-left: 0;
-  font-size: 0.95rem;
-}
-
-/* Style bullet points in feedback */
-.feedback-section-content p::before {
-  content: "•";
-  color: #9448C4;
-  font-weight: bold;
-  font-size: 1.1rem;
-  margin-right: 12px;
-  vertical-align: middle;
-}
-
-/* Remove bullet from empty paragraphs */
-.feedback-section-content p:empty::before {
-  content: none;
+.bullet-dot {
+  width: 6px;
+  height: 6px;
+  background: rgba(148, 72, 196, 0.6);
+  border-radius: 50%;
 }
 
 .navigation-cards {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 25px;
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  margin-top: 40px;
 }
 
 .nav-card {
-  background: rgba(40, 40, 40, 0.8);
-  backdrop-filter: blur(20px);
-  border: 1px solid rgba(60, 60, 60, 0.5);
-  border-radius: 16px;
-  padding: 30px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  text-align: center;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  flex: 1;
+  background: rgba(15, 20, 25, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.04) !important;
+  border-radius: 20px !important;
+  padding: 30px 20px !important;
+  transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+  backdrop-filter: blur(10px);
 }
 
-.nav-icon {
-  font-size: 2.5rem;
-  color: #9448C4;
-  margin-bottom: 15px;
+.nav-card:hover {
+  background: rgba(30, 35, 45, 0.6);
+  border-color: rgba(148, 72, 196, 0.3) !important;
+  transform: translateY(-12px);
+  box-shadow: 0 40px 80px rgba(0, 0, 0, 0.4), 0 0 20px rgba(148, 72, 196, 0.1);
 }
 
-.nav-card h4 {
-  font-size: 1.3rem;
-  margin-bottom: 10px;
-  color: #ffffff;
+.nav-card .text-lg {
+  color: #fff !important;
+  font-weight: 800 !important;
+  letter-spacing: 1px;
 }
 
 .nav-card p {
-  color: #999999;
-  font-size: 0.95rem;
+  color: rgba(255, 255, 255, 0.4) !important;
+  font-size: 0.85rem !important;
+  margin-top: 8px !important;
+}
+
+@media (max-width: 1024px) {
+  .navigation-cards {
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .feedback-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 768px) {
@@ -648,11 +666,14 @@
   }
 
   .gauges-container {
-    grid-template-columns: 1fr;
+    flex-direction: column;
+    padding: 30px 20px;
+    gap: 40px;
   }
 
   .navigation-cards {
-    grid-template-columns: 1fr;
+    flex-direction: column;
+    gap: 20px;
   }
 
   .job-desc-header {

@@ -6,8 +6,10 @@
 
 .prep-plan-main {
   flex: 1;
-  margin-left: 280px;
-  padding: 30px;
+  margin-left: 70px;
+  padding: 40px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  background: #05070a;
 }
 
 .no-data {
@@ -67,8 +69,10 @@
 }
 
 .prep-plan-content {
-  max-width: 1000px;
-  margin: 0 auto;
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
+  padding-right: 40px;
 }
 
 .plan-input-section {
@@ -164,7 +168,7 @@
   border-radius: 8px;
   font-weight: 600;
   cursor: pointer;
-  
+
 }
 
 .quick-button.active {
@@ -195,7 +199,7 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  
+
 }
 
 .generate-button:disabled {
@@ -213,7 +217,9 @@
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .info-box {
@@ -276,7 +282,7 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  
+
 }
 
 .plan-content {
@@ -292,7 +298,9 @@
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
 }
 
-.plan-content h1, .plan-content h2, .plan-content h3 {
+.plan-content h1,
+.plan-content h2,
+.plan-content h3 {
   color: #ffffff;
   margin-top: 25px;
   margin-bottom: 15px;
@@ -314,7 +322,8 @@
   color: #cbd5e1;
 }
 
-.plan-content ul, .plan-content ol {
+.plan-content ul,
+.plan-content ol {
   padding-left: 25px;
   margin: 15px 0;
 }
@@ -356,7 +365,7 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  
+
 }
 
 .action-button.primary {

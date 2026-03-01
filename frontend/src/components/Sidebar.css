@@ -19,10 +19,7 @@
   transition: transform 0.25s ease;
 }
 
-/* Hide the collapsed strip when expanded is open (optional, backdrop covers it) */
-.sidebar-collapsed.sidebar-hidden {
-  /* keep it visible underneath — backdrop handles it */
-}
+/* Collapsed strip visibility is handled by container classes */
 
 .sidebar-collapsed-logo {
   width: 44px;
@@ -38,6 +35,15 @@
 
 .sidebar-collapsed-logo:hover {
   background: rgba(255, 255, 255, 0.06);
+}
+
+.sidebar-collapsed-image {
+  width: 44px;
+  height: 44px;
+  object-fit: cover;
+  clip-path: inset(0 15% 15% 0);
+  border-radius: 8px;
+  transform: scale(1.2);
 }
 
 .sidebar-collapsed-nav {
@@ -132,9 +138,11 @@
 }
 
 .sidebar-logo {
-  width: 120px;
+  width: 140px;
   height: auto;
   object-fit: contain;
+  clip-path: inset(0 5% 10% 0);
+  margin-right: -10px;
 }
 
 .sidebar-close-btn {

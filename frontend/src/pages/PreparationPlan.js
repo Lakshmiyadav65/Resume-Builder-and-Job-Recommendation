@@ -73,15 +73,6 @@ const PreparationPlan = () => {
 
       <div className="prep-plan-main">
         <motion.div
-          className="prep-plan-header"
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-        >
-          <FcCalendar className="header-icon" style={{ fontSize: '3rem' }} />
-          <h1>Preparation Plan</h1>
-        </motion.div>
-
-        <motion.div
           className="prep-plan-content"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}

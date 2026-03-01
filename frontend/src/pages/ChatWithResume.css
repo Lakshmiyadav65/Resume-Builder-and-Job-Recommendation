@@ -6,10 +6,21 @@
 
 .chat-main {
   flex: 1;
-  margin-left: 280px;
+  margin-left: 70px;
   display: flex;
   flex-direction: column;
   height: 100vh;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  background: #05070a;
+}
+
+.chat-content-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  width: 100%;
+  max-width: 100%;
 }
 
 .chat-header {
@@ -78,7 +89,8 @@
   gap: 15px;
 }
 
-.clear-button, .upload-button {
+.clear-button,
+.upload-button {
   padding: 10px 20px;
   border: none;
   border-radius: 10px;
@@ -87,7 +99,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  
+
 }
 
 .clear-button {
@@ -101,7 +113,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  
+
 }
 
 .upload-button {
@@ -230,6 +242,7 @@
   0% {
     background-position: -200% center;
   }
+
   100% {
     background-position: 200% center;
   }
@@ -248,10 +261,12 @@
     opacity: 0;
     transform: translateY(30px) scale(0.95);
   }
+
   50% {
     opacity: 0.5;
     transform: translateY(-5px) scale(1.02);
   }
+
   100% {
     opacity: 1;
     transform: translateY(0) scale(1);
@@ -263,6 +278,7 @@
     opacity: 0;
     transform: translateX(-20px);
   }
+
   to {
     opacity: 1;
     transform: translateX(0);
@@ -320,7 +336,8 @@
   box-shadow: 0 0 10px rgba(148, 72, 196, 0.6);
 }
 
-.message-content ul, .message-content ol {
+.message-content ul,
+.message-content ol {
   margin: 10px 0;
   padding-left: 20px;
 }
@@ -391,9 +408,12 @@
 }
 
 @keyframes pulse {
-  0%, 100% {
+
+  0%,
+  100% {
     opacity: 0.6;
   }
+
   50% {
     opacity: 1;
   }
@@ -417,10 +437,14 @@
 }
 
 @keyframes typing {
-  0%, 60%, 100% {
+
+  0%,
+  60%,
+  100% {
     transform: translateY(0);
     opacity: 0.5;
   }
+
   30% {
     transform: translateY(-10px);
     opacity: 1;
@@ -486,7 +510,7 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  
+
 }
 
 .send-button:disabled {
