@@ -28,7 +28,7 @@ import { rankResumes } from '../services/api';
 import Sidebar from '../components/Sidebar';
 import './RecruiterDashboard.css';
 
-import { Search, MapPin, FileText, Send, User, ChevronLeft, ChevronRight, X, Mic, MicOff, Video, Clock, CheckCircle2, Copy, Briefcase, Sparkles, Settings, AlertCircle, XCircle, Check, CircleSlash, Eye, Edit3, VolumeX, EyeOff } from 'lucide-react';
+import { Search, MapPin, FileText, Send, User, ChevronLeft, ChevronRight, X, Mic, MicOff, Video, Clock, CheckCircle2, Copy, Briefcase, Sparkles, Settings, AlertCircle, XCircle, Check, CircleSlash, Eye, Edit3, VolumeX, EyeOff, Camera, ShieldCheck, Lock } from 'lucide-react';
 import { Avatar, AvatarImage, AvatarFallback } from '../components/ui/avatar';
 import { toast } from 'sonner';
 import { inviteToInterview } from '../services/api';
@@ -86,6 +86,7 @@ const RecruiterDashboard = () => {
   const [capturedIdentityPhoto, setCapturedIdentityPhoto] = useState(null);
   const [isCapturingIdentity, setIsCapturingIdentity] = useState(false);
   const [identityMatchScore, setIdentityMatchScore] = useState(0);
+  const [demoFlowStep, setDemoFlowStep] = useState(0); // 0=Secure Capture, 1=Main Dashboard
 
   const demoQuestions = [
     {
@@ -436,7 +437,9 @@ const RecruiterDashboard = () => {
     ++speakGenRef.current;
     window.speechSynthesis && window.speechSynthesis.cancel();
     setShowDemoExperience(true);
-    // Automatically trigger permissions and camera for phase 0 (Identity Capture)
+    setDemoFlowStep(0);
+    setDemoIntroPhase(0);
+    // Start camera immediately for security capture
     requestPermissionsAndCheck();
   };
 
@@ -459,8 +462,9 @@ const RecruiterDashboard = () => {
 
       setTimeout(() => {
         setIsCapturingIdentity(false);
-        setDemoIntroPhase(1); // Move to Process Overview
-      }, 800);
+        setDemoFlowStep(1); // Move to Main Dashboard
+        setDemoIntroPhase(0); // Show Process Overview first in dashboard
+      }, 1000);
     } catch (e) {
       console.error('[KIA] Capture error:', e);
       setIsCapturingIdentity(false);
@@ -1750,271 +1754,314 @@ Expiry: `}<strong className="text-white font-bold">{(parseInt(linkExpiry))} hour
                 <div style={{ position: 'fixed', bottom: '15%', left: '12%', width: '30vw', height: '30vw', background: 'radial-gradient(circle, rgba(168, 85, 247, 0.05) 0%, transparent 70%)', zIndex: 0, pointerEvents: 'none' }} />
 
                 <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '20px', zIndex: 1, boxSizing: 'border-box', height: '100%', overflowY: 'hidden' }}>
-                  <div style={{ maxWidth: '1000px', width: '100%', height: '100%', display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                  {demoFlowStep === 0 ? (
+                    /* SECURITY STEP 0: FULL SCREEN CAPTURE */
+                    <div style={{ maxWidth: '800px', width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '30px', textAlign: 'center' }}>
+                      <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}>
+                        <div style={{ display: 'inline-flex', padding: '12px 24px', background: 'rgba(99, 102, 241, 0.1)', borderRadius: '100px', border: '1px solid rgba(99, 102, 241, 0.2)', color: '#818cf8', fontSize: '12px', fontWeight: '900', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '20px' }}>
+                          Security Verification Initialized
+                        </div>
+                        <h1 style={{ fontSize: '42px', fontWeight: '900', color: '#fff', margin: '0 0 16px', letterSpacing: '-0.04em' }}>
+                          Let's verify your <span style={{ color: '#818cf8' }}>Identity</span>
+                        </h1>
+                        <p style={{ color: '#94a3b8', fontSize: '16px', maxWidth: '500px', margin: '0 auto 40px', lineHeight: 1.6 }}>
+                          Before entering the assessment room, we need a high-resolution biometric reference photo for security purposes.
+                        </p>
+                      </motion.div>
 
-                    <div style={{ textAlign: 'center' }}>
-                      <h1 style={{ margin: '0 0 8px', fontSize: '32px', fontWeight: '900', lineHeight: 1.1, letterSpacing: '-0.05em', color: '#fff' }}>
-                        Welcome to your AI Interview for <br />
-                        <span style={{ background: 'linear-gradient(135deg, #818cf8 0%, #c084fc 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Full Stack Engineer</span>
-                      </h1>
-                      <p style={{ margin: '0 auto', fontSize: '13px', color: '#94a3b8', fontWeight: '400', lineHeight: 1.5, maxWidth: '580px' }}>
-                        Experience our precision-engineered KIA Assessment. We'll evaluate your technical mindset through contextual challenges.
-                      </p>
-                    </div>
+                      <div style={{ width: '100%', maxWidth: '560px', position: 'relative' }}>
+                        <div style={{ background: '#000', borderRadius: '32px', aspectRatio: '16/10', overflow: 'hidden', border: '2px solid rgba(255,255,255,0.05)', position: 'relative', boxShadow: '0 30px 60px rgba(0,0,0,0.5)' }}>
+                          {cameraDetected ? (
+                            <video ref={cameraPreviewRef} autoPlay muted playsInline style={{ width: '100%', height: '100%', objectFit: 'cover', transform: 'scaleX(-1)' }} />
+                          ) : (
+                            <div style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '20px', background: 'rgba(255,255,255,0.02)' }}>
+                              <div className="spinner" style={{ width: '40px', height: '40px' }} />
+                              <span style={{ fontSize: '14px', color: '#475569', fontWeight: '800' }}>Initializing Secure Feed...</span>
+                            </div>
+                          )}
 
-                    <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.5fr) minmax(0, 1fr)', gap: '20px', flex: 1, minHeight: 0 }}>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', minHeight: 0 }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', padding: '18px 40px', background: 'rgba(255,255,255,0.02)', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)', backdropFilter: 'blur(30px)', flexShrink: 0 }}>
-                          {[
-                            { label: 'Time', val: '~10 mins' },
-                            { label: 'Entity', val: 'AI Demo Lab' },
-                            { label: 'Focus', val: 'Architecture' }
-                          ].map((item, i) => (
-                            <React.Fragment key={i}>
-                              <div style={{ textAlign: 'center' }}>
-                                <p style={{ margin: '0 0 2px', fontSize: '9px', fontWeight: '900', color: '#818cf8', textTransform: 'uppercase', letterSpacing: '0.12em' }}>{item.label}</p>
-                                <p style={{ margin: 0, fontSize: '15px', fontWeight: '800' }}>{item.val}</p>
-                              </div>
-                              {i < 2 && <div style={{ width: '1px', background: 'rgba(255,255,255,0.1)', alignSelf: 'stretch' }} />}
-                            </React.Fragment>
-                          ))}
+                          {isCapturingIdentity && (
+                            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ position: 'absolute', inset: 0, background: '#fff', zIndex: 10 }} />
+                          )}
+
+                          {/* Aesthetic Scanning Overlay */}
+                          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(transparent, rgba(99, 102, 241, 0.1), transparent)', height: '20%', width: '100%', top: '-20%', animation: 'scan 3s infinite linear', pointerEvents: 'none' }} />
                         </div>
 
-                        <div className="demo-column-scroll" style={{ padding: '20px 24px', background: 'rgba(255,255,255,0.01)', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.05)', flex: 1, minHeight: 0, overflowY: 'auto' }}>
-                          {demoIntroPhase === 0 ? (
-                            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-                              <h3 style={{ margin: '0 0 16px', fontSize: '18px', fontWeight: '900', color: '#fff', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                <User size={18} className="text-indigo-400" /> Identity Capture
-                              </h3>
-                              <p style={{ margin: '0 0 20px', fontSize: '13px', color: '#94a3b8', lineHeight: 1.5 }}>
-                                Please look directly into the camera. We'll take a security photograph to verify your identity throughout the assessment.
-                              </p>
-
-                              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '20px', justifyContent: 'center' }}>
-                                <div style={{
-                                  width: '100%',
-                                  aspectRatio: '16/10',
-                                  background: '#000',
-                                  borderRadius: '20px',
-                                  border: '2px solid rgba(99, 102, 241, 0.2)',
-                                  position: 'relative',
-                                  overflow: 'hidden',
-                                  boxShadow: '0 20px 40px rgba(0,0,0,0.4)'
-                                }}>
-                                  {cameraDetected ? (
-                                    <video ref={cameraPreviewRef} autoPlay muted playsInline style={{ width: '100%', height: '100%', objectFit: 'cover', transform: 'scaleX(-1)' }} />
-                                  ) : (
-                                    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '15px' }}>
-                                      <div className="spinner" style={{ width: '30px', height: '30px', borderTopColor: '#6366f1' }} />
-                                      <span style={{ fontSize: '11px', fontWeight: '600', color: '#475569', textTransform: 'uppercase' }}>Waking up Camera...</span>
-                                    </div>
-                                  )}
-
-                                  {isCapturingIdentity && (
-                                    <motion.div
-                                      initial={{ opacity: 0 }}
-                                      animate={{ opacity: 1 }}
-                                      style={{ position: 'absolute', inset: 0, background: '#fff', zIndex: 10 }}
-                                    />
-                                  )}
-
-                                  {/* Overlay Guide */}
-                                  <div style={{ position: 'absolute', inset: '20px', border: '1px dashed rgba(255,255,255,0.2)', borderRadius: '100%', opacity: 0.5, pointerEvents: 'none' }} />
-                                </div>
-
-                                <Button
-                                  disabled={!cameraDetected || isCapturingIdentity}
-                                  onClick={captureIdentityPhoto}
-                                  className="h-14 bg-indigo-600 hover:bg-indigo-500 text-white rounded-2xl font-black text-sm uppercase tracking-widest shadow-xl transition-all active:scale-95 flex items-center justify-center gap-3"
-                                >
-                                  {isCapturingIdentity ? <><div className="spinner w-4 h-4" /> Capturing...</> : <><Edit3 size={18} /> Take Verification Photo</>}
-                                </Button>
-                              </div>
-                            </motion.div>
-                          ) : demoIntroPhase === 1 ? (
-                            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                              <h3 style={{ margin: '0 0 16px', fontSize: '18px', fontWeight: '900', color: '#fff', letterSpacing: '-0.02em' }}>Process Overview</h3>
-                              <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
-                                <div style={{ display: 'flex', gap: '14px', alignItems: 'flex-start' }}>
-                                  <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94a3b8', flexShrink: 0 }}>
-                                    <Video size={16} />
-                                  </div>
-                                  <div>
-                                    <h4 style={{ margin: '0 0 2px', fontSize: '15px', fontWeight: '800', color: '#f8fafc' }}>Calibrated Environment</h4>
-                                    <p style={{ margin: 0, fontSize: '11px', color: '#64748b', lineHeight: 1.4, fontWeight: '500' }}>First, we synchronize your audio/video feed for a seamless experience.</p>
-                                  </div>
-                                </div>
-                                <div style={{ display: 'flex', gap: '14px', alignItems: 'flex-start' }}>
-                                  <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94a3b8', flexShrink: 0 }}>
-                                    <Mic size={16} />
-                                  </div>
-                                  <div>
-                                    <h4 style={{ margin: '0 0 2px', fontSize: '15px', fontWeight: '800', color: '#f8fafc' }}>Voice Assessments</h4>
-                                    <p style={{ margin: 0, fontSize: '11px', color: '#64748b', lineHeight: 1.4, fontWeight: '500' }}>Talk naturally with our AI. It explores depth beyond your code.</p>
-                                  </div>
-                                </div>
-                                <div style={{ display: 'flex', gap: '14px', alignItems: 'flex-start' }}>
-                                  <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94a3b8', flexShrink: 0 }}>
-                                    <CheckCircle2 size={16} />
-                                  </div>
-                                  <div>
-                                    <h4 style={{ margin: '0 0 2px', fontSize: '15px', fontWeight: '800', color: '#f8fafc' }}>Competency Report</h4>
-                                    <p style={{ margin: 0, fontSize: '11px', color: '#64748b', lineHeight: 1.4, fontWeight: '500' }}>Get an exhaustive evaluation of your technical mindset immediately.</p>
-                                  </div>
-                                </div>
-                              </div>
-                            </motion.div>
-                          ) : (
-                            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                              <h3 style={{ margin: '0 0 14px', fontSize: '16px', fontWeight: '900' }}>Hardware Calibration</h3>
-                              <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.2fr) minmax(0, 1fr)', gap: '16px' }}>
-                                <div style={{ background: '#000', borderRadius: '12px', aspectRatio: '16/10', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.1)', position: 'relative' }}>
-                                  {cameraDetected ? (
-                                    <video ref={cameraPreviewRef} autoPlay muted playsInline style={{ width: '100%', height: '100%', objectFit: 'cover', transform: 'scaleX(-1)' }} />
-                                  ) : <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Video size={24} color="#1e293b" /></div>}
-                                </div>
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                                  <div style={{ background: 'rgba(255,255,255,0.02)', padding: '12px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.04)' }}>
-                                    <p style={{ margin: '0 0 6px', fontSize: '8px', fontWeight: '800', color: '#818cf8' }}>AUDIO STATUS</p>
-                                    <div style={{ display: 'flex', gap: '3px', height: '18px', alignItems: 'center' }}>
-                                      {Array.from({ length: 18 }).map((_, i) => <motion.div key={i} animate={{ height: micDetected ? [6, 18, 6] : 3 }} transition={{ repeat: Infinity, duration: 0.6 + i * 0.05 }} style={{ flex: 1, background: micDetected ? '#6366f1' : '#1e293b', borderRadius: '1.5px' }} />)}
-                                    </div>
-                                  </div>
-
-                                  {/* Biometric Match Indicator */}
-                                  <div style={{ background: 'rgba(129, 140, 248, 0.05)', padding: '10px 12px', borderRadius: '12px', border: '1px solid rgba(129, 140, 248, 0.1)' }}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                                      <span style={{ fontSize: '9px', fontWeight: '900', color: '#818cf8', textTransform: 'uppercase' }}>Biometric Match</span>
-                                      <span style={{ fontSize: '9px', fontWeight: '900', color: identityMatchScore > 90 ? '#10b981' : '#f59e0b' }}>{identityMatchScore.toFixed(1)}%</span>
-                                    </div>
-                                    <div style={{ height: '4px', background: 'rgba(255,255,255,0.05)', borderRadius: '10px', overflow: 'hidden' }}>
-                                      <motion.div
-                                        initial={{ width: 0 }}
-                                        animate={{ width: `${identityMatchScore}%` }}
-                                        style={{ height: '100%', background: identityMatchScore > 90 ? '#10b981' : '#6366f1', borderRadius: '10px' }}
-                                      />
-                                    </div>
-                                  </div>
-
-                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                                    {[["Optical Stream", cameraDetected], ["Voice Stream", micDetected]].map(([l, ok], i) => (
-                                      <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 10px', background: 'rgba(255,255,255,0.02)', borderRadius: '10px' }}>
-                                        <span style={{ fontSize: '11px', fontWeight: '500', color: ok ? '#fff' : '#334155' }}>{l}</span>
-                                        {ok ? <CheckCircle2 size={12} color="#10b981" /> : <div style={{ width: '4px', height: '4px', borderRadius: '50%', background: '#1e293b' }} />}
-                                      </div>
-                                    ))}
-                                  </div>
-                                </div>
-                              </div>
-                            </motion.div>
-                          )}
+                        {/* Capture Button Container */}
+                        <div style={{ position: 'absolute', bottom: '-40px', left: '50%', transform: 'translateX(-50%)', width: '100%', display: 'flex', justifyContent: 'center' }}>
+                          <motion.button
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            disabled={!cameraDetected || isCapturingIdentity}
+                            onClick={captureIdentityPhoto}
+                            style={{
+                              padding: '18px 40px',
+                              borderRadius: '24px',
+                              background: 'linear-gradient(135deg, #6366f1, #4f46e5)',
+                              color: '#fff',
+                              border: 'none',
+                              fontSize: '16px',
+                              fontWeight: '900',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '12px',
+                              boxShadow: '0 20px 40px rgba(79, 70, 229, 0.4)'
+                            }}
+                          >
+                            <Camera size={20} />
+                            {isCapturingIdentity ? 'Capturing...' : 'Capture Reference Photo'}
+                          </motion.button>
                         </div>
                       </div>
 
-                      {/* Right: Prep Guide & CTA */}
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', minHeight: 0 }}>
-                        <div style={{ padding: '20px', background: 'rgba(99, 102, 241, 0.02)', border: '1px solid rgba(99, 102, 241, 0.1)', borderRadius: '20px', flex: 1, minHeight: 0, overflowY: 'hidden' }}>
-                          <h4 style={{ margin: '0 0 16px', fontSize: '16px', fontWeight: '900' }}>Preparation</h4>
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                      <div style={{ marginTop: '80px', display: 'flex', gap: '30px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#64748b' }}>
+                          <ShieldCheck size={18} className="text-indigo-400" />
+                          <span style={{ fontSize: '12px', fontWeight: '600' }}>ISO 27001 Certified</span>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#64748b' }}>
+                          <Lock size={18} className="text-indigo-400" />
+                          <span style={{ fontSize: '12px', fontWeight: '600' }}>RSA-2048 Encryption</span>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    /* MAIN DASHBOARD: WELCOME SCREEN */
+                    <div style={{ maxWidth: '1000px', width: '100%', height: '100%', display: 'flex', flexDirection: 'column', gap: '15px' }}>
+
+                      <div style={{ textAlign: 'center' }}>
+                        <h1 style={{ margin: '0 0 8px', fontSize: '32px', fontWeight: '900', lineHeight: 1.1, letterSpacing: '-0.05em', color: '#fff' }}>
+                          Welcome to your AI Interview for <br />
+                          <span style={{ background: 'linear-gradient(135deg, #818cf8 0%, #c084fc 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Full Stack Engineer</span>
+                        </h1>
+                        <p style={{ margin: '0 auto', fontSize: '13px', color: '#94a3b8', fontWeight: '400', lineHeight: 1.5, maxWidth: '580px' }}>
+                          Experience our precision-engineered KIA Assessment. We'll evaluate your technical mindset through contextual challenges.
+                        </p>
+                      </div>
+
+                      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.5fr) minmax(0, 1fr)', gap: '20px', flex: 1, minHeight: 0 }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', minHeight: 0 }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', padding: '18px 40px', background: 'rgba(255,255,255,0.02)', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)', backdropFilter: 'blur(30px)', flexShrink: 0 }}>
                             {[
-                              "Find a bright, quiet space",
-                              "Stable internet required",
-                              "Think aloud during assessment",
-                              "Elaborate on architectural choices",
-                              "Keep camera centered at eye level",
-                              "No external aid or browsers permitted",
-                              "Relax and speak naturally"
-                            ].map((t, i) => (
-                              <div key={i} style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-                                <div style={{ width: '20px', height: '20px', borderRadius: '50%', background: 'rgba(99, 102, 241, 0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', color: '#818cf8', fontWeight: '800' }}>{i + 1}</div>
-                                <span style={{ fontSize: '12px', color: '#94a3b8', fontWeight: '500' }}>{t}</span>
-                              </div>
+                              { label: 'Time', val: '~10 mins' },
+                              { label: 'Entity', val: 'AI Demo Lab' },
+                              { label: 'Focus', val: 'Architecture' }
+                            ].map((item, i) => (
+                              <React.Fragment key={i}>
+                                <div style={{ textAlign: 'center' }}>
+                                  <p style={{ margin: '0 0 2px', fontSize: '9px', fontWeight: '900', color: '#818cf8', textTransform: 'uppercase', letterSpacing: '0.12em' }}>{item.label}</p>
+                                  <p style={{ margin: 0, fontSize: '15px', fontWeight: '800' }}>{item.val}</p>
+                                </div>
+                                {i < 2 && <div style={{ width: '1px', background: 'rgba(255,255,255,0.1)', alignSelf: 'stretch' }} />}
+                              </React.Fragment>
                             ))}
+                          </div>
+
+                          <div className="demo-column-scroll" style={{ padding: '20px 24px', background: 'rgba(255,255,255,0.01)', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.05)', flex: 1, minHeight: 0, overflowY: 'auto' }}>
+                            {demoIntroPhase === 0 ? (
+                              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                                <h3 style={{ margin: '0 0 16px', fontSize: '18px', fontWeight: '900', color: '#fff', letterSpacing: '-0.02em' }}>Process Overview</h3>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+                                  <div style={{ display: 'flex', gap: '14px', alignItems: 'flex-start' }}>
+                                    <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94a3b8', flexShrink: 0 }}>
+                                      <Video size={16} />
+                                    </div>
+                                    <div>
+                                      <h4 style={{ margin: '0 0 2px', fontSize: '15px', fontWeight: '800', color: '#f8fafc' }}>Calibrated Environment</h4>
+                                      <p style={{ margin: 0, fontSize: '11px', color: '#64748b', lineHeight: 1.4, fontWeight: '500' }}>First, we synchronize your audio/video feed for a seamless experience.</p>
+                                    </div>
+                                  </div>
+                                  <div style={{ display: 'flex', gap: '14px', alignItems: 'flex-start' }}>
+                                    <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94a3b8', flexShrink: 0 }}>
+                                      <Mic size={16} />
+                                    </div>
+                                    <div>
+                                      <h4 style={{ margin: '0 0 2px', fontSize: '15px', fontWeight: '800', color: '#f8fafc' }}>Voice Assessments</h4>
+                                      <p style={{ margin: 0, fontSize: '11px', color: '#64748b', lineHeight: 1.4, fontWeight: '500' }}>Talk naturally with our AI. It explores depth beyond your code.</p>
+                                    </div>
+                                  </div>
+                                  <div style={{ display: 'flex', gap: '14px', alignItems: 'flex-start' }}>
+                                    <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94a3b8', flexShrink: 0 }}>
+                                      <CheckCircle2 size={16} />
+                                    </div>
+                                    <div>
+                                      <h4 style={{ margin: '0 0 2px', fontSize: '15px', fontWeight: '800', color: '#f8fafc' }}>Competency Report</h4>
+                                      <p style={{ margin: 0, fontSize: '11px', color: '#64748b', lineHeight: 1.4, fontWeight: '500' }}>Get an exhaustive evaluation of your technical mindset immediately.</p>
+                                    </div>
+                                  </div>
+                                </div>
+                              </motion.div>
+                            ) : (
+                              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                                <h3 style={{ margin: '0 0 14px', fontSize: '16px', fontWeight: '900' }}>Hardware Calibration</h3>
+                                <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.2fr) minmax(0, 1fr)', gap: '16px' }}>
+                                  <div style={{ background: '#000', borderRadius: '12px', aspectRatio: '16/10', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.1)', position: 'relative' }}>
+                                    {cameraDetected ? (
+                                      <video ref={cameraPreviewRef} autoPlay muted playsInline style={{ width: '100%', height: '100%', objectFit: 'cover', transform: 'scaleX(-1)' }} />
+                                    ) : <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Video size={24} color="#1e293b" /></div>}
+                                  </div>
+                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                    <div style={{ background: 'rgba(255,255,255,0.02)', padding: '12px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.04)' }}>
+                                      <p style={{ margin: '0 0 8px', fontSize: '8px', fontWeight: '800', color: '#818cf8', letterSpacing: '0.05em' }}>AESTHETIC AUDIO STATUS</p>
+                                      <div style={{ display: 'flex', gap: '2px', height: '24px', alignItems: 'center', justifyContent: 'center' }}>
+                                        {Array.from({ length: 24 }).map((_, i) => {
+                                          // Aesthetic Mirrored Wave Logic
+                                          const distanceFromCenter = Math.abs(i - 11.5);
+                                          const baseHeight = Math.max(4, 18 - distanceFromCenter * 1.5);
+                                          const reactFactor = micLevel * (1 - distanceFromCenter / 12);
+                                          const height = micDetected ? baseHeight + reactFactor * 1.5 : 4;
+
+                                          return (
+                                            <motion.div
+                                              key={i}
+                                              animate={{ height: height }}
+                                              transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+                                              style={{
+                                                width: '2px',
+                                                background: micDetected ? (micLevel > 2 ? '#818cf8' : '#6366f1') : '#1e293b',
+                                                borderRadius: '2px',
+                                                opacity: 0.3 + (1 - distanceFromCenter / 12) * 0.7
+                                              }}
+                                            />
+                                          );
+                                        })}
+                                      </div>
+                                    </div>
+
+                                    {/* Biometric Match Indicator */}
+                                    <div style={{ background: 'rgba(129, 140, 248, 0.05)', padding: '10px 12px', borderRadius: '12px', border: '1px solid rgba(129, 140, 248, 0.1)' }}>
+                                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                                        <span style={{ fontSize: '9px', fontWeight: '900', color: '#818cf8', textTransform: 'uppercase' }}>Biometric Match</span>
+                                        <span style={{ fontSize: '9px', fontWeight: '900', color: identityMatchScore > 90 ? '#10b981' : '#f59e0b' }}>{identityMatchScore.toFixed(1)}%</span>
+                                      </div>
+                                      <div style={{ height: '4px', background: 'rgba(255,255,255,0.05)', borderRadius: '10px', overflow: 'hidden' }}>
+                                        <motion.div
+                                          initial={{ width: 0 }}
+                                          animate={{ width: `${identityMatchScore}%` }}
+                                          style={{ height: '100%', background: identityMatchScore > 90 ? '#10b981' : '#6366f1', borderRadius: '10px' }}
+                                        />
+                                      </div>
+                                    </div>
+
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                      {[["Optical Stream", cameraDetected], ["Voice Stream", micDetected]].map(([l, ok], i) => (
+                                        <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 10px', background: 'rgba(255,255,255,0.02)', borderRadius: '10px' }}>
+                                          <span style={{ fontSize: '11px', fontWeight: '500', color: ok ? '#fff' : '#334155' }}>{l}</span>
+                                          {ok ? <CheckCircle2 size={12} color="#10b981" /> : <div style={{ width: '4px', height: '4px', borderRadius: '50%', background: '#1e293b' }} />}
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                </div>
+                              </motion.div>
+                            )}
                           </div>
                         </div>
 
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', flexShrink: 0 }}>
-                          {(demoIntroPhase === 2) && (
-                            <motion.div
-                              initial={{ opacity: 0, y: 10 }}
-                              animate={{ opacity: 1, y: 0 }}
-                              style={{
-                                padding: '12px 18px',
-                                background: 'rgba(255,255,255,0.02)',
-                                borderRadius: '14px',
-                                border: '1px solid rgba(255,255,255,0.05)',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'space-between',
-                                marginBottom: '5px'
-                              }}
-                            >
-                              <div>
-                                <p style={{
-                                  margin: '0 0 2px',
-                                  fontSize: '9px',
-                                  fontWeight: '900',
-                                  color: (faceStatus === 'clear' && identityMatchScore > 85) ? '#10b981' : faceStatus === 'unclear' ? '#f59e0b' : '#f43f5e',
-                                  textTransform: 'uppercase'
-                                }}>
-                                  {(faceStatus === 'clear' && identityMatchScore > 85) ? 'Biometric Identity Verified' : identityMatchScore > 0 ? 'Identity Match Failed' : 'Scanning Face...'}
-                                </p>
-                                <p style={{ margin: 0, fontSize: '11px', color: '#94a3b8', lineHeight: '1.3' }}>
-                                  {(faceStatus === 'clear' && identityMatchScore > 85)
-                                    ? "Perfect match! Your current video matches your identity photo. You may proceed."
-                                    : identityMatchScore > 0
-                                      ? "Face match confidence is too low. Please ensure you are the same person as in the identity photo."
-                                      : "Detecting facial features for biometric comparison..."}
-                                </p>
-                              </div>
-                              <div style={{
-                                width: '40px',
-                                height: '40px',
-                                borderRadius: '50%',
-                                background: (faceStatus === 'clear' && identityMatchScore > 85) ? 'rgba(16,185,129,0.1)' : 'rgba(244,63,94,0.1)',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                color: (faceStatus === 'clear' && identityMatchScore > 85) ? '#10b981' : '#f43f5e'
-                              }}>
-                                {(faceStatus === 'clear' && identityMatchScore > 85) ? <CheckCircle2 size={20} /> : <AlertCircle size={20} />}
-                              </div>
-                            </motion.div>
-                          )}
+                        {/* Right: Prep Guide & CTA */}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', minHeight: 0 }}>
+                          <div style={{ padding: '20px', background: 'rgba(99, 102, 241, 0.02)', border: '1px solid rgba(99, 102, 241, 0.1)', borderRadius: '20px', flex: 1, minHeight: 0, overflowY: 'hidden' }}>
+                            <h4 style={{ margin: '0 0 16px', fontSize: '16px', fontWeight: '900' }}>Preparation</h4>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                              {[
+                                "Find a bright, quiet space",
+                                "Stable internet required",
+                                "Think aloud during assessment",
+                                "Elaborate on architectural choices",
+                                "Keep camera centered at eye level",
+                                "No external aid or browsers permitted",
+                                "Relax and speak naturally"
+                              ].map((t, i) => (
+                                <div key={i} style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                                  <div style={{ width: '20px', height: '20px', borderRadius: '50%', background: 'rgba(99, 102, 241, 0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', color: '#818cf8', fontWeight: '800' }}>{i + 1}</div>
+                                  <span style={{ fontSize: '12px', color: '#94a3b8', fontWeight: '500' }}>{t}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
 
-                          {demoIntroPhase === 0 ? (
-                            <span style={{ textAlign: 'center', padding: '10px', fontSize: '11px', color: '#64748b', fontStyle: 'italic' }}>Capture Identity to Proceed →</span>
-                          ) : demoIntroPhase === 1 ? (
-                            <motion.button whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }} onClick={() => setDemoIntroPhase(2)} style={{ width: '100%', padding: '14px', borderRadius: '14px', border: 'none', background: 'linear-gradient(135deg, #6366f1, #4f46e5)', color: '#fff', fontWeight: '900', fontSize: '14px', cursor: 'pointer', boxShadow: '0 8px 16px rgba(99, 102, 241, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
-                              Begin Security Calibration <ChevronRight size={16} />
-                            </motion.button>
-                          ) : (
-                            <motion.button
-                              whileHover={(cameraDetected && micDetected && identityMatchScore > 85) ? { scale: 1.01 } : {}}
-                              whileTap={(cameraDetected && micDetected && identityMatchScore > 85) ? { scale: 0.99 } : {}}
-                              onClick={startDemoInterview}
-                              disabled={!cameraDetected || !micDetected || identityMatchScore < 85}
-                              style={{
-                                width: '100%', padding: '16px', borderRadius: '14px', border: 'none',
-                                background: (cameraDetected && micDetected && identityMatchScore > 85) ? 'linear-gradient(135deg, #6366f1, #a855f7)' : 'rgba(255,255,255,0.03)',
-                                color: (cameraDetected && micDetected && identityMatchScore > 85) ? '#fff' : '#475569',
-                                fontWeight: '900', fontSize: '15px',
-                                cursor: (cameraDetected && micDetected && identityMatchScore > 85) ? 'pointer' : 'not-allowed',
-                                boxShadow: (cameraDetected && micDetected && identityMatchScore > 85) ? '0 8px 16px rgba(124,58,237,0.2)' : 'none',
-                                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px'
-                              }}
-                            >
-                              Enter Evaluation Room {(cameraDetected && micDetected && identityMatchScore > 85) && <Sparkles size={14} />}
-                            </motion.button>
-                          )}
-                          <p style={{ margin: 0, textAlign: 'center', fontSize: '8px', color: '#94a3b8', fontWeight: '800', letterSpacing: '0.1em' }}>🔒 ENCRYPTED SESSION ACTIVE</p>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', flexShrink: 0 }}>
+                            {(demoIntroPhase === 1) && (
+                              <motion.div
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                style={{
+                                  padding: '12px 18px',
+                                  background: 'rgba(255,255,255,0.02)',
+                                  borderRadius: '14px',
+                                  border: '1px solid rgba(255,255,255,0.05)',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'space-between',
+                                  marginBottom: '5px'
+                                }}
+                              >
+                                <div>
+                                  <p style={{
+                                    margin: '0 0 2px',
+                                    fontSize: '9px',
+                                    fontWeight: '900',
+                                    color: (faceStatus === 'clear' && identityMatchScore > 85) ? '#10b981' : faceStatus === 'unclear' ? '#f59e0b' : '#f43f5e',
+                                    textTransform: 'uppercase'
+                                  }}>
+                                    {(faceStatus === 'clear' && identityMatchScore > 85) ? 'Biometric Identity Verified' : identityMatchScore > 0 ? 'Identity Match Failed' : 'Scanning Face...'}
+                                  </p>
+                                  <p style={{ margin: 0, fontSize: '11px', color: '#94a3b8', lineHeight: '1.3' }}>
+                                    {(faceStatus === 'clear' && identityMatchScore > 85)
+                                      ? "Perfect match! Your current video matches your identity photo. You may proceed."
+                                      : identityMatchScore > 0
+                                        ? "Face match confidence is too low. Please ensure you are the same person as in the identity photo."
+                                        : "Detecting facial features for biometric comparison..."}
+                                  </p>
+                                </div>
+                                <div style={{
+                                  width: '40px',
+                                  height: '40px',
+                                  borderRadius: '50%',
+                                  background: (faceStatus === 'clear' && identityMatchScore > 85) ? 'rgba(16,185,129,0.1)' : 'rgba(244,63,94,0.1)',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  color: (faceStatus === 'clear' && identityMatchScore > 85) ? '#10b981' : '#f43f5e'
+                                }}>
+                                  {(faceStatus === 'clear' && identityMatchScore > 85) ? <CheckCircle2 size={20} /> : <AlertCircle size={20} />}
+                                </div>
+                              </motion.div>
+                            )}
+
+                            {demoIntroPhase === 0 ? (
+                              <motion.button whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }} onClick={() => setDemoIntroPhase(1)} style={{ width: '100%', padding: '14px', borderRadius: '14px', border: 'none', background: 'linear-gradient(135deg, #6366f1, #4f46e5)', color: '#fff', fontWeight: '900', fontSize: '14px', cursor: 'pointer', boxShadow: '0 8px 16px rgba(99, 102, 241, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
+                                Begin Security Calibration <ChevronRight size={16} />
+                              </motion.button>
+                            ) : (
+                              <motion.button
+                                whileHover={(cameraDetected && micDetected && identityMatchScore > 85) ? { scale: 1.01 } : {}}
+                                whileTap={(cameraDetected && micDetected && identityMatchScore > 85) ? { scale: 0.99 } : {}}
+                                onClick={startDemoInterview}
+                                disabled={!cameraDetected || !micDetected || identityMatchScore < 85}
+                                style={{
+                                  width: '100%', padding: '16px', borderRadius: '14px', border: 'none',
+                                  background: (cameraDetected && micDetected && identityMatchScore > 85) ? 'linear-gradient(135deg, #6366f1, #a855f7)' : 'rgba(255,255,255,0.03)',
+                                  color: (cameraDetected && micDetected && identityMatchScore > 85) ? '#fff' : '#475569',
+                                  fontWeight: '900', fontSize: '15px',
+                                  cursor: (cameraDetected && micDetected && identityMatchScore > 85) ? 'pointer' : 'not-allowed',
+                                  boxShadow: (cameraDetected && micDetected && identityMatchScore > 85) ? '0 8px 16px rgba(124,58,237,0.2)' : 'none',
+                                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px'
+                                }}
+                              >
+                                Enter Evaluation Room {(cameraDetected && micDetected && identityMatchScore > 85) && <Sparkles size={14} />}
+                              </motion.button>
+                            )}
+                            <p style={{ margin: 0, textAlign: 'center', fontSize: '8px', color: '#94a3b8', fontWeight: '800', letterSpacing: '0.1em' }}>🔒 ENCRYPTED SESSION ACTIVE</p>
+                          </div>
                         </div>
                       </div>
                     </div>
-
-                    <div style={{ marginTop: '15px', textAlign: 'center', flexShrink: 0 }}>
-                      <p style={{ fontSize: '10px', color: '#64748b', opacity: 0.8 }}>Data is processed locally for evaluation and discarded upon exit.</p>
-                    </div>
+                  )}
+                  <div style={{ marginTop: '15px', textAlign: 'center', flexShrink: 0 }}>
+                    <p style={{ fontSize: '10px', color: '#64748b', opacity: 0.8 }}>Data is processed locally for evaluation and discarded upon exit.</p>
                   </div>
                 </div>
               </motion.div>
