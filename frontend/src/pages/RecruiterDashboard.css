@@ -1239,3 +1239,34 @@
     border-radius: 24px;
   }
 }
+
+/* Custom Scrollbar for the entire dashboard */
+.recruiter-dashboard-main::-webkit-scrollbar,
+.upload-section::-webkit-scrollbar,
+.candidates-list::-webkit-scrollbar,
+.demo-column-scroll::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.recruiter-dashboard-main::-webkit-scrollbar-track,
+.upload-section::-webkit-scrollbar-track,
+.candidates-list::-webkit-scrollbar-track,
+.demo-column-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.recruiter-dashboard-main::-webkit-scrollbar-thumb,
+.upload-section::-webkit-scrollbar-thumb,
+.candidates-list::-webkit-scrollbar-thumb,
+.demo-column-scroll::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+}
+
+.recruiter-dashboard-main::-webkit-scrollbar-thumb:hover,
+.upload-section::-webkit-scrollbar-thumb:hover,
+.candidates-list::-webkit-scrollbar-thumb:hover,
+.demo-column-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
+}

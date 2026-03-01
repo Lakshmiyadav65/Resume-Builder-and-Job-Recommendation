@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FcNext, FcPrevious, FcDocument, FcCheckmark } from 'react-icons/fc';
 import { FaCheck } from 'react-icons/fa';
+import { ChevronLeft } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Textarea } from '../components/ui/textarea';
@@ -917,17 +918,17 @@ const ResumeBuilder = () => {
     return (
         <div className="resume-builder-container">
             {/* Header with Back Navigation */}
-            <div className="builder-header">
+            <div className="builder-header flex items-center justify-between px-8 py-4">
                 <Button
                     variant="ghost"
-                    className="back-to-dashboard-btn gap-2 text-slate-300 hover:text-white hover:bg-slate-800"
-                    onClick={() => navigate('/dashboard')}
+                    className="back-nav-btn gap-2 text-slate-300 hover:text-white hover:bg-slate-800"
+                    onClick={() => navigate('/')}
                 >
-                    <FcPrevious style={{ fontSize: '1.2rem' }} />
-                    <span>Back to Dashboard</span>
+                    <ChevronLeft size={20} />
+                    <span>Back to Navigation</span>
                 </Button>
-                <h1 className="builder-title">Build Your Resume</h1>
-                <div className="header-spacer"></div>
+                <h1 className="builder-title text-2xl font-bold text-white">Build Your Resume</h1>
+                <div className="header-spacer w-32"></div>
             </div>
 
             {/* Progress Stepper */}

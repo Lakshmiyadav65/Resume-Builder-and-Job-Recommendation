@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FcUpload, FcDocument, FcVoicePresentation, FcSearch, FcCalendar, FcGraduationCap, FcBusinessman, FcRedo, FcBarChart } from 'react-icons/fc';
+import { ChevronLeft } from 'lucide-react';
 import { FaChevronDown } from 'react-icons/fa';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
@@ -510,16 +511,25 @@ const Dashboard = () => {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -20 }}
               >
-                <div className="results-header">
-                  <h2><FcBarChart style={{ marginRight: '8px', fontSize: '1.5rem' }} />Match Scores</h2>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="new-analysis-button gap-2 border-slate-700 hover:bg-slate-800 text-xs"
-                    onClick={handleNewAnalysis}
-                  >
-                    <FcRedo style={{ fontSize: '1rem' }} /> New Analysis
-                  </Button>
+                <div className="results-header flex items-center justify-between mb-6">
+                  <h2 className="flex items-center m-0"><FcBarChart style={{ marginRight: '8px', fontSize: '1.5rem' }} />Match Scores</h2>
+                  <div className="flex items-center gap-4">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="new-analysis-button gap-2 border-slate-700 hover:bg-slate-800 text-xs"
+                      onClick={handleNewAnalysis}
+                    >
+                      <FcRedo style={{ fontSize: '1rem' }} /> New Analysis
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      className="back-nav-btn text-slate-500 hover:text-white hover:bg-transparent flex items-center gap-2 font-bold px-4 text-xs"
+                      onClick={() => navigate('/')}
+                    >
+                      <ChevronLeft size={16} /> Back to Navigation
+                    </Button>
+                  </div>
                 </div>
 
                 <div className="gauges-container">

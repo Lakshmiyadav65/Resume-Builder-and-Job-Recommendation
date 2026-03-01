@@ -8,6 +8,7 @@ import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
 import { useApp } from '../context/AppContext';
 import Sidebar from '../components/Sidebar';
+import { ChevronLeft } from 'lucide-react';
 import './DeepDive.css';
 
 const DeepDive = () => {
@@ -107,6 +108,18 @@ const DeepDive = () => {
           initial="hidden"
           animate="visible"
         >
+          <div className="page-header flex items-center justify-between mb-8">
+            <h1 className="text-3xl font-bold text-white flex items-center gap-3">
+              <FcSearch style={{ fontSize: '2.5rem' }} /> Deep Dive Analysis
+            </h1>
+            <Button
+              variant="ghost"
+              className="back-nav-btn text-slate-500 hover:text-white hover:bg-transparent flex items-center gap-2 font-bold px-4"
+              onClick={() => navigate('/')}
+            >
+              <ChevronLeft size={20} /> Back to Navigation
+            </Button>
+          </div>
           {/* Skills Coverage Summary */}
           <motion.div className="coverage-summary grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8" variants={itemVariants}>
             <Card className="summary-card bg-slate-800 border-slate-700">

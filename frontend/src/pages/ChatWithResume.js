@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FcSupport, FcDocument, FcBusinessContact, FcSms } from 'react-icons/fc';
 import { FaPaperPlane, FaTrash } from 'react-icons/fa';
@@ -9,9 +10,11 @@ import { useApp } from '../context/AppContext';
 import { initChat, sendChatMessage, getChatHistory, clearChat } from '../services/api';
 import Sidebar from '../components/Sidebar';
 import ReactMarkdown from 'react-markdown';
+import { ChevronLeft } from 'lucide-react';
 import './ChatWithResume.css';
 
 const ChatWithResume = () => {
+  const navigate = useNavigate();
   const { sessionId, setSessionId } = useApp();
   const [messages, setMessages] = useState([]);
   const [inputMessage, setInputMessage] = useState('');
@@ -164,6 +167,18 @@ Feel free to ask me anything about your resume! I'm here to provide personalized
       <Sidebar />
 
       <div className="chat-main">
+        <div className="page-header flex items-center justify-between mb-6 px-4">
+          <h1 className="text-2xl font-bold text-white flex items-center gap-3">
+            <FcSms style={{ fontSize: '2rem' }} /> Chat with Resume
+          </h1>
+          <Button
+            variant="ghost"
+            className="back-nav-btn text-slate-500 hover:text-white hover:bg-transparent flex items-center gap-2 font-bold px-4"
+            onClick={() => navigate('/')}
+          >
+            <ChevronLeft size={20} /> Back to Navigation
+          </Button>
+        </div>
         <div className="chat-content-container">
           {!chatInitialized ? (
             <motion.div

@@ -9,6 +9,7 @@ import { useApp } from '../context/AppContext';
 import { generatePrepPlan } from '../services/api';
 import Sidebar from '../components/Sidebar';
 import ReactMarkdown from 'react-markdown';
+import { ChevronLeft } from 'lucide-react';
 import './PreparationPlan.css';
 
 const PreparationPlan = () => {
@@ -78,6 +79,18 @@ const PreparationPlan = () => {
           animate={{ opacity: 1 }}
           transition={{ delay: 0.2 }}
         >
+          <div className="page-header flex items-center justify-between mb-8">
+            <h1 className="text-3xl font-bold text-white flex items-center gap-3">
+              <FcPlanner style={{ fontSize: '2.5rem' }} /> Preparation Plan
+            </h1>
+            <Button
+              variant="ghost"
+              className="back-nav-btn text-slate-500 hover:text-white hover:bg-transparent flex items-center gap-2 font-bold px-4"
+              onClick={() => navigate('/')}
+            >
+              <ChevronLeft size={20} /> Back to Navigation
+            </Button>
+          </div>
           {!plan ? (
             <div className="plan-input-section mx-auto">
               <motion.div
