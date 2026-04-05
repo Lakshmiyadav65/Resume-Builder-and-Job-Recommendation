@@ -25,10 +25,13 @@ async function retryWithBackoff(fn, maxRetries = 3, initialDelay = 1000) {
     try {
       return await fn();
     } catch (error) {
-      if (error.message?.includes('429') || error.message?.includes('Too Many Requests')) {
+      const msg = error.message || '';
+      const isRetryable = msg.includes('429') || msg.includes('Too Many Requests') ||
+        msg.includes('failed_generation') || msg.includes('Failed to generate');
+      if (isRetryable) {
         if (i === maxRetries - 1) throw error;
         const delay = initialDelay * Math.pow(2, i);
-        console.log(`Rate limit hit, retrying in ${delay}ms...`);
+        console.log(`Retryable error (attempt ${i + 1}/${maxRetries}), retrying in ${delay}ms: ${msg.substring(0, 100)}`);
         await new Promise(resolve => setTimeout(resolve, delay));
       } else {
         throw error;
@@ -253,101 +256,44 @@ router.post('/rank-resumes', upload.fields([
       });
     }
 
-    // Prepare prompt for Gemini
-    const prompt = `You are an expert AI recruiter with deep knowledge of industry-specific skills and job requirements.
+    // Dynamically adjust resume text length based on number of resumes
+    const resumeCount = resumeTexts.length;
+    const maxCharsPerResume = resumeCount <= 2 ? 2000 : resumeCount <= 5 ? 1200 : 800;
+
+    const prompt = `You are an expert AI recruiter. Rank these resumes against the job description.
 
 Job Description:
-${finalJobDescription}
+${finalJobDescription.substring(0, 2000)}
 
-    Resumes:
-    ${resumeTexts.map(r => `
-    Resume ${r.index} (${r.fileName}):
-    ${r.text.substring(0, 2000)}
-    ---
-    `).join('\n')}
+Resumes:
+${resumeTexts.map(r => `Resume ${r.index} (${r.fileName}):\n${r.text.substring(0, maxCharsPerResume)}\n---`).join('\n')}
 
-**INTELLIGENT RANKING INSTRUCTIONS:**
+RANKING RULES:
+- Domain mismatch (e.g., Hardware resume for Consulting job): fitScore 15-35
+- Different domain with transferable skills: fitScore 35-55
+- Same domain, different level: fitScore 50-75
+- Strong domain match: fitScore 70-95
+- State domain mismatch clearly in justification
 
-1. **DOMAIN MATCH ANALYSIS - BE CRITICAL:**
-   - **Identify the JOB DOMAIN** from job description:
-     * Software/Tech: software engineer, developer, data scientist, ML, web dev, DevOps
-     * Hardware/Electronics: VLSI, embedded, circuit design, PCB, FPGA, Verilog, VHDL
-     * Consulting/Business: consultant, business analyst, management, supply chain, operations
-     * Finance: accountant, financial analyst, investment, auditor
-     * Marketing/Sales: marketing, sales, digital marketing, brand
-     * Data/Analytics: data analyst, BI, data engineer, analytics
-   
-   - **For EACH resume, identify its DOMAIN**:
-     * Look at education, job titles, projects, primary skills
-   
-   - **SCORING RULES:**
-     * **Domain mismatch** (e.g., Hardware resume for Consulting job): fitScore 15-35 maximum
-     * **Different domain with transferable skills**: fitScore 35-55
-     * **Same domain, different level**: fitScore 50-75
-     * **Strong domain match**: fitScore 70-95
-   
-   - **In justification, STATE domain mismatch clearly** if it exists
-
-2. **Identify the job title/role** from the job description and infer industry-standard skills
-
-3. **Infer required skills** based on the role:
-   - Examples:
-     * "Supply Chain Consultant" → SAP, Excel, Data Analytics, ERP, Procurement, Logistics
-     * "Software Engineer" → Git, APIs, Database, Testing, Cloud, Programming languages
-     * "Data Analyst" → SQL, Excel, Power BI, Python, Tableau
-     * "Hardware Engineer" → Verilog, VHDL, Cadence, PCB, Circuit Design, FPGA
-
-4. **Evaluate each resume STRICTLY on:**
-   - **PRIMARY: Domain/field alignment** (hardware vs software vs business vs marketing)
-   - Skills match (only count relevant domain skills)
-   - Experience relevance and depth
-   - Education alignment with job field
-   - Quantifiable achievements
-
-5. **fitScore - BE REALISTIC:**
-   - 15-35: Wrong domain/field (hardware for software, engineering for marketing)
-   - 35-55: Different domain but some transferable skills
-   - 55-75: Same domain, different specialization or junior
-   - 75-90: Strong match with minor gaps
-   - 90-100: Excellent match, ideal candidate
-
-6. **Strengths - BE HONEST:**
-   - Call out exact matching skills (only if domain-relevant)
-   - If domain mismatch, acknowledge limited alignment
-   - Mention relevant certifications or education
-   - Highlight quantifiable achievements
-
-7. **Missing Skills - BE DOMAIN-AWARE:**
-   - List critical skills for the ACTUAL job domain
-   - If candidate is from different domain, list fundamental domain skills missing
-   - Example: For consulting job, if hardware resume: "Supply chain management, business analysis, ERP systems, consulting experience"
-
-8. **Justification - BE FRANK:**
-   - If domain mismatch, state it clearly: "Background is in electronics hardware engineering while role requires supply chain consulting expertise"
-   - Be specific about why score is low/high
-   - Provide honest career guidance
-
-**OUTPUT FORMAT (JSON only, no markdown):**
-
+Return JSON only:
 {
   "rankedCandidates": [
     {
       "rank": 1,
-      "fileName": "resume_name.pdf",
-      "name": "Candidate Name (extract from resume, or 'Candidate X')",
-      "fitScore": number (15-100, BE STRICT about domain mismatch),
-      "strengths": [
-        "Specific strength 1 (only if domain-relevant)",
-        "Specific strength 2 with achievements",
-        "Specific strength 3 with relevant skills"
-      ],
-      "missingSkills": ["Critical domain skill 1", "Critical domain skill 2", "Fundamental field expertise"],
-      "justification": "HONEST assessment: If domain mismatch, state it clearly. Example: 'Candidate has strong electronics hardware background (Verilog, VHDL) but lacks supply chain consulting and business operations expertise required for this role.' Or if good match: 'Strong alignment with 5+ years in supply chain management and proven ERP implementation experience.'"
+      "fileName": "resume.pdf",
+      "name": "Candidate Name",
+      "fitScore": 85,
+      "strengths": ["strength1", "strength2", "strength3"],
+      "missingSkills": ["skill1", "skill2"],
+      "justification": "Brief honest assessment of fit"
     }
   ]
 }
 
-**CRITICAL:** Rank from highest to lowest fitScore. BE STRICT about domain alignment. A hardware engineer should NOT score 55% for a consulting job - score should be 20-30% maximum.`;
+Rank from highest to lowest fitScore. Be strict about domain alignment.`;
+
+    // Dynamically set max_tokens based on resume count
+    const maxTokens = Math.min(8000, 1500 + resumeCount * 800);
 
     // Call Groq API with retry logic
     const completion = await retryWithBackoff(async () => {
@@ -356,7 +302,7 @@ ${finalJobDescription}
         messages: [
           {
             role: "system",
-            content: "You are an expert resume ranker. Always respond with valid JSON only, no markdown formatting. Be strict about domain matching."
+            content: "You are an expert resume ranker. Respond with valid JSON only. Be strict about domain matching."
           },
           {
             role: "user",
@@ -364,10 +310,10 @@ ${finalJobDescription}
           }
         ],
         response_format: { type: "json_object" },
-        temperature: 0.7,
-        max_tokens: 4000
+        temperature: 0.5,
+        max_tokens: maxTokens
       });
-    }, 5, 2000); // Increased retries and initial delay
+    }, 5, 2000);
 
     const text = completion.choices[0].message.content;
 

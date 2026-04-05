@@ -57,7 +57,7 @@ const RecruiterDashboard = () => {
 
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [selectedCandidate, setSelectedCandidate] = useState(null);
-  const [interviewMode, setInterviewMode] = useState('voice'); // 'voice' or 'avatar'
+  const [interviewMode] = useState('kia'); // Kia Agent mode
   const [linkExpiry, setLinkExpiry] = useState('48');
   const [inviteSuccess, setInviteSuccess] = useState(false);
   const [showDemoModal, setShowDemoModal] = useState(false);
@@ -1302,42 +1302,19 @@ const RecruiterDashboard = () => {
                   </div>
 
                   <div className="modal-section mb-8">
-                    <label className="section-label block text-slate-400 text-[11px] font-bold tracking-widest uppercase mb-4">SELECT INTERVIEW MODE</label>
-                    <div className="mode-options grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div
-                        className={`mode-option-v3 relative flex items-center gap-4 p-5 rounded-2xl border-2 cursor-pointer transition-all ${interviewMode === 'voice' ? 'bg-[#9448C4]/5 border-[#9448C4] shadow-[0_0_20px_rgba(148,72,196,0.1)]' : 'bg-[#111827] border-[#1f2937] hover:border-slate-700'}`}
-                        onClick={() => setInterviewMode('voice')}
-                      >
-                        <div className={`mode-icon-v3 w-12 h-12 rounded-xl flex items-center justify-center ${interviewMode === 'voice' ? 'bg-[#9448C4] text-white' : 'bg-slate-800 text-slate-400'}`}>
-                          <Mic size={22} />
-                        </div>
-                        <div className="mode-text-v3">
-                          <div className="mode-title-v3 text-white font-bold text-sm mb-0.5">Standard Voice</div>
-                          <div className="mode-desc-v3 text-slate-500 text-[11px] leading-tight">Natural voice interaction via<br />audio call interface.</div>
-                        </div>
-                        <div className={`absolute top-4 right-4 w-5 h-5 rounded-full border-2 flex items-center justify-center ${interviewMode === 'voice' ? 'border-[#9448C4]' : 'border-slate-700'}`}>
-                          {interviewMode === 'voice' && <div className="radio-inner w-2.5 h-2.5 rounded-full bg-[#9448C4]"></div>}
-                        </div>
+                    <label className="section-label block text-slate-400 text-[11px] font-bold tracking-widest uppercase mb-4">INTERVIEW MODE</label>
+                    <div className="mode-option-v3 relative flex items-center gap-4 p-5 rounded-2xl border-2 bg-indigo-500/5 border-indigo-500/40 shadow-[0_0_24px_rgba(99,102,241,0.1)]">
+                      <div className="mode-icon-v3 w-12 h-12 rounded-xl flex items-center justify-center bg-gradient-to-br from-indigo-500 to-purple-600 text-white shadow-lg shadow-indigo-500/25">
+                        <Mic size={22} />
                       </div>
-
-                      <div
-                        className={`mode-option-v3 relative flex items-center gap-4 p-5 rounded-2xl border-2 cursor-pointer transition-all ${interviewMode === 'avatar' ? 'bg-[#9448C4]/5 border-[#9448C4] shadow-[0_0_20px_rgba(148,72,196,0.1)]' : 'bg-[#111827] border-[#1f2937] hover:border-slate-700'}`}
-                        onClick={() => setInterviewMode('avatar')}
-                      >
-                        <div className={`mode-icon-v3 w-12 h-12 rounded-xl flex items-center justify-center ${interviewMode === 'avatar' ? 'bg-[#9448C4] text-white' : 'bg-slate-800 text-slate-400'}`}>
-                          <Video size={22} />
+                      <div className="mode-text-v3 flex-1">
+                        <div className="mode-title-v3 text-white font-bold text-sm mb-0.5 flex items-center gap-2">
+                          Kia Agent
+                          <Badge className="bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 text-[8px] px-1.5 py-0 uppercase font-black">AI</Badge>
                         </div>
-                        <div className="mode-text-v3">
-                          <div className="mode-title-v3 text-white font-bold text-sm mb-0.5 flex items-center gap-2">
-                            Premium AI Avatar
-                            <Badge className="bg-purple-500/10 text-purple-400 border border-purple-500/20 text-[8px] px-1.5 py-0 uppercase font-black">PREMIUM</Badge>
-                          </div>
-                          <div className="mode-desc-v3 text-slate-500 text-[11px] leading-tight">Realistic visual 3D avatar<br />with human-like expressions.</div>
-                        </div>
-                        <div className={`absolute top-4 right-4 w-5 h-5 rounded-full border-2 flex items-center justify-center ${interviewMode === 'avatar' ? 'border-[#9448C4]' : 'border-slate-700'}`}>
-                          {interviewMode === 'avatar' && <div className="radio-inner w-2.5 h-2.5 rounded-full bg-[#9448C4]"></div>}
-                        </div>
+                        <div className="mode-desc-v3 text-slate-500 text-[11px] leading-tight">AI-powered voice interview with intelligent<br />questioning and real-time evaluation.</div>
                       </div>
+                      <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.5)]"></div>
                     </div>
                   </div>
 
@@ -1447,7 +1424,7 @@ Expiry: `}<strong className="text-white font-bold">{(parseInt(linkExpiry))} hour
                         <div>
                           <p className="text-[8px] text-slate-600 font-black uppercase tracking-wider mb-0">Interview Mode</p>
                           <p className="text-white text-xs font-bold">
-                            {interviewMode === 'voice' ? 'Standard Voice Interview' : 'KIA Agent Interview'}
+                            Kia Agent Interview
                           </p>
                         </div>
                       </div>
