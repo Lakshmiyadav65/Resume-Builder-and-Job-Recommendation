@@ -1,7 +1,13 @@
+/* ============================================
+   DeepDive - Glassmorphism Dark Theme
+   ============================================ */
+
 .deep-dive-container {
   display: flex;
   min-height: 100vh;
-  background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 50%, #282828 100%);
+  background: radial-gradient(ellipse at 30% 20%, rgba(99, 102, 241, 0.07) 0%, transparent 50%),
+              radial-gradient(ellipse at 70% 80%, rgba(139, 92, 246, 0.05) 0%, transparent 50%),
+              linear-gradient(135deg, #06070a 0%, #0c0e14 40%, #10121a 100%);
 }
 
 .deep-dive-main {
@@ -11,6 +17,7 @@
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+/* No Data State */
 .no-data {
   display: flex;
   flex-direction: column;
@@ -24,40 +31,53 @@
 .no-data h2 {
   font-size: 2rem;
   color: #ffffff;
+  text-shadow: 0 0 30px rgba(99, 102, 241, 0.1);
 }
 
 .no-data p {
   font-size: 1.2rem;
-  color: #999999;
+  color: rgba(148, 163, 184, 0.7);
 }
 
 .dashboard-button {
   padding: 15px 35px;
-  background: linear-gradient(180deg, #9448C4 0%, #5D2A91 100%);
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.7), rgba(139, 92, 246, 0.7));
   color: white;
-  border: none;
+  border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 12px;
   font-size: 1.1rem;
   font-weight: 600;
   cursor: pointer;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 8px 32px rgba(99, 102, 241, 0.2);
+  transition: all 0.3s ease;
 }
 
+.dashboard-button:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 12px 40px rgba(99, 102, 241, 0.3);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+/* Header */
 .deep-dive-header {
   display: flex;
   align-items: center;
   gap: 15px;
   margin-bottom: 40px;
   padding: 20px 30px;
-  background: rgba(40, 40, 40, 0.8);
+  background: rgba(255, 255, 255, 0.04);
   backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   border-radius: 20px;
-  border: 1px solid rgba(60, 60, 60, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
 }
 
 .header-icon {
   font-size: 1.5rem;
-  color: #aaaaaa;
+  color: #94a3b8;
 }
 
 .deep-dive-header h1 {
@@ -67,6 +87,7 @@
   color: #ffffff;
 }
 
+/* Content Layout */
 .deep-dive-content {
   width: 100%;
   max-width: 1200px;
@@ -83,13 +104,14 @@
   display: flex;
   align-items: center;
   gap: 10px;
+  text-shadow: 0 0 30px rgba(99, 102, 241, 0.1);
 }
 
 .section-icon {
-  color: #9448C4;
+  color: #818cf8;
 }
 
-/* Coverage Summary Section */
+/* Coverage Summary - Glass Cards */
 .coverage-summary {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -98,18 +120,40 @@
 }
 
 .summary-card {
-  background: rgba(30, 30, 30, 0.6);
+  background: rgba(255, 255, 255, 0.04) !important;
   backdrop-filter: blur(20px);
-  border: 1px solid rgba(60, 60, 60, 0.3);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
   border-radius: 16px;
   padding: 20px;
   transition: all 0.3s ease;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  position: relative;
+  overflow: hidden;
+}
+
+.summary-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+}
+
+.summary-card:hover {
+  background: rgba(255, 255, 255, 0.06) !important;
+  border-color: rgba(255, 255, 255, 0.15) !important;
+  transform: translateY(-3px);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3),
+              0 0 20px rgba(99, 102, 241, 0.06);
 }
 
 .summary-icon {
   font-size: 2rem;
   margin-bottom: 10px;
+  filter: drop-shadow(0 0 8px rgba(99, 102, 241, 0.15));
 }
 
 .summary-content h3 {
@@ -119,13 +163,14 @@
   font-weight: 600;
 }
 
+/* Coverage Bars */
 .coverage-bar {
-  background: rgba(20, 20, 20, 0.8);
+  background: rgba(255, 255, 255, 0.04);
   border-radius: 10px;
   height: 32px;
   overflow: hidden;
   margin-bottom: 10px;
-  border: 1px solid rgba(60, 60, 60, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 .coverage-fill {
@@ -140,11 +185,13 @@
 }
 
 .coverage-fill.soft {
-  background: linear-gradient(90deg, #f59e0b, #d97706);
+  background: linear-gradient(90deg, rgba(16, 185, 129, 0.6), rgba(5, 150, 105, 0.6));
+  box-shadow: 0 0 15px rgba(16, 185, 129, 0.2);
 }
 
 .coverage-fill.tech {
-  background: linear-gradient(90deg, #3b82f6, #2563eb);
+  background: linear-gradient(90deg, rgba(59, 130, 246, 0.6), rgba(37, 99, 235, 0.6));
+  box-shadow: 0 0 15px rgba(59, 130, 246, 0.2);
 }
 
 .coverage-details {
@@ -155,24 +202,27 @@
 }
 
 .balance-text {
-  color: #ffffff;
+  color: rgba(255, 255, 255, 0.9);
   font-size: 1.1rem;
   text-align: center;
   margin: 10px 0 0 0;
 }
 
 .balance-text strong {
-  color: #9448C4;
+  color: #a78bfa;
+  text-shadow: 0 0 10px rgba(139, 92, 246, 0.2);
 }
 
 .suitability-score {
-  color: #9448C4;
+  color: #818cf8;
   font-size: 2rem;
   font-weight: 700;
   text-align: center;
   margin: 10px 0 0 0;
+  text-shadow: 0 0 20px rgba(99, 102, 241, 0.2);
 }
 
+/* Skills Grid - Glass Cards */
 .skills-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
@@ -180,20 +230,41 @@
 }
 
 .skill-card {
-  background: rgba(30, 30, 30, 0.6);
+  background: rgba(255, 255, 255, 0.03);
   backdrop-filter: blur(20px);
-  border: 1px solid rgba(60, 60, 60, 0.3);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 16px;
   padding: 20px;
   transition: all 0.3s ease;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  position: relative;
+  overflow: hidden;
+}
+
+.skill-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(99, 102, 241, 0.3), transparent);
+}
+
+.skill-card:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.12);
+  transform: translateY(-2px);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3),
+              0 0 20px rgba(99, 102, 241, 0.05);
 }
 
 .skill-card h3 {
   font-size: 1.5rem;
   margin-bottom: 25px;
   color: #ffffff;
-  border-bottom: 2px solid rgba(80, 80, 80, 0.6);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   padding-bottom: 15px;
 }
 
@@ -222,25 +293,45 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  transition: all 0.3s ease;
+  transition: all 0.25s ease;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
 }
 
 .skill-tag.required {
-  background: rgba(59, 130, 246, 0.2);
-  border: 1px solid rgba(59, 130, 246, 0.4);
-  color: #93c5fd;
+  background: rgba(99, 102, 241, 0.1);
+  border: 1px solid rgba(99, 102, 241, 0.2);
+  color: #a5b4fc;
+}
+
+.skill-tag.required:hover {
+  background: rgba(99, 102, 241, 0.18);
+  border-color: rgba(99, 102, 241, 0.35);
+  transform: translateY(-1px);
 }
 
 .skill-tag.present {
-  background: rgba(16, 185, 129, 0.2);
-  border: 1px solid rgba(16, 185, 129, 0.4);
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.2);
   color: #6ee7b7;
 }
 
+.skill-tag.present:hover {
+  background: rgba(16, 185, 129, 0.18);
+  border-color: rgba(16, 185, 129, 0.35);
+  transform: translateY(-1px);
+}
+
 .skill-tag.missing {
-  background: rgba(239, 68, 68, 0.2);
-  border: 1px solid rgba(239, 68, 68, 0.4);
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.2);
   color: #fca5a5;
+}
+
+.skill-tag.missing:hover {
+  background: rgba(239, 68, 68, 0.18);
+  border-color: rgba(239, 68, 68, 0.35);
+  transform: translateY(-1px);
 }
 
 .no-data-text {
@@ -263,13 +354,27 @@
   font-weight: 500;
 }
 
+/* Recommendations - Glass Section */
 .recommendations-section {
-  background: rgba(30, 30, 30, 0.6);
+  background: rgba(255, 255, 255, 0.03);
   backdrop-filter: blur(20px);
-  border: 1px solid rgba(60, 60, 60, 0.3);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 16px;
   padding: 30px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  position: relative;
+  overflow: hidden;
+}
+
+.recommendations-section::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(139, 92, 246, 0.3), transparent);
 }
 
 .recommendations-list {
@@ -283,16 +388,23 @@
   display: flex;
   gap: 20px;
   padding: 20px;
-  background: rgba(50, 50, 50, 0.8);
-  border: 1px solid rgba(80, 80, 80, 0.6);
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
   color: white;
   border-radius: 12px;
   font-weight: 600;
   cursor: pointer;
-  display: flex;
   align-items: center;
-  gap: 10px;
   transition: all 0.3s ease;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.recommendation-item:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(99, 102, 241, 0.2);
+  transform: translateX(6px);
+  box-shadow: 0 4px 20px rgba(99, 102, 241, 0.08);
 }
 
 .rec-number {
@@ -301,10 +413,12 @@
   justify-content: center;
   width: 32px;
   height: 32px;
-  background: linear-gradient(180deg, #9448C4 0%, #5D2A91 100%);
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.5), rgba(139, 92, 246, 0.5));
+  border: 1px solid rgba(99, 102, 241, 0.3);
   border-radius: 50%;
   font-weight: 700;
   flex-shrink: 0;
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.15);
 }
 
 .recommendation-item p {
@@ -313,10 +427,12 @@
   margin: 0;
 }
 
+/* Insights Section */
 .insights-section {
-  background: rgba(40, 40, 40, 0.8);
+  background: rgba(255, 255, 255, 0.04);
   backdrop-filter: blur(20px);
-  border: 1px solid rgba(60, 60, 60, 0.5);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 20px;
   padding: 30px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
@@ -331,28 +447,46 @@
 
 .insight-card {
   padding: 20px;
-  background: rgba(50, 50, 50, 0.6);
-  border: 1px solid rgba(80, 80, 80, 0.6);
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 12px;
   display: flex;
   gap: 15px;
   align-items: flex-start;
   transition: all 0.3s ease;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.insight-card:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.12);
+  transform: translateY(-2px);
 }
 
 .insight-card.warning {
+  background: rgba(239, 68, 68, 0.06);
+  border-color: rgba(239, 68, 68, 0.15);
+}
+
+.insight-card.warning:hover {
   background: rgba(239, 68, 68, 0.1);
-  border-color: rgba(239, 68, 68, 0.3);
+  border-color: rgba(239, 68, 68, 0.25);
 }
 
 .insight-card.success {
-  background: rgba(16, 185, 129, 0.2);
-  border: 1px solid rgba(16, 185, 129, 0.4);
+  background: rgba(16, 185, 129, 0.06);
+  border: 1px solid rgba(16, 185, 129, 0.15);
   color: #6ee7b7;
   padding: 8px 16px;
   border-radius: 20px;
   font-weight: 600;
   transition: all 0.3s ease;
+}
+
+.insight-card.success:hover {
+  background: rgba(16, 185, 129, 0.12);
+  border-color: rgba(16, 185, 129, 0.3);
 }
 
 .insight-icon {
@@ -371,6 +505,7 @@
   font-weight: 700;
 }
 
+/* Responsive */
 @media (max-width: 1024px) {
   .skills-grid {
     grid-template-columns: 1fr;

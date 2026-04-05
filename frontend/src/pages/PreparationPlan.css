@@ -1,7 +1,13 @@
+/* ============================================
+   PreparationPlan - Glassmorphism Dark Theme
+   ============================================ */
+
 .prep-plan-container {
   display: flex;
   min-height: 100vh;
-  background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 50%, #282828 100%);
+  background: radial-gradient(ellipse at 60% 30%, rgba(99, 102, 241, 0.07) 0%, transparent 50%),
+              radial-gradient(ellipse at 20% 80%, rgba(139, 92, 246, 0.05) 0%, transparent 50%),
+              linear-gradient(135deg, #06070a 0%, #0c0e14 40%, #10121a 100%);
 }
 
 .prep-plan-main {
@@ -11,6 +17,7 @@
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+/* No Data State */
 .no-data {
   display: flex;
   flex-direction: column;
@@ -24,40 +31,53 @@
 .no-data h2 {
   font-size: 2rem;
   color: #ffffff;
+  text-shadow: 0 0 30px rgba(99, 102, 241, 0.1);
 }
 
 .no-data p {
   font-size: 1.2rem;
-  color: #999999;
+  color: rgba(148, 163, 184, 0.7);
 }
 
 .dashboard-button {
   padding: 15px 35px;
-  background: linear-gradient(180deg, #9448C4 0%, #5D2A91 100%);
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.7), rgba(139, 92, 246, 0.7));
   color: white;
-  border: none;
+  border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 12px;
   font-size: 1.1rem;
   font-weight: 600;
   cursor: pointer;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 8px 32px rgba(99, 102, 241, 0.2);
+  transition: all 0.3s ease;
 }
 
+.dashboard-button:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 12px 40px rgba(99, 102, 241, 0.3);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+/* Header */
 .prep-plan-header {
   display: flex;
   align-items: center;
   gap: 15px;
   margin-bottom: 40px;
   padding: 20px 30px;
-  background: rgba(40, 40, 40, 0.8);
+  background: rgba(255, 255, 255, 0.04);
   backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   border-radius: 20px;
-  border: 1px solid rgba(60, 60, 60, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
 }
 
 .header-icon {
   font-size: 1.5rem;
-  color: #aaaaaa;
+  color: #94a3b8;
 }
 
 .prep-plan-header h1 {
@@ -67,6 +87,7 @@
   color: #ffffff;
 }
 
+/* Content */
 .prep-plan-content {
   width: 100%;
   max-width: 1200px;
@@ -80,18 +101,32 @@
   width: 100%;
 }
 
+/* Input Card - Glass */
 .input-card {
   width: 100%;
   max-width: 800px;
-  background: rgba(30, 30, 30, 0.6);
-  backdrop-filter: blur(20px);
-  border: 1px solid rgba(60, 60, 60, 0.3);
-  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.04) !important;
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border-radius: 20px;
   padding: 40px;
   display: flex;
   flex-direction: column;
   gap: 30px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  position: relative;
+  overflow: hidden;
+}
+
+.input-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(99, 102, 241, 0.3), rgba(139, 92, 246, 0.3), transparent);
 }
 
 .card-header {
@@ -102,7 +137,7 @@
 
 .card-icon {
   font-size: 2.5rem;
-  color: #9448C4;
+  filter: drop-shadow(0 0 12px rgba(99, 102, 241, 0.2));
 }
 
 .card-header h2 {
@@ -111,6 +146,7 @@
   color: #ffffff;
 }
 
+/* Days Input */
 .days-input-container {
   display: flex;
   align-items: center;
@@ -121,34 +157,39 @@
 .days-input {
   width: 200px;
   padding: 20px;
-  background: rgba(20, 20, 20, 0.8);
-  border: 2px solid rgba(80, 80, 80, 0.6);
+  background: rgba(255, 255, 255, 0.04) !important;
+  border: 2px solid rgba(255, 255, 255, 0.1) !important;
   border-radius: 16px;
-  color: #ffffff;
+  color: #ffffff !important;
   font-size: 2rem;
   font-weight: 700;
   text-align: center;
   transition: all 0.3s ease;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
 }
 
 .days-input:focus {
   outline: none;
-  border-color: #9448C4;
-  box-shadow: 0 0 0 4px rgba(148, 72, 196, 0.2);
+  border-color: rgba(99, 102, 241, 0.5) !important;
+  box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1),
+              0 0 20px rgba(99, 102, 241, 0.08);
+  background: rgba(255, 255, 255, 0.06) !important;
 }
 
 .days-label {
   font-size: 1.5rem;
-  color: #94a3b8;
+  color: rgba(148, 163, 184, 0.7);
   font-weight: 600;
 }
 
+/* Quick Select Options */
 .quick-options {
   text-align: center;
 }
 
 .quick-options p {
-  color: #94a3b8;
+  color: rgba(148, 163, 184, 0.6);
   margin-bottom: 15px;
   font-weight: 500;
 }
@@ -162,36 +203,50 @@
 
 .quick-button {
   padding: 12px 24px;
-  background: rgba(99, 102, 241, 0.2);
-  border: 1px solid rgba(99, 102, 241, 0.4);
+  background: rgba(99, 102, 241, 0.08);
+  border: 1px solid rgba(99, 102, 241, 0.15);
   color: #a5b4fc;
-  border-radius: 8px;
+  border-radius: 10px;
   font-weight: 600;
   cursor: pointer;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  transition: all 0.25s ease;
+}
 
+.quick-button:hover {
+  background: rgba(99, 102, 241, 0.15);
+  border-color: rgba(99, 102, 241, 0.3);
+  transform: translateY(-1px) scale(1.02);
+  box-shadow: 0 4px 16px rgba(99, 102, 241, 0.1);
 }
 
 .quick-button.active {
-  background: linear-gradient(180deg, #9448C4 0%, #5D2A91 100%);
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.6), rgba(139, 92, 246, 0.6));
   color: white;
-  border-color: transparent;
+  border-color: rgba(255, 255, 255, 0.15);
+  box-shadow: 0 4px 20px rgba(99, 102, 241, 0.2);
 }
 
+/* Error */
 .error-message {
   padding: 16px 24px;
-  background: rgba(239, 68, 68, 0.1);
-  border: 1px solid rgba(239, 68, 68, 0.3);
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.2);
   border-radius: 12px;
   color: #fca5a5;
   text-align: center;
   font-weight: 500;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
 }
 
+/* Generate Button - Glass Accent */
 .generate-button {
   padding: 20px 40px;
-  background: linear-gradient(180deg, #9448C4 0%, #5D2A91 100%);
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.7), rgba(139, 92, 246, 0.7));
   color: white;
-  border: none;
+  border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 14px;
   font-size: 1.15rem;
   font-weight: 700;
@@ -199,18 +254,28 @@
   display: flex;
   align-items: center;
   gap: 12px;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow: 0 8px 32px rgba(99, 102, 241, 0.2);
+  transition: all 0.3s ease;
+}
 
+.generate-button:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 40px rgba(99, 102, 241, 0.3);
+  border-color: rgba(255, 255, 255, 0.2);
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.85), rgba(139, 92, 246, 0.85));
 }
 
 .generate-button:disabled {
-  opacity: 0.6;
+  opacity: 0.4;
   cursor: not-allowed;
 }
 
 .spinner {
   width: 24px;
   height: 24px;
-  border: 3px solid rgba(255, 255, 255, 0.3);
+  border: 3px solid rgba(255, 255, 255, 0.2);
   border-top-color: white;
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
@@ -222,12 +287,21 @@
   }
 }
 
+/* Info Box - Glass */
 .info-box {
-  background: rgba(50, 50, 50, 0.6);
-  border: 1px solid rgba(80, 80, 80, 0.6);
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 12px;
   padding: 20px;
   color: #cbd5e1;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  transition: all 0.25s ease;
+}
+
+.info-box:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.12);
 }
 
 .info-box strong {
@@ -243,8 +317,14 @@
 
 .info-box li {
   margin: 8px 0;
+  color: rgba(148, 163, 184, 0.8);
 }
 
+.info-box li::marker {
+  color: rgba(99, 102, 241, 0.6);
+}
+
+/* Plan Display Section */
 .plan-display-section {
   display: flex;
   flex-direction: column;
@@ -264,17 +344,18 @@
   font-weight: 700;
   color: #ffffff;
   margin-bottom: 10px;
+  text-shadow: 0 0 30px rgba(99, 102, 241, 0.1);
 }
 
 .plan-title p {
-  color: #999999;
+  color: rgba(148, 163, 184, 0.6);
   font-size: 1rem;
 }
 
 .new-plan-button {
   padding: 12px 24px;
-  background: rgba(50, 50, 50, 0.8);
-  border: 1px solid rgba(80, 80, 80, 0.6);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   color: white;
   border-radius: 12px;
   font-weight: 600;
@@ -282,20 +363,59 @@
   display: flex;
   align-items: center;
   gap: 10px;
-
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  transition: all 0.25s ease;
 }
 
+.new-plan-button:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.18);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+}
+
+/* Plan Content - Glass Card */
 .plan-content {
-  background: rgba(30, 30, 30, 0.6);
-  backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 20px;
   padding: 30px;
   color: #e2e8f0;
   line-height: 1.8;
   max-height: 70vh;
   overflow-y: auto;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  position: relative;
+}
+
+.plan-content::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(99, 102, 241, 0.3), rgba(139, 92, 246, 0.3), transparent);
+}
+
+.plan-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.plan-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.plan-content::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 3px;
+}
+
+.plan-content::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.15);
 }
 
 .plan-content h1,
@@ -308,18 +428,18 @@
 
 .plan-content h1 {
   font-size: 1.8rem;
-  border-bottom: 2px solid rgba(80, 80, 80, 0.6);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   padding-bottom: 10px;
 }
 
 .plan-content h2 {
   font-size: 1.5rem;
-  color: #cccccc;
+  color: #c4b5fd;
 }
 
 .plan-content h3 {
   font-size: 1.2rem;
-  color: #cbd5e1;
+  color: #a5b4fc;
 }
 
 .plan-content ul,
@@ -330,6 +450,11 @@
 
 .plan-content li {
   margin: 10px 0;
+  color: rgba(226, 232, 240, 0.85);
+}
+
+.plan-content li::marker {
+  color: rgba(99, 102, 241, 0.6);
 }
 
 .plan-content strong {
@@ -338,7 +463,8 @@
 }
 
 .plan-content code {
-  background: rgba(99, 102, 241, 0.2);
+  background: rgba(99, 102, 241, 0.1);
+  border: 1px solid rgba(99, 102, 241, 0.15);
   padding: 2px 6px;
   border-radius: 4px;
   font-family: 'Courier New', monospace;
@@ -349,6 +475,7 @@
   margin: 15px 0;
 }
 
+/* Action Buttons - Glass */
 .plan-actions {
   display: flex;
   gap: 15px;
@@ -365,20 +492,39 @@
   display: flex;
   align-items: center;
   gap: 10px;
-
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  transition: all 0.25s ease;
 }
 
 .action-button.primary {
-  background: linear-gradient(180deg, #9448C4 0%, #5D2A91 100%);
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.6), rgba(139, 92, 246, 0.6));
   color: white;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 4px 20px rgba(99, 102, 241, 0.15);
+}
+
+.action-button.primary:hover {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.8), rgba(139, 92, 246, 0.8));
+  transform: translateY(-2px);
+  box-shadow: 0 8px 32px rgba(99, 102, 241, 0.25);
+  border-color: rgba(255, 255, 255, 0.2);
 }
 
 .action-button.secondary {
-  background: rgba(50, 50, 50, 0.8);
-  border: 1px solid rgba(80, 80, 80, 0.6);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   color: white;
 }
 
+.action-button.secondary:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.18);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+}
+
+/* Responsive */
 @media (max-width: 768px) {
   .prep-plan-main {
     margin-left: 0;

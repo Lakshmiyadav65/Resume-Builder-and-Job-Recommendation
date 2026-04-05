@@ -10,6 +10,7 @@ import ChatWithResume from './pages/ChatWithResume';
 import DeepDive from './pages/DeepDive';
 import PreparationPlan from './pages/PreparationPlan';
 import InterviewPage from './pages/InterviewPage';
+import InterviewReport from './pages/InterviewReport';
 
 function App() {
   return (
@@ -25,6 +26,7 @@ function App() {
           <Route path="/deep-dive" element={<DeepDive />} />
           <Route path="/preparation" element={<PreparationPlan />} />
           <Route path="/interview/:token" element={<InterviewPage />} />
+          <Route path="/interview-report" element={<InterviewReport />} />
         </Routes>
       </Router>
     </AppProvider>

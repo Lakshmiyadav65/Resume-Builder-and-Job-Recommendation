@@ -28,7 +28,7 @@ import { rankResumes } from '../services/api';
 import Sidebar from '../components/Sidebar';
 import './RecruiterDashboard.css';
 
-import { Search, MapPin, FileText, Send, User, ChevronLeft, ChevronRight, X, Mic, MicOff, Video, Clock, CheckCircle2, Copy, Briefcase, Sparkles, Settings, AlertCircle, XCircle, Check, CircleSlash, Eye, Edit3, VolumeX, EyeOff, Camera, ShieldCheck, Lock } from 'lucide-react';
+import { Search, MapPin, FileText, Send, User, ChevronLeft, ChevronRight, X, Mic, MicOff, Video, Clock, CheckCircle2, Copy, Briefcase, Sparkles, Settings, AlertCircle, XCircle, Check, CircleSlash, Eye, Edit3, VolumeX, EyeOff, Camera, ShieldCheck, Lock, Pause, MoreHorizontal } from 'lucide-react';
 import { Avatar, AvatarImage, AvatarFallback } from '../components/ui/avatar';
 import { toast } from 'sonner';
 import { inviteToInterview } from '../services/api';
@@ -76,6 +76,8 @@ const RecruiterDashboard = () => {
   const demoMessagesEndRef = useRef(null);
   const cameraStreamRef = useRef(null);
   const cameraPreviewRef = useRef(null);
+  const micAudioCtxRef = useRef(null);  // store AudioContext for cleanup
+  const micActiveRef = useRef(false);   // controls the RAF loop without stale closures
   const [demoIntroPhase, setDemoIntroPhase] = useState(0); // 0=welcome, 1=hardware check
   const [cameraDetected, setCameraDetected] = useState(false);
   const [micDetected, setMicDetected] = useState(false);
@@ -488,20 +490,43 @@ const RecruiterDashboard = () => {
       }, 200);
       setCameraDetected(true);
       setMicDetected(true);
-      // Simulate mic level animation
-      const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      const analyser = audioCtx.createAnalyser();
-      const source = audioCtx.createMediaStreamSource(stream);
-      source.connect(analyser);
-      analyser.fftSize = 256;
-      const data = new Uint8Array(analyser.frequencyBinCount);
-      const tick = () => {
-        analyser.getByteFrequencyData(data);
-        const avg = data.reduce((a, b) => a + b, 0) / data.length;
-        setMicLevel(Math.min(10, Math.round(avg / 12)));
-        if (demoStep === 0 && showDemoExperience) requestAnimationFrame(tick);
-      };
-      tick();
+      // Real-time mic level monitor using Web Audio API
+      // We use a REF flag (micActiveRef) instead of React state to avoid stale closure bugs
+      try {
+        if (micAudioCtxRef.current) {
+          micAudioCtxRef.current.close().catch(() => { });
+        }
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        micAudioCtxRef.current = audioCtx;
+        const analyser = audioCtx.createAnalyser();
+        analyser.fftSize = 512;
+        analyser.smoothingTimeConstant = 0.6;
+        const source = audioCtx.createMediaStreamSource(stream);
+        source.connect(analyser);
+        const data = new Uint8Array(analyser.frequencyBinCount);
+        micActiveRef.current = true;
+        const tick = () => {
+          if (!micActiveRef.current) return; // stop the loop cleanly via ref
+          analyser.getByteFrequencyData(data);
+          // Focus on voice frequency bins only (bins 2-100 ≈ 172Hz–8.6kHz with fftSize 512)
+          const voiceBins = Array.from(data.slice(2, 100));
+          const sumOfSquares = voiceBins.reduce((acc, val) => acc + val * val, 0);
+          const rms = Math.sqrt(sumOfSquares / voiceBins.length);
+          // Scale: rms<3=silent, 3-12=low(1-2 dots), 12-40=normal(3-5 dots), 40+=loud(6-8 dots)
+          let level = 0;
+          if (rms >= 3) {
+            level = rms < 12 ? Math.ceil(((rms - 3) / 9) * 2) + 1        // 1-3 dots: quiet
+              : rms < 40 ? Math.ceil(((rms - 12) / 28) * 3) + 3      // 4-6 dots: normal
+                : Math.ceil(((rms - 40) / 30) * 2) + 6;                 // 7-8 dots: loud
+          }
+          level = Math.min(8, Math.max(0, level));
+          setMicLevel(level);
+          requestAnimationFrame(tick);
+        };
+        tick();
+      } catch (audioErr) {
+        console.warn('[KIA] AudioContext error:', audioErr);
+      }
 
       // Camera Visibility/Face Detection Check (Security Feature)
       const detectVisibility = async () => {
@@ -1721,10 +1746,13 @@ Expiry: `}<strong className="text-white font-bold">{(parseInt(linkExpiry))} hour
                   </button>
                   <Button
                     onClick={() => {
+                      micActiveRef.current = false;
+                      if (micAudioCtxRef.current) { micAudioCtxRef.current.close().catch(() => { }); micAudioCtxRef.current = null; }
                       if (cameraStreamRef.current) {
                         cameraStreamRef.current.getTracks().forEach(t => t.stop());
                         cameraStreamRef.current = null;
                       }
+                      setMicLevel(0);
                       setShowDemoExperience(false);
                       setDemoStep(0);
                       setDemoMessages([]);
@@ -1909,22 +1937,36 @@ Expiry: `}<strong className="text-white font-bold">{(parseInt(linkExpiry))} hour
                                   </div>
                                   <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                                     <div style={{ background: 'rgba(255,255,255,0.02)', padding: '12px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.04)' }}>
-                                      <p style={{ margin: '0 0 10px', fontSize: '8px', fontWeight: '800', color: '#818cf8', letterSpacing: '0.05em' }}>STATIC AUDIO STATUS</p>
-                                      <div style={{ height: '8px', background: 'rgba(255,255,255,0.05)', borderRadius: '4px', overflow: 'hidden', position: 'relative' }}>
-                                        <motion.div
-                                          animate={{ width: `${Math.min(100, micLevel * 10)}%` }}
-                                          transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-                                          style={{
-                                            height: '100%',
-                                            background: micLevel > 1 ? 'linear-gradient(to right, #10b981, #34d399)' : '#1e293b',
-                                            boxShadow: micLevel > 2 ? '0 0 10px rgba(16, 185, 129, 0.3)' : 'none'
-                                          }}
-                                        />
+                                      <p style={{ margin: '0 0 8px', fontSize: '8px', fontWeight: '800', color: '#818cf8', letterSpacing: '0.05em' }}>STATIC AUDIO STATUS</p>
+                                      {/* 8-dot voice level indicator */}
+                                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '6px' }}>
+                                        {Array.from({ length: 8 }).map((_, idx) => {
+                                          const active = idx < micLevel;
+                                          const color = idx < 3 ? '#10b981' : idx < 6 ? '#f59e0b' : '#ef4444';
+                                          return (
+                                            <motion.div
+                                              key={idx}
+                                              animate={{
+                                                opacity: active ? 1 : 0.12,
+                                                scale: active ? [1, 1.15, 1] : 1
+                                              }}
+                                              transition={active ? { duration: 0.3, repeat: 0 } : { duration: 0.2 }}
+                                              style={{
+                                                flex: 1,
+                                                height: '10px',
+                                                borderRadius: '3px',
+                                                background: active ? color : 'rgba(255,255,255,0.08)',
+                                                boxShadow: active ? `0 0 6px ${color}88` : 'none',
+                                                transition: 'background 0.15s, box-shadow 0.15s'
+                                              }}
+                                            />
+                                          );
+                                        })}
                                       </div>
-                                      <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '6px' }}>
+                                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                                         <span style={{ fontSize: '8px', color: '#64748b', fontWeight: '700' }}>VOICE LEVEL</span>
-                                        <span style={{ fontSize: '8px', color: micLevel > 1 ? '#10b981' : '#64748b', fontWeight: '800' }}>
-                                          {micLevel > 1 ? 'EXCELLENT' : 'SILENT'}
+                                        <span style={{ fontSize: '8px', fontWeight: '800', color: micLevel === 0 ? '#64748b' : micLevel < 3 ? '#10b981' : micLevel < 6 ? '#f59e0b' : '#ef4444' }}>
+                                          {micLevel === 0 ? 'SILENT' : micLevel < 3 ? 'LOW' : micLevel < 6 ? 'GOOD' : 'LOUD'}
                                         </span>
                                       </div>
                                     </div>
@@ -2007,371 +2049,175 @@ Expiry: `}<strong className="text-white font-bold">{(parseInt(linkExpiry))} hour
               </motion.div>
             )}
             {/* Step 1 -- Dark Modern Interview UI */}
-            {
-              demoStep === 1 && (
-                <div style={{ flex: 1, display: 'flex', overflow: 'hidden', position: 'relative', background: '#05060b' }}>
-                  {/* Background Glows for Dark Mode */}
-                  <div style={{ position: 'absolute', top: '20%', left: '50%', transform: 'translate(-50%, -50%)', width: '600px', height: '600px', background: 'radial-gradient(circle, rgba(59, 130, 246, 0.05) 0%, transparent 70%)', zIndex: 0 }}></div>
-                  <div style={{ position: 'absolute', bottom: '0', left: '0', width: '300px', height: '300px', background: 'radial-gradient(circle, rgba(148, 72, 196, 0.05) 0%, transparent 70%)', zIndex: 0 }}></div>
+            {/* Step 1 -- Dark Modern Split-Screen Interview UI */}
+            {demoStep === 1 && (
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', background: '#05060b' }}>
+                <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', padding: '24px', minHeight: 0 }}>
 
-                  {/* Main Interaction Area - DARK & NO OVERLAP */}
-                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', position: 'relative', zIndex: 1, padding: '20px' }}>
+                  {/* LEFT: AI AGENT SCREEN */}
+                  <div style={{
+                    background: 'rgba(255,255,255,0.02)',
+                    borderRadius: '32px',
+                    border: '1px solid rgba(255,255,255,0.06)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    position: 'relative',
+                    overflow: 'hidden'
+                  }}>
+                    {/* Background Glows */}
+                    <div style={{ position: 'absolute', top: '20%', left: '50%', transform: 'translate(-50%, -50%)', width: '400px', height: '400px', background: 'radial-gradient(circle, rgba(99, 102, 241, 0.08) 0%, transparent 70%)', zIndex: 0 }}></div>
 
-                    {/* Status Badge */}
-                    <div style={{
-                      background: 'rgba(59, 130, 246, 0.1)',
-                      border: '1px solid rgba(59, 130, 246, 0.2)',
-                      borderRadius: '20px',
-                      padding: '6px 16px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '8px',
-                      marginBottom: '20px'
-                    }}>
-                      <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#3b82f6', animation: 'pulse 1.5s infinite' }}></div>
-                      <span style={{ color: '#3b82f6', fontSize: '10px', fontWeight: '900', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
-                        {isListening ? 'Mic is Active' : isAgentSpeaking ? 'Agent is Speaking' : 'Waiting...'}
-                      </span>
-                    </div>
-
-                    {/* Premium AI Agent Visualizer - Spherical Core Design */}
-                    <div style={{
-                      width: '180px',
-                      height: '180px',
-                      position: 'relative',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      marginBottom: '40px',
-                      flexShrink: 0
-                    }}>
-                      {/* Outer Rotating Orbits */}
-                      <motion.div
-                        animate={{ rotate: 360 }}
-                        transition={{ duration: 15, repeat: Infinity, ease: 'linear' }}
-                        style={{
-                          position: 'absolute',
-                          inset: '-10px',
-                          borderRadius: '50%',
-                          border: '1px dashed rgba(59, 130, 246, 0.15)',
-                          opacity: 0.5
-                        }}
-                      />
-                      <motion.div
-                        animate={{ rotate: -360 }}
-                        transition={{ duration: 25, repeat: Infinity, ease: 'linear' }}
-                        style={{
-                          position: 'absolute',
-                          inset: '-20px',
-                          borderRadius: '50%',
-                          border: '1px dotted rgba(139, 92, 246, 0.1)',
-                          opacity: 0.3
-                        }}
-                      />
-
-                      {/* Dynamic Background Glow */}
-                      <motion.div
-                        animate={isListening || isAgentSpeaking ? {
-                          scale: [1, 1.2, 1],
-                          opacity: [0.2, 0.5, 0.2]
-                        } : { scale: 1, opacity: 0.1 }}
-                        transition={{ duration: 3, repeat: Infinity }}
-                        style={{
-                          position: 'absolute',
-                          inset: '-50px',
-                          borderRadius: '50%',
-                          background: isAgentSpeaking
-                            ? 'radial-gradient(circle, rgba(139, 92, 246, 0.12) 0%, transparent 70%)'
-                            : 'radial-gradient(circle, rgba(59, 130, 246, 0.12) 0%, transparent 70%)',
-                          zIndex: 0
-                        }}
-                      />
-
-                      {/* Main Glowing Sphere */}
-                      <div style={{
-                        width: '140px',
-                        height: '140px',
-                        borderRadius: '50%',
-                        background: '#090c14',
-                        border: isListening
-                          ? '2px solid rgba(59, 130, 246, 0.4)'
-                          : isAgentSpeaking
-                            ? '2px solid rgba(139, 92, 246, 0.3)'
-                            : '1.5px solid rgba(255, 255, 255, 0.05)',
-                        boxShadow: isListening
-                          ? '0 0 40px rgba(59, 130, 246, 0.2), inset 0 0 25px rgba(59, 130, 246, 0.1)'
-                          : '0 15px 45px rgba(0,0,0,0.6)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        overflow: 'hidden',
-                        position: 'relative',
-                        zIndex: 1
-                      }}>
-                        {/* Internal Fluid Waveform */}
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '3px', zIndex: 2 }}>
-                          {Array.from({ length: 14 }).map((_, i) => {
-                            const distanceFromCenter = Math.abs(i - 6.5);
-                            const factor = 1 - (distanceFromCenter / 7);
-                            const baseHeight = 12 + factor * 30;
-
-                            return (
-                              <motion.div
-                                key={i}
-                                animate={{
-                                  height: (isListening || isAgentSpeaking)
-                                    ? [baseHeight * 0.4, baseHeight, baseHeight * 0.6, baseHeight * 0.9, baseHeight * 0.5]
-                                    : [8, 12, 8]
-                                }}
-                                transition={{
-                                  duration: 1.2,
-                                  repeat: Infinity,
-                                  delay: i * 0.08,
-                                  ease: "easeInOut"
-                                }}
-                                style={{
-                                  width: '3px',
-                                  background: isAgentSpeaking
-                                    ? 'linear-gradient(to bottom, #a78bfa, #8b5cf6)'
-                                    : 'linear-gradient(to bottom, #60a5fa, #3b82f6)',
-                                  borderRadius: '20px',
-                                  opacity: 0.3 + factor * 0.7,
-                                  boxShadow: (isListening || isAgentSpeaking)
-                                    ? `0 0 12px ${isAgentSpeaking ? 'rgba(139, 92, 246, 0.4)' : 'rgba(59, 130, 246, 0.4)'}`
-                                    : 'none'
-                                }}
-                              />
-                            );
-                          })}
-                        </div>
-
-                        {/* Glass Overlay Shine */}
-                        <div style={{
-                          position: 'absolute',
-                          top: '-50%',
-                          left: '-50%',
-                          width: '200%',
-                          height: '200%',
-                          background: 'linear-gradient(135deg, rgba(255,255,255,0.05) 0%, transparent 40%)',
-                          pointerEvents: 'none'
-                        }} />
+                    {/* AI Visualizer */}
+                    <div style={{ width: '180px', height: '180px', borderRadius: '50%', background: '#090c14', border: isListening ? '2px solid #3b82f6' : '1.5px solid rgba(255,255,255,0.1)', boxShadow: isListening ? '0 0 40px rgba(59, 130, 246, 0.2)' : '0 10px 30px rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', zIndex: 2, marginBottom: '40px' }}>
+                      <div style={{ display: 'flex', gap: '4px' }}>
+                        {Array.from({ length: 14 }).map((_, i) => (
+                          <motion.div
+                            key={i}
+                            animate={{ height: (isListening || isAgentSpeaking) ? [20, 50, 25, 45, 20] : [10, 15, 10] }}
+                            transition={{ duration: 1.2, repeat: Infinity, delay: i * 0.08 }}
+                            style={{ width: '3px', background: isAgentSpeaking ? '#a78bfa' : '#3b82f6', borderRadius: '10px', opacity: 0.7 }}
+                          />
+                        ))}
                       </div>
                     </div>
 
-                    {/* Question Display - Dark Variant */}
-                    <div style={{ textAlign: 'center', maxWidth: '600px', padding: '0 20px' }}>
-                      <p style={{ fontSize: '10px', fontWeight: '900', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: '8px' }}>Current Question</p>
-                      <h2 style={{ fontSize: '28px', fontWeight: '800', color: '#f8fafc', lineHeight: '1.2', letterSpacing: '-0.02em', marginBottom: '16px' }}>
-                        "{demoMessages.filter(m => m.role === 'agent').pop()?.text || "Preparing your first question..."}"
-                      </h2>
+                    {/* Question & Transcript Display */}
+                    <div style={{ width: 'k100%', maxWidth: '440px', padding: '0 24px', zIndex: 2, display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                      <div style={{ alignSelf: 'flex-start', background: 'rgba(255,255,255,0.05)', backdropFilter: 'blur(10px)', padding: '16px 20px', borderRadius: '20px 20px 20px 4px', fontSize: '15px', color: '#f8fafc', maxWidth: '90%', lineHeight: 1.5, border: '1px solid rgba(255,255,255,0.08)' }}>
+                        <span style={{ fontSize: '10px', fontWeight: '900', color: '#6366f1', textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>AI AI Agent</span>
+                        "{demoMessages.filter(m => m.role === 'agent').pop()?.text || "..."}"
+                      </div>
 
-                      <p style={{ fontSize: '13px', color: '#94a3b8', fontWeight: '500', marginBottom: '8px' }}>
-                        {isListening ? "AI is listening... Speak your answer now." : "Agent is speaking... Please listen carefully."}
-                      </p>
-
-                      <span style={{
-                        background: 'rgba(255,255,255,0.04)',
-                        color: '#64748b',
-                        fontSize: '8px',
-                        fontWeight: '800',
-                        padding: '4px 12px',
-                        borderRadius: '20px',
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.05em',
-                        border: '1px solid rgba(255,255,255,0.08)'
-                      }}>
-                        STAR Method Recommended
-                      </span>
-                    </div>
-
-                    {/* Live Captions Bar - Dark Glassmorphism */}
-                    <AnimatePresence>
-                      {showCaptions && voiceTranscript && (
+                      {voiceTranscript && isListening && (
                         <motion.div
-                          initial={{ opacity: 0, y: 10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          exit={{ opacity: 0, y: 10 }}
-                          style={{
-                            marginTop: '24px',
-                            background: 'rgba(13,18,31,0.6)',
-                            backdropFilter: 'blur(20px)',
-                            padding: '16px 32px',
-                            borderRadius: '24px',
-                            border: '1px solid rgba(255,255,255,0.06)',
-                            maxWidth: '700px',
-                            textAlign: 'center',
-                            boxShadow: '0 20px 50px rgba(0,0,0,0.5)',
-                            zIndex: 10
-                          }}
-                        >
-                          <p style={{ margin: 0, fontSize: '15px', fontWeight: '600', color: '#f1f5f9', fontStyle: 'italic', letterSpacing: '0.01em', lineHeight: 1.5 }}>
-                            "{voiceTranscript}"
-                            <motion.span animate={{ opacity: [1, 0] }} transition={{ repeat: Infinity, duration: 0.5 }} style={{ display: 'inline-block', width: '2px', height: '16px', background: '#3b82f6', marginLeft: '4px', verticalAlign: 'middle' }} />
-                          </p>
+                          initial={{ opacity: 0, scale: 0.95 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          style={{ alignSelf: 'flex-start', background: 'rgba(59, 130, 246, 0.12)', border: '1px solid rgba(59, 130, 246, 0.2)', padding: '16px 20px', borderRadius: '20px 20px 20px 4px', fontSize: '15px', color: '#93c5fd', maxWidth: '90%', fontStyle: 'italic', lineHeight: 1.5, backdropFilter: 'blur(10px)' }}>
+                          <span style={{ fontSize: '10px', fontWeight: '900', color: '#3b82f6', textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>You (Transcribing)</span>
+                          "{voiceTranscript}"
                         </motion.div>
                       )}
-                    </AnimatePresence>
-
-                    {/* Explicit Submit Action -- only show after student has given a real answer */}
-                    {voiceTranscript.trim().length > 5 && isListening && (
-                      <motion.button
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        onClick={stopListeningAndSubmit}
-                        style={{
-                          marginTop: '24px',
-                          background: '#3b82f6',
-                          color: 'white',
-                          padding: '10px 24px',
-                          borderRadius: '30px',
-                          fontWeight: '800',
-                          fontSize: '12px',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '10px',
-                          border: 'none',
-                          cursor: 'pointer',
-                          boxShadow: '0 10px 20px rgba(59, 130, 246, 0.3)',
-                          textTransform: 'uppercase',
-                          letterSpacing: '0.05em'
-                        }}
-                      >
-                        <Send size={16} />
-                        Next Question
-                      </motion.button>
-                    )}
-
-                    {/* Student Camera Card - Floating Glassmorphism */}
-                    <motion.div
-                      initial={{ opacity: 0, x: 20, scale: 0.9 }}
-                      animate={{ opacity: 1, x: 0, scale: 1 }}
-                      transition={{ delay: 0.5, duration: 0.8 }}
-                      style={{
-                        position: 'absolute',
-                        bottom: '40px',
-                        right: '40px',
-                        width: '180px',
-                        aspectRatio: '4/3',
-                        background: 'rgba(13, 18, 31, 0.4)',
-                        backdropFilter: 'blur(10px)',
-                        borderRadius: '20px',
-                        border: '1px solid rgba(255, 255, 255, 0.1)',
-                        boxShadow: '0 10px 30px rgba(0,0,0,0.4)',
-                        overflow: 'hidden',
-                        zIndex: 10
-                      }}
-                    >
-                      {cameraDetected ? (
-                        <video
-                          ref={cameraPreviewRef}
-                          autoPlay
-                          muted
-                          playsInline
-                          style={{
-                            width: '100%',
-                            height: '100%',
-                            objectFit: 'cover',
-                            transform: 'scaleX(-1)', // Mirror effect
-                          }}
-                        />
-                      ) : (
-                        <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#000' }}>
-                          <Video size={32} color="#1e293b" />
-                        </div>
-                      )}
-
-                      {/* Label Overlay */}
-                      <div style={{
-                        position: 'absolute',
-                        top: '12px',
-                        left: '12px',
-                        background: 'rgba(0,0,0,0.5)',
-                        backdropFilter: 'blur(4px)',
-                        padding: '4px 10px',
-                        borderRadius: '20px',
-                        border: '1px solid rgba(255,255,255,0.1)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '6px'
-                      }}>
-                        <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#10b981', boxShadow: '0 0 8px #10b981' }}></div>
-                        <span style={{ fontSize: '9px', fontWeight: '800', color: '#fff', letterSpacing: '0.05em', textTransform: 'uppercase' }}>YOU</span>
-                      </div>
-                    </motion.div>
-
-                    {/* Footer Controls - MOVED UP TO PREVENT OVERLAP */}
-                    <div style={{ marginTop: '40px', display: 'flex', gap: '32px' }}>
-                      {/* Mute/Mic Control */}
-                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
-                        <button
-                          onClick={() => {
-                            if (isListening) stopListeningAndSubmit();
-                            else startListening();
-                          }}
-                          style={{
-                            width: '48px', height: '48px', borderRadius: '50%',
-                            border: isListening ? 'none' : '1px solid rgba(255,255,255,0.1)',
-                            background: isListening ? '#3b82f6' : 'rgba(255,255,255,0.03)',
-                            color: isListening ? 'white' : '#94a3b8',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
-                            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                            boxShadow: isListening ? '0 0 20px rgba(59, 130, 246, 0.4)' : 'none'
-                          }}
-                        >
-                          {isListening ? <Mic size={22} /> : <MicOff size={22} />}
-                        </button>
-                        <span style={{ fontSize: '10px', fontWeight: '900', color: isListening ? '#3b82f6' : '#64748b', letterSpacing: '0.05em' }}>
-                          {isListening ? 'LISTENING' : 'MIC OFF'}
-                        </span>
-                      </div>
-
-                      {/* Speaker Control */}
-                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
-                        <button
-                          onClick={() => setIsSpeakerOff(!isSpeakerOff)}
-                          style={{
-                            width: '48px', height: '48px', borderRadius: '50%',
-                            border: '1px solid rgba(255,255,255,0.1)',
-                            background: isSpeakerOff ? 'rgba(239, 68, 68, 0.1)' : 'rgba(255,255,255,0.03)',
-                            color: isSpeakerOff ? '#ef4444' : '#94a3b8',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
-                            transition: 'all 0.2s'
-                          }}
-                        >
-                          {isSpeakerOff ? <VolumeX size={22} /> : <Video size={22} />}
-                        </button>
-                        <span style={{ fontSize: '10px', fontWeight: '900', color: isSpeakerOff ? '#ef4444' : '#64748b', letterSpacing: '0.05em' }}>
-                          SPEAKER
-                        </span>
-                      </div>
-
-                      {/* Captions Control */}
-                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
-                        <button
-                          onClick={() => setShowCaptions(!showCaptions)}
-                          style={{
-                            width: '48px', height: '48px', borderRadius: '50%',
-                            border: '1px solid rgba(255,255,255,0.1)',
-                            background: showCaptions ? 'rgba(59, 130, 246, 0.1)' : 'rgba(255,255,255,0.03)',
-                            color: showCaptions ? '#3b82f6' : '#94a3b8',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
-                            transition: 'all 0.2s'
-                          }}
-                        >
-                          {showCaptions ? <FileText size={22} /> : <EyeOff size={22} />}
-                        </button>
-                        <span style={{ fontSize: '10px', fontWeight: '900', color: showCaptions ? '#3b82f6' : '#64748b', letterSpacing: '0.05em' }}>
-                          CAPTIONS
-                        </span>
-                      </div>
                     </div>
 
-                    {/* Live Transcript Removed from here since it's above now */}
+                    {/* Floating Next Button inside AI window */}
+                    {voiceTranscript.trim().length > 5 && isListening && (
+                      <motion.button
+                        initial={{ opacity: 0, y: 10, scale: 0.9 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={stopListeningAndSubmit}
+                        style={{
+                          position: 'absolute', bottom: '40px', right: '40px',
+                          background: 'linear-gradient(135deg, #6366f1, #4f46e5)', color: 'white', padding: '14px 28px', borderRadius: '16px', fontWeight: '900', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '12px', border: 'none', cursor: 'pointer', boxShadow: '0 15px 30px rgba(79, 70, 229, 0.3)', textTransform: 'uppercase', letterSpacing: '0.02em', zIndex: 10
+                        }}
+                      >
+                        <Send size={18} /> Next Question
+                      </motion.button>
+                    )}
                   </div>
 
+                  {/* RIGHT: STUDENT VIDEO FEED SCREEN */}
+                  <div style={{
+                    background: '#000',
+                    borderRadius: '32px',
+                    overflow: 'hidden',
+                    position: 'relative',
+                    border: '1px solid rgba(255,255,255,0.06)',
+                    boxShadow: '0 20px 50px rgba(0,0,0,0.5)'
+                  }}>
+                    {cameraDetected ? (
+                      <video ref={cameraPreviewRef} autoPlay muted playsInline style={{ width: '100%', height: '100%', objectFit: 'cover', transform: 'scaleX(-1)' }} />
+                    ) : (
+                      <div style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '16px' }}>
+                        <div className="animate-pulse" style={{ width: '64px', height: '64px', borderRadius: '50%', background: 'rgba(255,255,255,0.02)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <Video size={32} color="#1e293b" />
+                        </div>
+                        <span style={{ color: '#334155', fontSize: '12px', fontWeight: '800', letterSpacing: '0.1em' }}>CAMERA FEED INITIALIZING</span>
+                      </div>
+                    )}
+
+                    {/* Status Overlays */}
+                    <div style={{
+                      position: 'absolute', top: '24px', left: '24px',
+                      background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(10px)', padding: '8px 16px', borderRadius: '100px', border: '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', gap: '10px'
+                    }}>
+                      <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#10b981', boxShadow: '0 0 10px #10b981' }}></div>
+                      <span style={{ fontSize: '11px', fontWeight: '900', color: '#fff', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Student: Active</span>
+                    </div>
+
+                    {isListening && (
+                      <motion.div
+                        animate={{ scale: [1, 1.1, 1] }}
+                        transition={{ duration: 1, repeat: Infinity }}
+                        style={{ position: 'absolute', top: '24px', right: '24px', background: 'rgba(59, 130, 246, 0.8)', padding: '10px', borderRadius: '50%', border: '2px solid rgba(255,255,255,0.2)' }}>
+                        <Mic size={20} color="white" />
+                      </motion.div>
+                    )}
+                  </div>
                 </div>
-              )
-            }
+
+                {/* BOTTOM PREMIUM CONTROL BAR */}
+                <div style={{
+                  height: '92px', background: 'rgba(3, 4, 7, 0.8)', borderTop: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 48px', backdropFilter: 'blur(20px)', zIndex: 100
+                }}>
+                  {/* Left: Help / Support */}
+                  <Button variant="outline" className="rounded-2xl border-white/10 bg-white/5 hover:bg-white/10 text-white gap-3 h-12 px-6 text-xs font-black uppercase tracking-tight transition-all active:scale-95">
+                    Help Center <span style={{ width: 18, height: 18, borderRadius: '6px', border: '1.5px solid currentColor', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10 }}>?</span>
+                  </Button>
+
+                  {/* Middle: Centered Interaction Icons */}
+                  <div style={{ display: 'flex', gap: '16px' }}>
+                    <Button variant="ghost" size="icon" className="w-14 h-14 rounded-2xl bg-white/5 text-white hover:bg-white/10 transition-all hover:translate-y-[-2px] active:scale-95">
+                      <Pause size={24} />
+                    </Button>
+                    <Button
+                      variant="ghost" size="icon"
+                      className={`w-14 h-14 rounded-2xl ${showCaptions ? 'bg-indigo-600/20 border-indigo-500/30' : 'bg-white/5 border-transparent'} border text-white hover:bg-white/10 transition-all hover:translate-y-[-2px] active:scale-95`}
+                      onClick={() => setShowCaptions(!showCaptions)}
+                    >
+                      <FileText size={24} color={showCaptions ? '#818cf8' : 'white'} />
+                    </Button>
+                    <Button
+                      variant="ghost" size="icon"
+                      className={`w-14 h-14 rounded-2xl ${isListening ? 'bg-indigo-600 animate-pulse-subtle' : 'bg-white/5'} text-white hover:bg-indigo-700 transition-all hover:translate-y-[-2px] active:scale-95 shadow-lg shadow-indigo-500/10`}
+                      onClick={() => { if (isListening) stopListeningAndSubmit(); else startListening(); }}
+                    >
+                      {isListening ? <Mic size={24} /> : <MicOff size={24} />}
+                    </Button>
+                    <Button variant="ghost" size="icon" className="w-14 h-14 rounded-2xl bg-white/5 text-white hover:bg-white/10 transition-all hover:translate-y-[-2px] active:scale-95">
+                      <Video size={24} />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="w-14 h-14 rounded-2xl bg-white/5 text-white hover:bg-white/10 transition-all hover:translate-y-[-2px] active:scale-95">
+                      <MoreHorizontal size={24} />
+                    </Button>
+                  </div>
+
+                  {/* Right: Explicit Session Actions */}
+                  <div style={{ display: 'flex', gap: '16px' }}>
+                    <Button
+                      className="bg-red-500/90 hover:bg-red-600 text-white font-black text-xs uppercase rounded-2xl px-8 h-12 shadow-lg shadow-red-500/20 transition-all active:scale-95"
+                      onClick={() => {
+                        micActiveRef.current = false;
+                        if (micAudioCtxRef.current) { micAudioCtxRef.current.close().catch(() => { }); micAudioCtxRef.current = null; }
+                        if (cameraStreamRef.current) { cameraStreamRef.current.getTracks().forEach(t => t.stop()); cameraStreamRef.current = null; }
+                        setShowDemoExperience(false);
+                      }}
+                    >
+                      End Session
+                    </Button>
+                    <Button
+                      className="bg-zinc-800 text-zinc-500 font-black text-xs uppercase rounded-2xl px-8 h-12 cursor-not-allowed border border-white/5"
+                      disabled
+                    >
+                      Continue
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Step 2 -- Premium AI Interview Report */}
             {
@@ -2595,7 +2441,7 @@ Expiry: `}<strong className="text-white font-bold">{(parseInt(linkExpiry))} hour
                               Retake Interview
                             </button>
                             <button
-                              onClick={() => { setShowDemoExperience(false); setDemoStep(0); setDemoMessages([]); }}
+                              onClick={() => { micActiveRef.current = false; if (micAudioCtxRef.current) { micAudioCtxRef.current.close().catch(() => { }); micAudioCtxRef.current = null; } setMicLevel(0); setShowDemoExperience(false); setDemoStep(0); setDemoMessages([]); }}
                               style={{ padding: '10px', borderRadius: '10px', border: '1px solid #e2e8f0', background: 'white', color: '#475569', fontWeight: '800', fontSize: '12px', cursor: 'pointer', textTransform: 'uppercase', letterSpacing: '0.04em' }}
                             >
                               Close & Finish

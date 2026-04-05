@@ -1,6 +1,12 @@
+/* ============================================
+   Interview Page - Glassmorphism Theme
+   ============================================ */
+
 .interview-page-container {
     min-height: 100vh;
-    background: #020617;
+    background: radial-gradient(ellipse at 30% 20%, rgba(99, 102, 241, 0.1) 0%, transparent 50%),
+                radial-gradient(ellipse at 70% 80%, rgba(139, 92, 246, 0.08) 0%, transparent 50%),
+                linear-gradient(160deg, #06060a 0%, #0c0e18 40%, #10101c 100%);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -11,53 +17,263 @@
 .interview-error-container {
     text-align: center;
     color: white;
+    background: rgba(255, 255, 255, 0.04);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 24px;
+    padding: 60px 48px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    max-width: 500px;
+    transition: all 0.3s ease;
+}
+
+.interview-error-container:hover {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(255, 255, 255, 0.12);
+}
+
+.interview-setup {
+    background: rgba(255, 255, 255, 0.03);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 28px;
+    padding: 60px 48px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3),
+                inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    transition: all 0.3s ease;
+}
+
+.interview-setup:hover {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.12);
+}
+
+.info-cards .bg-slate-800\/50 {
+    background: rgba(255, 255, 255, 0.04) !important;
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    border-radius: 16px;
+    transition: all 0.25s ease;
+}
+
+.info-cards .bg-slate-800\/50:hover {
+    background: rgba(255, 255, 255, 0.07) !important;
+    border-color: rgba(99, 102, 241, 0.2) !important;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+}
+
+.start-btn {
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.9) 0%, rgba(139, 92, 246, 0.9) 100%) !important;
+    border: 1px solid rgba(139, 92, 246, 0.3) !important;
+    border-radius: 16px !important;
+    font-weight: 700 !important;
+    font-size: 1.1rem !important;
+    padding: 14px 32px !important;
+    box-shadow: 0 8px 32px rgba(99, 102, 241, 0.3),
+                inset 0 1px 0 rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    transition: all 0.3s ease !important;
+}
+
+.start-btn:hover {
+    transform: translateY(-2px) scale(1.01) !important;
+    box-shadow: 0 12px 40px rgba(99, 102, 241, 0.45),
+                0 0 0 1px rgba(139, 92, 246, 0.4),
+                inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
+}
+
+.interview-session-active {
+    background: rgba(255, 255, 255, 0.02);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 28px;
+    padding: 40px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+    transition: all 0.3s ease;
+}
+
+.session-header {
+    padding-bottom: 20px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.stage-badge {
+    background: rgba(99, 102, 241, 0.1) !important;
+    border: 1px solid rgba(99, 102, 241, 0.2) !important;
+    color: #a5b4fc !important;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border-radius: 12px !important;
+    font-weight: 600;
+    transition: all 0.25s ease;
+}
+
+.stage-badge:hover {
+    background: rgba(99, 102, 241, 0.15) !important;
+    border-color: rgba(99, 102, 241, 0.3) !important;
 }
 
 .voice-visualizer {
     height: 100px;
+    background: rgba(255, 255, 255, 0.03);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 24px;
+    padding: 20px 40px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
 }
 
 .wave-bar {
     width: 10px;
     border-radius: 5px;
+    background: linear-gradient(180deg, rgba(99, 102, 241, 0.9) 0%, rgba(139, 92, 246, 0.9) 100%);
+    box-shadow: 0 0 12px rgba(99, 102, 241, 0.3);
+}
+
+.status-indicator {
+    background: rgba(255, 255, 255, 0.04);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 100px;
+    padding: 8px 16px;
 }
 
 .status-dot {
     width: 10px;
     height: 10px;
     border-radius: 50%;
+    transition: all 0.3s ease;
 }
 
 .status-dot.idle {
-    background: #64748b;
+    background: rgba(100, 116, 139, 0.8);
+    box-shadow: 0 0 8px rgba(100, 116, 139, 0.3);
 }
 
 .status-dot.listening {
     background: #10b981;
-    box-shadow: 0 0 10px #10b981;
+    box-shadow: 0 0 12px rgba(16, 185, 129, 0.5),
+                0 0 24px rgba(16, 185, 129, 0.2);
+    animation: pulse-glow-green 2s ease-in-out infinite;
 }
 
 .status-dot.thinking {
     background: #f59e0b;
+    box-shadow: 0 0 12px rgba(245, 158, 11, 0.5),
+                0 0 24px rgba(245, 158, 11, 0.2);
+    animation: pulse-glow-amber 2s ease-in-out infinite;
 }
 
 .status-dot.speaking {
     background: #6366f1;
-    box-shadow: 0 0 10px #6366f1;
+    box-shadow: 0 0 12px rgba(99, 102, 241, 0.5),
+                0 0 24px rgba(99, 102, 241, 0.2);
+    animation: pulse-glow-indigo 2s ease-in-out infinite;
 }
 
 .status-dot.evaluating {
     background: #8b5cf6;
+    box-shadow: 0 0 12px rgba(139, 92, 246, 0.5),
+                0 0 24px rgba(139, 92, 246, 0.2);
+    animation: pulse-glow-purple 2s ease-in-out infinite;
+}
+
+@keyframes pulse-glow-green {
+    0%, 100% { box-shadow: 0 0 8px rgba(16, 185, 129, 0.4); }
+    50% { box-shadow: 0 0 16px rgba(16, 185, 129, 0.7), 0 0 32px rgba(16, 185, 129, 0.3); }
+}
+
+@keyframes pulse-glow-amber {
+    0%, 100% { box-shadow: 0 0 8px rgba(245, 158, 11, 0.4); }
+    50% { box-shadow: 0 0 16px rgba(245, 158, 11, 0.7), 0 0 32px rgba(245, 158, 11, 0.3); }
+}
+
+@keyframes pulse-glow-indigo {
+    0%, 100% { box-shadow: 0 0 8px rgba(99, 102, 241, 0.4); }
+    50% { box-shadow: 0 0 16px rgba(99, 102, 241, 0.7), 0 0 32px rgba(99, 102, 241, 0.3); }
+}
+
+@keyframes pulse-glow-purple {
+    0%, 100% { box-shadow: 0 0 8px rgba(139, 92, 246, 0.4); }
+    50% { box-shadow: 0 0 16px rgba(139, 92, 246, 0.7), 0 0 32px rgba(139, 92, 246, 0.3); }
 }
 
 .interview-loading {
-    color: white;
+    color: rgba(226, 232, 240, 0.8);
     font-size: 1.5rem;
+    background: rgba(255, 255, 255, 0.04);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 16px;
+    padding: 24px 40px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+}
+
+.avatar-container {
+    transition: all 0.3s ease;
 }
 
 .avatar-frame {
     position: relative;
     z-index: 1;
+    border-color: rgba(99, 102, 241, 0.25) !important;
+    box-shadow: 0 8px 32px rgba(99, 102, 241, 0.2),
+                0 0 60px rgba(139, 92, 246, 0.08) !important;
+    transition: all 0.3s ease;
+}
+
+.avatar-frame:hover {
+    border-color: rgba(99, 102, 241, 0.4) !important;
+    box-shadow: 0 12px 48px rgba(99, 102, 241, 0.3),
+                0 0 80px rgba(139, 92, 246, 0.12) !important;
+}
+
+.pulse-overlay {
+    background: rgba(99, 102, 241, 0.06) !important;
+    border: 1px solid rgba(99, 102, 241, 0.08);
+}
+
+.question-display {
+    background: rgba(255, 255, 255, 0.03);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 20px;
+    padding: 32px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    transition: all 0.3s ease;
+}
+
+.question-display:hover {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+.interview-completion {
+    background: rgba(255, 255, 255, 0.03);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 28px;
+    padding: 60px 48px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3),
+                inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    max-width: 600px;
+    transition: all 0.3s ease;
+}
+
+.interview-completion:hover {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.12);
 }
 
 @keyframes pulse-ring {
