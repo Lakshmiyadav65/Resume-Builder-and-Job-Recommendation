@@ -66,7 +66,7 @@ const interviewSessionSchema = new mongoose.Schema({
     timestamps: true
 });
 
-interviewSessionSchema.index({ token: 1 });
+// token index already created by unique: true in schema definition
 interviewSessionSchema.index({ candidateId: 1 });
 interviewSessionSchema.index({ recruiterId: 1 });
 
