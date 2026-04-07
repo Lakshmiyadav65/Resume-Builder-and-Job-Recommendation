@@ -9,7 +9,59 @@ const api = axios.create({
   },
 });
 
-// Analysis APIs
+// Attach JWT token to every request
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem('token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
+// Handle 401 responses - only redirect for protected routes (recruiter)
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      const url = error.config?.url || '';
+      // Only redirect to login for recruiter/protected routes
+      const isProtectedRoute = url.includes('/recruiter') || url.includes('/auth/me');
+      if (isProtectedRoute) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        if (window.location.pathname !== '/login') {
+          window.location.href = '/login';
+        }
+      }
+    }
+    return Promise.reject(error);
+  }
+);
+
+// ==================== Auth APIs ====================
+
+export const registerUser = async (name, email, password, role) => {
+  const response = await api.post('/auth/register', { name, email, password, role });
+  return response.data;
+};
+
+export const loginUser = async (email, password) => {
+  const response = await api.post('/auth/login', { email, password });
+  return response.data;
+};
+
+export const getCurrentUser = async () => {
+  const response = await api.get('/auth/me');
+  return response.data;
+};
+
+export const updateUserRole = async (role) => {
+  const response = await api.put('/auth/role', { role });
+  return response.data;
+};
+
+// ==================== Analysis APIs ====================
+
 export const analyzeResume = async (formData) => {
   const response = await api.post('/analysis/analyze', formData, {
     headers: {
@@ -24,7 +76,8 @@ export const getAnalysis = async (sessionId) => {
   return response.data;
 };
 
-// Chat APIs
+// ==================== Chat APIs ====================
+
 export const initChat = async (formData) => {
   const response = await api.post('/chat/init', formData, {
     headers: {
@@ -49,7 +102,8 @@ export const clearChat = async (sessionId) => {
   return response.data;
 };
 
-// Preparation Plan APIs
+// ==================== Preparation Plan APIs ====================
+
 export const generatePrepPlan = async (sessionId, days) => {
   const response = await api.post('/prep-plan/generate', { sessionId, days });
   return response.data;
@@ -60,7 +114,8 @@ export const getPrepPlans = async (sessionId) => {
   return response.data;
 };
 
-// Recruiter Mode APIs
+// ==================== Recruiter Mode APIs ====================
+
 export const rankResumes = async (formData) => {
   const response = await api.post('/recruiter/rank-resumes', formData, {
     headers: {
@@ -75,7 +130,8 @@ export const generateAssignments = async (data) => {
   return response.data;
 };
 
-// Resume Builder APIs
+// ==================== Resume Builder APIs ====================
+
 export const saveResume = async (data) => {
   const response = await api.post('/resume-builder/save', data);
   return response.data;
@@ -108,7 +164,13 @@ export const generatePDF = async (data) => {
   return response.data;
 };
 
-// Interview APIs
+export const updateResumeStatus = async (data) => {
+  const response = await api.put('/resume-builder/update-status', data);
+  return response.data;
+};
+
+// ==================== Interview APIs ====================
+
 export const inviteToInterview = async (candidateId, recruiterId, options = {}) => {
   const response = await api.post('/interview/invite', { candidateId, recruiterId, ...options });
   return response.data;
@@ -126,11 +188,6 @@ export const getInterviewQuestion = async (token, stage) => {
 
 export const submitInterviewAnswer = async (data) => {
   const response = await api.post('/interview/answer', data);
-  return response.data;
-};
-
-export const updateResumeStatus = async (data) => {
-  const response = await api.put('/resume-builder/update-status', data);
   return response.data;
 };
 

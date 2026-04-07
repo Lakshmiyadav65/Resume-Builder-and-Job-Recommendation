@@ -38,14 +38,14 @@ router.post('/generate', async (req, res) => {
     }
 
     // Get analysis data
-    const analysis = await Analysis.findOne({ sessionId });
+    const analysis = await Analysis.findOne({ sessionId, userId: String(req.user._id) });
 
     if (!analysis) {
       return res.status(404).json({ error: 'Analysis not found. Please complete analysis first.' });
     }
 
     // Check if plan already exists for this session and days
-    const existingPlan = await PrepPlan.findOne({ sessionId, days });
+    const existingPlan = await PrepPlan.findOne({ sessionId, days, userId: String(req.user._id) });
     if (existingPlan) {
       return res.json({
         success: true,
@@ -113,6 +113,7 @@ Format with clear headers, bullet points, and numbered lists for easy readabilit
 
     // Save plan to database
     const prepPlan = new PrepPlan({
+      userId: String(req.user._id),
       sessionId,
       resumeText: analysis.resumeText,
       jobDescription: analysis.jobDescription,
@@ -135,7 +136,7 @@ Format with clear headers, bullet points, and numbered lists for easy readabilit
 // GET /api/prep-plan/:sessionId
 router.get('/:sessionId', async (req, res) => {
   try {
-    const plans = await PrepPlan.find({ sessionId: req.params.sessionId })
+    const plans = await PrepPlan.find({ sessionId: req.params.sessionId, userId: String(req.user._id) })
       .sort({ createdAt: -1 })
       .limit(10);
 

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useApp } from '../context/AppContext';
+import { useAuth } from '../context/AuthContext';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
 import { FaGraduationCap, FaBriefcase, FaArrowRight, FaSlack, FaTrello, FaSalesforce, FaMicrosoft } from 'react-icons/fa';
@@ -11,6 +12,7 @@ import './LandingPage.css';
 const LandingPage = () => {
   const navigate = useNavigate();
   const { setUserRole } = useApp();
+  const { user, logout } = useAuth();
   const [imagesLoaded, setImagesLoaded] = useState(false);
   const [backgroundLoaded, setBackgroundLoaded] = useState(false);
 
@@ -58,7 +60,16 @@ const LandingPage = () => {
     return () => clearTimeout(timeout);
   }, []);
 
+  const [showLoginPrompt, setShowLoginPrompt] = useState(false);
+
   const handleRoleSelection = (role) => {
+    if (role === 'recruiter') {
+      // Recruiter requires login
+      if (!user) {
+        setShowLoginPrompt(true);
+        return;
+      }
+    }
     setUserRole(role);
     if (role === 'recruiter') {
       navigate('/recruiter-dashboard');
@@ -129,12 +140,34 @@ const LandingPage = () => {
           <div className="logo-container">
             <img src="/logo.png" alt="CVtoCall" className="logo" />
           </div>
-          <Button
-            className="get-started-btn bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-full font-medium transition-all"
-            onClick={() => document.getElementById('role-selection').scrollIntoView({ behavior: 'smooth' })}
-          >
-            Get Started
-          </Button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            {user && (
+              <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: '14px' }}>
+                Hi, {user.name}
+              </span>
+            )}
+            <Button
+              className="get-started-btn bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-full font-medium transition-all"
+              onClick={() => document.getElementById('role-selection').scrollIntoView({ behavior: 'smooth' })}
+            >
+              Get Started
+            </Button>
+            {user ? (
+              <Button
+                className="bg-red-600/20 hover:bg-red-600/40 text-red-300 px-4 py-2 rounded-full font-medium transition-all border border-red-500/30"
+                onClick={() => { logout(); navigate('/login'); }}
+              >
+                Logout
+              </Button>
+            ) : (
+              <Button
+                className="bg-white/5 hover:bg-white/10 text-white/70 px-5 py-2 rounded-full font-medium transition-all border border-white/10"
+                onClick={() => navigate('/login')}
+              >
+                Login
+              </Button>
+            )}
+          </div>
         </nav>
 
         <div className="hero-content">
@@ -295,6 +328,53 @@ const LandingPage = () => {
           </div>
         </motion.div>
       </motion.div>
+
+      {/* Login Required Modal for Recruiter */}
+      {showLoginPrompt && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(8px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          zIndex: 9999
+        }} onClick={() => setShowLoginPrompt(false)}>
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            style={{
+              background: 'rgba(15, 15, 30, 0.95)',
+              border: '1px solid rgba(255,255,255,0.1)',
+              borderRadius: '16px', padding: '36px', maxWidth: '400px',
+              width: '90%', textAlign: 'center',
+              boxShadow: '0 20px 60px rgba(0,0,0,0.5)'
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ fontSize: '40px', marginBottom: '16px' }}>
+              <FaBriefcase style={{ color: '#a78bfa' }} />
+            </div>
+            <h3 style={{ color: '#fff', fontSize: '20px', fontWeight: 600, marginBottom: '8px' }}>
+              Login Required
+            </h3>
+            <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '14px', marginBottom: '24px', lineHeight: 1.5 }}>
+              The Hiring Platform requires an account to manage candidates, rank resumes, and conduct interviews.
+            </p>
+            <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
+              <Button
+                className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-full font-medium"
+                onClick={() => navigate('/login')}
+              >
+                Login / Sign Up
+              </Button>
+              <Button
+                className="bg-white/5 hover:bg-white/10 text-white/60 px-6 py-2 rounded-full font-medium border border-white/10"
+                onClick={() => setShowLoginPrompt(false)}
+              >
+                Cancel
+              </Button>
+            </div>
+          </motion.div>
+        </div>
+      )}
     </div>
   );
 };

@@ -112,6 +112,8 @@ app.use(express.static(path.join(__dirname, '../frontend/build')));
 // API ROUTES
 // ===========================================
 
+const { protect, optionalAuth } = require('./middleware/auth');
+const authRoutes = require('./routes/auth');
 const analysisRoutes = require('./routes/analysis');
 const chatRoutes = require('./routes/chat');
 const prepPlanRoutes = require('./routes/prepPlan');
@@ -119,13 +121,18 @@ const recruiterRoutes = require('./routes/recruiter');
 const resumeBuilderRoutes = require('./routes/resumeBuilder');
 const interviewRoutes = require('./routes/interview');
 
-// Apply stricter rate limit to AI-heavy routes
-app.use('/api/analysis', aiLimiter, analysisRoutes);
-app.use('/api/chat', aiLimiter, chatRoutes);
-app.use('/api/prep-plan', aiLimiter, prepPlanRoutes);
-app.use('/api/recruiter', aiLimiter, recruiterRoutes);
-app.use('/api/resume-builder', resumeBuilderRoutes);
-app.use('/api/interview', aiLimiter, interviewRoutes);
+// Auth routes (public - no auth required)
+app.use('/api/auth', authRoutes);
+
+// Guest-accessible routes (AI Resume Analysis - candidate flow)
+app.use('/api/analysis', aiLimiter, optionalAuth, analysisRoutes);
+app.use('/api/chat', aiLimiter, optionalAuth, chatRoutes);
+app.use('/api/prep-plan', aiLimiter, optionalAuth, prepPlanRoutes);
+app.use('/api/resume-builder', optionalAuth, resumeBuilderRoutes);
+
+// Protected routes (Hiring Platform - requires login)
+app.use('/api/recruiter', aiLimiter, protect, recruiterRoutes);
+app.use('/api/interview', aiLimiter, interviewRoutes); // Interview uses token-based auth
 
 // ===========================================
 // HEALTH CHECK & API INFO

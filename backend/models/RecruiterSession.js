@@ -1,6 +1,12 @@
 const mongoose = require('mongoose');
 
 const recruiterSessionSchema = new mongoose.Schema({
+  userId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true,
+    index: true,
+  },
   // Session identification
   sessionId: {
     type: String,

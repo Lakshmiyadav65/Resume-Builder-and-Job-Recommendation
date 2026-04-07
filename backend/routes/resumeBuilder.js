@@ -42,8 +42,8 @@ router.post('/save', async (req, res) => {
 
         // Find and update or create new
         const resume = await Resume.findOneAndUpdate(
-            { sessionId },
-            { ...resumeData, sessionId },
+            { sessionId, userId: String(req.user._id) },
+            { ...resumeData, sessionId, userId: String(req.user._id) },
             { upsert: true, new: true }
         );
 
@@ -64,7 +64,7 @@ router.post('/save', async (req, res) => {
 // GET /api/resume-builder/:sessionId - Get resume by session
 router.get('/:sessionId', async (req, res) => {
     try {
-        const resume = await Resume.findOne({ sessionId: req.params.sessionId });
+        const resume = await Resume.findOne({ sessionId: req.params.sessionId, userId: String(req.user._id) });
 
         if (!resume) {
             return res.status(404).json({
@@ -278,7 +278,7 @@ router.post('/generate-pdf', async (req, res) => {
             });
         }
 
-        const resume = await Resume.findOne({ sessionId });
+        const resume = await Resume.findOne({ sessionId, userId: String(req.user._id) });
 
         if (!resume) {
             return res.status(404).json({
@@ -471,7 +471,7 @@ router.put('/update-status', async (req, res) => {
         const { sessionId, status } = req.body;
 
         const resume = await Resume.findOneAndUpdate(
-            { sessionId },
+            { sessionId, userId: String(req.user._id) },
             { status },
             { new: true }
         );

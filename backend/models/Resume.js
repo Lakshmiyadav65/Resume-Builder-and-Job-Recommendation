@@ -1,6 +1,11 @@
 const mongoose = require('mongoose');
 
 const resumeSchema = new mongoose.Schema({
+  userId: {
+    type: String,
+    index: true,
+    default: 'guest',
+  },
   sessionId: {
     type: String,
     required: true,

@@ -428,8 +428,9 @@ router.post('/analyze', upload.fields([
 
     // Use findOneAndUpdate with upsert to avoid duplicate key errors
     const analysisDoc = await Analysis.findOneAndUpdate(
-      { sessionId: sessionId || `session_${Date.now()}` },
+      { sessionId: sessionId || `session_${Date.now()}`, userId: String(req.user._id) },
       {
+        userId: String(req.user._id),
         resumeText,
         jobDescription: finalJobDescription,
         overallScore: analysis.overall_score || 0,
@@ -473,7 +474,7 @@ router.post('/analyze', upload.fields([
 // GET /api/analysis/:sessionId
 router.get('/:sessionId', async (req, res) => {
   try {
-    const analysis = await Analysis.findOne({ sessionId: req.params.sessionId });
+    const analysis = await Analysis.findOne({ sessionId: req.params.sessionId, userId: String(req.user._id) });
 
     if (!analysis) {
       return res.status(404).json({ error: 'Analysis not found' });

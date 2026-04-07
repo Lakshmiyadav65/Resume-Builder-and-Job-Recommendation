@@ -334,12 +334,13 @@ Rank from highest to lowest fitScore. Be strict about domain alignment.`;
     // Save to MongoDB
     try {
       // Create or update recruiter session
-      let recruiterSession = await RecruiterSession.findOne({ sessionId });
+      let recruiterSession = await RecruiterSession.findOne({ sessionId, userId: req.user._id });
 
       if (!recruiterSession) {
         recruiterSession = new RecruiterSession({
+          userId: req.user._id,
           sessionId: sessionId,
-          recruiterId: sessionId, // Using sessionId as recruiterId for now
+          recruiterId: req.user._id.toString(),
           jobDescription: finalJobDescription,
           totalCandidates: resumeTexts.length,
           status: 'active',
@@ -353,11 +354,12 @@ Rank from highest to lowest fitScore. Be strict about domain alignment.`;
       // Save each candidate to database
       if (analysisData.rankedCandidates && analysisData.rankedCandidates.length > 0) {
         // Delete existing candidates for this session (refresh)
-        await Candidate.deleteMany({ sessionId });
+        await Candidate.deleteMany({ sessionId, userId: req.user._id });
 
         // Save new candidates
         const candidateDocs = analysisData.rankedCandidates.map((candidate, index) => ({
-          recruiterId: sessionId,
+          userId: req.user._id,
+          recruiterId: req.user._id.toString(),
           sessionId: sessionId,
           jobDescription: finalJobDescription,
           fileName: candidate.fileName || resumeTexts[index].fileName,

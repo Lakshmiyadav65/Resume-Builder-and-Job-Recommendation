@@ -71,8 +71,9 @@ router.post('/init', upload.single('resume'), async (req, res) => {
 
     // Create or update chat session
     const chat = await Chat.findOneAndUpdate(
-      { sessionId: sessionId || `chat_${Date.now()}` },
+      { sessionId: sessionId || `chat_${Date.now()}`, userId: String(req.user._id) },
       {
+        userId: String(req.user._id),
         resumeText,
         messages: [],
       },
@@ -100,7 +101,7 @@ router.post('/message', async (req, res) => {
     }
 
     // Find chat session
-    const chat = await Chat.findOne({ sessionId });
+    const chat = await Chat.findOne({ sessionId, userId: String(req.user._id) });
 
     if (!chat) {
       return res.status(404).json({ error: 'Chat session not found' });
@@ -173,7 +174,7 @@ Rules:
 // GET /api/chat/:sessionId - Get chat history
 router.get('/:sessionId', async (req, res) => {
   try {
-    const chat = await Chat.findOne({ sessionId: req.params.sessionId });
+    const chat = await Chat.findOne({ sessionId: req.params.sessionId, userId: String(req.user._id) });
 
     if (!chat) {
       return res.status(404).json({ error: 'Chat session not found' });
@@ -192,7 +193,7 @@ router.get('/:sessionId', async (req, res) => {
 // DELETE /api/chat/:sessionId - Clear chat
 router.delete('/:sessionId', async (req, res) => {
   try {
-    const chat = await Chat.findOne({ sessionId: req.params.sessionId });
+    const chat = await Chat.findOne({ sessionId: req.params.sessionId, userId: String(req.user._id) });
 
     if (!chat) {
       return res.status(404).json({ error: 'Chat session not found' });
