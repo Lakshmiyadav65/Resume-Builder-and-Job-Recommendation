@@ -9,7 +9,15 @@ const interviewSessionSchema = new mongoose.Schema({
     candidateId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Candidate',
-        required: true
+    },
+    candidateEmail: {
+        type: String,
+    },
+    candidateName: {
+        type: String,
+    },
+    jobTitle: {
+        type: String,
     },
     recruiterId: {
         type: String,

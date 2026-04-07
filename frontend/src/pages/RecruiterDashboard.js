@@ -31,7 +31,7 @@ import './RecruiterDashboard.css';
 import { Search, MapPin, FileText, Send, User, ChevronLeft, ChevronRight, X, Mic, MicOff, Video, Clock, CheckCircle2, Copy, Briefcase, Sparkles, Settings, AlertCircle, XCircle, Check, CircleSlash, Eye, Edit3, VolumeX, EyeOff, Camera, ShieldCheck, Lock, Pause, MoreHorizontal } from 'lucide-react';
 import { Avatar, AvatarImage, AvatarFallback } from '../components/ui/avatar';
 import { toast } from 'sonner';
-import { inviteToInterview } from '../services/api';
+import { inviteToInterview, generateInterviewQuestions, generateInterviewReport } from '../services/api';
 
 const MotionCard = motion(Card);
 
@@ -60,6 +60,8 @@ const RecruiterDashboard = () => {
   const [interviewMode] = useState('kia'); // Kia Agent mode
   const [linkExpiry, setLinkExpiry] = useState('48');
   const [inviteSuccess, setInviteSuccess] = useState(false);
+  const [inviteEmail, setInviteEmail] = useState('');
+  const [inviteLink, setInviteLink] = useState('');
   const [showDemoModal, setShowDemoModal] = useState(false);
   const [showDemoExperience, setShowDemoExperience] = useState(false);
   const [demoStep, setDemoStep] = useState(0); // 0=intro, 1=interview, 2=results
@@ -90,24 +92,11 @@ const RecruiterDashboard = () => {
   const [identityMatchScore, setIdentityMatchScore] = useState(0);
   const [demoFlowStep, setDemoFlowStep] = useState(0); // 0=Secure Capture, 1=Main Dashboard
 
-  const demoQuestions = [
-    {
-      q: "Walk me through a full-stack project you've built. What technologies did you use and what was your role?",
-      followup: "That's a strong foundation! It helps to see how you think end-to-end. Now let's go deeper."
-    },
-    {
-      q: "How do you approach optimizing a slow API endpoint in a Node.js backend connected to MongoDB?",
-      followup: "Great thinking! Knowing how to profile and optimize is critical for production systems."
-    },
-    {
-      q: "Tell me about a time you faced a difficult bug in production. How did you diagnose and resolve it?",
-      followup: "That's exactly the kind of systematic thinking we look for in senior engineers."
-    },
-    {
-      q: "How do you manage state in large React applications, and when would you choose Redux over Context API?",
-      followup: "Excellent answer. Understanding trade-offs between tools is key for building scalable apps."
-    },
-  ];
+  const [demoQuestions, setDemoQuestions] = useState([]);
+  const [questionsLoading, setQuestionsLoading] = useState(false);
+  const [aiReport, setAiReport] = useState(null);
+  const [reportLoading, setReportLoading] = useState(false);
+  const userAnswersRef = useRef([]);
 
   useEffect(() => {
     if (showInviteModal || showDemoModal || showDemoExperience) {
@@ -256,10 +245,10 @@ const RecruiterDashboard = () => {
     accumulatedTranscriptRef.current = '';
     setVoiceTranscript('');
 
-    // MIC WARMUP: Chrome on Windows sometimes won't stream audio unless the device is opened first
+    // MIC WARMUP: Request mic permission and keep stream alive until recognition starts
+    let warmupStream = null;
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      setTimeout(() => stream.getTracks().forEach(t => t.stop()), 200);
+      warmupStream = await navigator.mediaDevices.getUserMedia({ audio: true });
     } catch (permErr) {
       console.error('[KIA] Mic permission denied:', permErr);
       toast.error('Microphone access denied. Please allow microphone access.');
@@ -267,7 +256,6 @@ const RecruiterDashboard = () => {
     }
 
     // IMPORTANT: Reset manually-stopped AFTER the async warmup, not before
-    // to avoid a race where speakText sets manuallyStoppedRef=true between these lines
     manuallyStoppedRef.current = false;
 
     const recognition = new SpeechRecognition();
@@ -279,6 +267,11 @@ const RecruiterDashboard = () => {
     recognition.onstart = () => {
       console.log('[KIA] Voice recognition started');
       setIsListening(true);
+      // Release warmup stream now that recognition has the mic
+      if (warmupStream) {
+        warmupStream.getTracks().forEach(t => t.stop());
+        warmupStream = null;
+      }
     };
 
     recognition.onresult = (event) => {
@@ -341,6 +334,11 @@ const RecruiterDashboard = () => {
     } catch (e) {
       console.error('[KIA] Start failed:', e);
       setIsListening(false);
+      // Cleanup warmup stream on failure
+      if (warmupStream) {
+        warmupStream.getTracks().forEach(t => t.stop());
+        warmupStream = null;
+      }
     }
   };
 
@@ -354,8 +352,8 @@ const RecruiterDashboard = () => {
     }
     setIsListening(false);
 
-    // Using current state to ensure we capture the most recent interim text as well
-    const finalAnswer = (voiceTranscript || accumulatedTranscriptRef.current).trim();
+    // Use ref (always fresh) as primary source, state as fallback
+    const finalAnswer = (accumulatedTranscriptRef.current || voiceTranscript).trim();
     console.log('[KIA] Submit answer:', finalAnswer);
 
     setVoiceTranscript('');
@@ -378,6 +376,9 @@ const RecruiterDashboard = () => {
     }
     setIsListening(false);
 
+    // Track answers for report
+    userAnswersRef.current = [...userAnswersRef.current, answer];
+
     const userMsg = { role: 'user', text: answer };
     const nextIndex = demoQuestionIndex + 1;
     setDemoMessages(prev => [...prev, userMsg]);
@@ -398,22 +399,43 @@ const RecruiterDashboard = () => {
         setDemoQuestionIndex(nextIndex);
         setDemoTyping(false);
 
-        // Automatically start listening after the agent finishes speaking the next question
         speakText(followup + " ... " + nextQ, () => {
           startListening();
         });
       } else {
-        const closing = "Excellent. That completes our demo interview! You've done a great job. Let me compile your performance results now...";
+        const closing = "Excellent. That completes our interview! Let me compile your detailed performance analysis now...";
         setDemoMessages(prev => [...prev, { role: 'agent', text: closing }]);
         setDemoTyping(false);
         speakText(closing, () => {
-          setTimeout(() => setDemoStep(2), 1500);
+          generateReport();
         });
       }
-    }, 1500); // 1.5s thinking time
+    }, 1500);
   };
 
-  const startDemoExperience = () => {
+  const generateReport = async () => {
+    setReportLoading(true);
+    setDemoStep(2);
+    try {
+      const questionsText = demoQuestions.map(q => q.q);
+      const res = await generateInterviewReport({
+        jobDescription: jobDesc || 'Software Engineering Position',
+        questions: questionsText,
+        answers: userAnswersRef.current,
+        candidateName: 'Demo Candidate'
+      });
+      if (res.success) {
+        setAiReport(res.data);
+      }
+    } catch (err) {
+      console.error('[KIA] Report generation failed:', err);
+      toast.error('Could not generate AI report.');
+    } finally {
+      setReportLoading(false);
+    }
+  };
+
+  const startDemoExperience = async () => {
     setShowDemoModal(false);
     setDemoStep(0);
     setDemoIntroPhase(0);
@@ -443,7 +465,38 @@ const RecruiterDashboard = () => {
     setDemoIntroPhase(0);
     // Start camera immediately for security capture
     requestPermissionsAndCheck();
+
+    // Generate 10 interview questions from the JD
+    if (jobDesc || jobDescFile) {
+      setQuestionsLoading(true);
+      try {
+        const jdText = jobDesc || 'General software engineering position';
+        const res = await generateInterviewQuestions({ jobDescription: jdText, count: 10 });
+        if (res.success && res.data.questions.length > 0) {
+          setDemoQuestions(res.data.questions);
+        } else {
+          // Fallback questions if API fails
+          setDemoQuestions(getDefaultQuestions());
+        }
+      } catch (err) {
+        console.error('[KIA] Failed to generate questions:', err);
+        setDemoQuestions(getDefaultQuestions());
+        toast.error('Could not generate JD-specific questions. Using default questions.');
+      } finally {
+        setQuestionsLoading(false);
+      }
+    } else {
+      setDemoQuestions(getDefaultQuestions());
+    }
   };
+
+  const getDefaultQuestions = () => [
+    { q: "Tell me about yourself and your relevant experience for this role.", followup: "Great introduction! Let's dive deeper into your technical skills." },
+    { q: "Walk me through a challenging project you've worked on recently.", followup: "Impressive work! Problem-solving is key in this role." },
+    { q: "How do you approach learning new technologies or frameworks?", followup: "That shows great adaptability. Let's move on." },
+    { q: "Describe a situation where you had to work under tight deadlines.", followup: "Good time management is crucial. Let's continue." },
+    { q: "What are your strongest technical skills and how have you applied them?", followup: "Solid technical foundation! Next question." },
+  ];
 
   const captureIdentityPhoto = () => {
     if (!cameraPreviewRef.current || !cameraDetected) return;
@@ -627,6 +680,10 @@ const RecruiterDashboard = () => {
   };
 
   const startDemoInterview = () => {
+    if (demoQuestions.length === 0 || questionsLoading) {
+      toast.error('Questions are still loading. Please wait...');
+      return;
+    }
     // Keep camera stream ACTIVE to show student in a separate card during interview
     setDemoStep(1);
     setDemoTyping(true);
@@ -844,27 +901,42 @@ const RecruiterDashboard = () => {
 
   const handleInvite = (candidate) => {
     setSelectedCandidate(candidate);
+    setInviteEmail(candidate.email || '');
+    setInviteLink('');
     setShowInviteModal(true);
   };
 
   const confirmInvite = async () => {
     if (!selectedCandidate) return;
+    if (!inviteEmail || !inviteEmail.includes('@')) {
+      toast.error('Please enter a valid email address');
+      return;
+    }
 
     try {
       setInviting(selectedCandidate.name);
 
-      // Attempt API call but ensure success screen shows for demo
-      const response = await inviteToInterview(selectedCandidate._id || selectedCandidate.id, sessionId, {
+      const response = await inviteToInterview(selectedCandidate._id || selectedCandidate.id || 'manual', sessionId, {
         mode: interviewMode,
-        expiry: linkExpiry
+        expiry: linkExpiry,
+        email: inviteEmail,
+        candidateName: selectedCandidate.name || selectedCandidate.candidateName,
+        jobTitle: selectedCandidate.jobTitle || 'Software Engineer'
       });
 
+      if (response.interviewLink) {
+        setInviteLink(response.interviewLink);
+      }
       setInviteSuccess(true);
+
+      if (response.emailSent) {
+        toast.success('Interview invitation emailed!');
+      } else {
+        toast.success('Interview link created! Share it manually.');
+      }
     } catch (err) {
       console.error('Invite error:', err);
-      // Still show success screen for frontend demo
-      setInviteSuccess(true);
-      toast.success('Interview invitation sent!');
+      toast.error('Failed to send invite. Please try again.');
     } finally {
       setInviting(null);
     }
@@ -874,10 +946,13 @@ const RecruiterDashboard = () => {
     setShowInviteModal(false);
     setInviteSuccess(false);
     setSelectedCandidate(null);
+    setInviteEmail('');
+    setInviteLink('');
   };
 
   const copyInviteLink = () => {
-    navigator.clipboard.writeText("hire-ai.platform/interview/lx-7782-ntx");
+    const link = inviteLink || 'No link generated';
+    navigator.clipboard.writeText(link);
     toast.success("Link copied to clipboard!");
   };
 
@@ -1333,22 +1408,36 @@ const RecruiterDashboard = () => {
                     </Select>
                   </div>
 
-                  <div className="modal-section mb-10">
-                    <div className="flex items-center justify-between mb-3">
-                      <label className="section-label text-slate-400 text-[11px] font-bold tracking-widest uppercase m-0">EMAIL INVITATION PREVIEW</label>
-                      <button className="edit-content-btn flex items-center gap-1.5 text-[11px] text-purple-400 font-bold hover:text-purple-300 transition-colors uppercase italic active:scale-95">
-                        <Edit3 size={12} /> Edit Content
-                      </button>
+                  <div className="modal-section mb-6">
+                    <label className="section-label block text-slate-400 text-[11px] font-bold tracking-widest uppercase mb-3">CANDIDATE EMAIL</label>
+                    <div className="relative">
+                      <input
+                        type="email"
+                        value={inviteEmail}
+                        onChange={(e) => setInviteEmail(e.target.value)}
+                        placeholder="Enter candidate's email address"
+                        className="w-full bg-[#111827] border border-[#1f2937] text-white h-12 rounded-xl px-4 text-sm focus:outline-none focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/20 transition-all placeholder:text-slate-600"
+                      />
+                      {inviteEmail && inviteEmail.includes('@') && (
+                        <CheckCircle2 size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-emerald-400" />
+                      )}
                     </div>
+                    {!inviteEmail && <p className="text-amber-400/70 text-[10px] mt-2 font-semibold">* Email is required to send the invite</p>}
+                  </div>
+
+                  <div className="modal-section mb-10">
+                    <label className="section-label block text-slate-400 text-[11px] font-bold tracking-widest uppercase mb-3">EMAIL INVITATION PREVIEW</label>
                     <div className="email-preview-box-v2 bg-[#090e1a] border border-[#1f2937] p-6 rounded-2xl font-mono text-[13px] leading-relaxed">
                       <pre className="preview-text m-0 text-slate-400 whitespace-pre-wrap">
                         {`Hi `}<span className="text-[#9448C4] font-bold uppercase">{selectedCandidate.name}</span>{`,
 
-You are invited for an AI Interview for the `}<span className="text-[#9448C4] font-bold">Senior Software Engineer</span>{`
+You are invited for an AI Interview for the `}<span className="text-[#9448C4] font-bold">Software Engineer</span>{`
 role at our company.
 
-Access your interview link here:
-`}<span className="text-blue-400 underline cursor-pointer hover:text-blue-300 transition-colors">https://hire-ai.platform/interview/lx-7782-ntx</span>{`
+Email: `}<span className="text-blue-400">{inviteEmail || '(not set)'}</span>{`
+
+A unique interview link will be generated and sent
+to the above email when you click Send.
 
 Expiry: `}<strong className="text-white font-bold">{(parseInt(linkExpiry))} hours</strong>{` from now.`}
                       </pre>
@@ -1435,7 +1524,7 @@ Expiry: `}<strong className="text-white font-bold">{(parseInt(linkExpiry))} hour
                       <div className="flex items-center gap-2">
                         <Input
                           readOnly
-                          value="hire-ai.platform/interview/lx-7782-ntx"
+                          value={inviteLink || 'Link will appear here'}
                           className="bg-[#090e1a] border-[#1f2937] text-slate-500 h-10 rounded-lg font-mono text-[10px] focus:ring-0 px-3"
                         />
                         <Button
@@ -1999,18 +2088,18 @@ Expiry: `}<strong className="text-white font-bold">{(parseInt(linkExpiry))} hour
                                 whileHover={(cameraDetected && micDetected) ? { scale: 1.01 } : {}}
                                 whileTap={(cameraDetected && micDetected) ? { scale: 0.99 } : {}}
                                 onClick={startDemoInterview}
-                                disabled={!cameraDetected || !micDetected}
+                                disabled={!cameraDetected || !micDetected || questionsLoading}
                                 style={{
                                   width: '100%', padding: '16px', borderRadius: '14px', border: 'none',
-                                  background: (cameraDetected && micDetected) ? 'linear-gradient(135deg, #6366f1, #a855f7)' : 'rgba(255,255,255,0.03)',
-                                  color: (cameraDetected && micDetected) ? '#fff' : '#475569',
+                                  background: (cameraDetected && micDetected && !questionsLoading) ? 'linear-gradient(135deg, #6366f1, #a855f7)' : 'rgba(255,255,255,0.03)',
+                                  color: (cameraDetected && micDetected && !questionsLoading) ? '#fff' : '#475569',
                                   fontWeight: '900', fontSize: '15px',
-                                  cursor: (cameraDetected && micDetected) ? 'pointer' : 'not-allowed',
-                                  boxShadow: (cameraDetected && micDetected) ? '0 8px 16px rgba(124,58,237,0.2)' : 'none',
+                                  cursor: (cameraDetected && micDetected && !questionsLoading) ? 'pointer' : 'not-allowed',
+                                  boxShadow: (cameraDetected && micDetected && !questionsLoading) ? '0 8px 16px rgba(124,58,237,0.2)' : 'none',
                                   display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px'
                                 }}
                               >
-                                Enter Evaluation Room {(cameraDetected && micDetected) && <Sparkles size={14} />}
+                                {questionsLoading ? 'Preparing JD-Based Questions...' : <>Enter Evaluation Room {(cameraDetected && micDetected) && <Sparkles size={14} />}</>}
                               </motion.button>
                             )}
                             <p style={{ margin: 0, textAlign: 'center', fontSize: '8px', color: '#94a3b8', fontWeight: '800', letterSpacing: '0.1em' }}>🔒 ENCRYPTED SESSION ACTIVE</p>
@@ -2061,7 +2150,7 @@ Expiry: `}<strong className="text-white font-bold">{(parseInt(linkExpiry))} hour
                     </div>
 
                     {/* Question & Transcript Display */}
-                    <div style={{ width: 'k100%', maxWidth: '440px', padding: '0 24px', zIndex: 2, display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                    <div style={{ width: '100%', maxWidth: '440px', padding: '0 24px', zIndex: 2, display: 'flex', flexDirection: 'column', gap: '16px' }}>
                       <div style={{ alignSelf: 'flex-start', background: 'rgba(255,255,255,0.05)', backdropFilter: 'blur(10px)', padding: '16px 20px', borderRadius: '20px 20px 20px 4px', fontSize: '15px', color: '#f8fafc', maxWidth: '90%', lineHeight: 1.5, border: '1px solid rgba(255,255,255,0.08)' }}>
                         <span style={{ fontSize: '10px', fontWeight: '900', color: '#6366f1', textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>AI AI Agent</span>
                         "{demoMessages.filter(m => m.role === 'agent').pop()?.text || "..."}"

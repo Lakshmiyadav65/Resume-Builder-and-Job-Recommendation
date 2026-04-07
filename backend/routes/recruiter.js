@@ -495,4 +495,179 @@ Generate 3-5 varied assignments covering different skill aspects from the JD.`;
   }
 });
 
+// Generate interview questions from job description
+router.post('/generate-interview-questions', async (req, res) => {
+  try {
+    const { jobDescription, candidateResume, count } = req.body;
+
+    if (!jobDescription) {
+      return res.status(400).json({
+        success: false,
+        error: 'Job description is required'
+      });
+    }
+
+    const numQuestions = Math.min(count || 10, 15);
+
+    const prompt = `You are a senior technical interviewer. Based on the following job description, generate exactly ${numQuestions} interview questions.
+
+Job Description:
+${jobDescription.substring(0, 3000)}
+
+${candidateResume ? `Candidate Resume:\n${candidateResume.substring(0, 2000)}` : ''}
+
+RULES:
+1. Generate exactly ${numQuestions} questions
+2. Questions must be directly based on skills, responsibilities, and requirements mentioned in the JD
+3. Mix question types:
+   - 3-4 Technical/skill-based questions (test specific skills from the JD)
+   - 2-3 Behavioral/situational questions (test soft skills from the JD)
+   - 2-3 Problem-solving/scenario questions (test real-world application)
+   - 1-2 Experience/project questions (test depth of knowledge)
+4. Each question should have a short professional followup response
+5. Questions should progressively increase in difficulty
+6. Be specific to the JD — don't ask generic questions
+
+Return JSON only:
+{
+  "questions": [
+    {
+      "q": "The interview question here",
+      "followup": "A brief professional acknowledgment/transition (1 sentence)"
+    }
+  ]
+}`;
+
+    const completion = await retryWithBackoff(async () => {
+      return await groq.chat.completions.create({
+        model: "llama-3.3-70b-versatile",
+        messages: [
+          {
+            role: "system",
+            content: "You are an expert technical interviewer. Generate targeted interview questions based on job descriptions. Always respond with valid JSON only."
+          },
+          {
+            role: "user",
+            content: prompt
+          }
+        ],
+        response_format: { type: "json_object" },
+        temperature: 0.7,
+        max_tokens: 3000
+      });
+    });
+
+    const text = completion.choices[0].message.content;
+    let data;
+    try {
+      data = JSON.parse(text);
+    } catch (parseError) {
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to parse AI response'
+      });
+    }
+
+    res.json({
+      success: true,
+      data: {
+        questions: data.questions || []
+      }
+    });
+
+  } catch (error) {
+    console.error('Interview question generation error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Failed to generate interview questions'
+    });
+  }
+});
+
+// Generate AI interview report from Q&A transcript
+router.post('/generate-interview-report', async (req, res) => {
+  try {
+    const { jobDescription, questions, answers, candidateName } = req.body;
+
+    if (!questions || !answers || questions.length === 0) {
+      return res.status(400).json({ success: false, error: 'Questions and answers are required' });
+    }
+
+    const transcript = questions.map((q, i) => `Q${i + 1}: ${q}\nA${i + 1}: ${answers[i] || 'No answer provided'}`).join('\n\n');
+
+    const prompt = `You are a senior hiring manager analyzing an AI-conducted interview. Generate a comprehensive, realistic interview evaluation report.
+
+Job Description:
+${(jobDescription || 'Software Engineering Position').substring(0, 2000)}
+
+Interview Transcript:
+${transcript.substring(0, 4000)}
+
+Candidate: ${candidateName || 'Candidate'}
+
+Analyze the candidate's responses and generate a detailed JSON report:
+
+{
+  "overallScore": <number 0-100, be strict and realistic>,
+  "recommendation": "<Highly Recommended / Recommended / Consider with Reservations / Not Recommended>",
+  "competencies": {
+    "communicationClarity": { "score": <1-10>, "detail": "<1 sentence>" },
+    "technicalAccuracy": { "score": <1-10>, "detail": "<1 sentence>" },
+    "problemSolving": { "score": <1-10>, "detail": "<1 sentence>" },
+    "answerDepth": { "score": <1-10>, "detail": "<1 sentence>" },
+    "confidenceLevel": { "score": <1-10>, "detail": "<1 sentence>" },
+    "culturalFit": { "score": <1-10>, "detail": "<1 sentence>" }
+  },
+  "sentiment": {
+    "positive": <percentage number>,
+    "neutral": <percentage number>,
+    "negative": <percentage number>,
+    "summary": "<2 sentences about candidate tone and attitude>"
+  },
+  "strengths": ["<specific strength 1>", "<specific strength 2>", "<specific strength 3>", "<specific strength 4>"],
+  "weaknesses": ["<specific area for improvement 1>", "<specific area for improvement 2>", "<specific area for improvement 3>"],
+  "questionAnalysis": [
+    {
+      "question": "<shortened question>",
+      "rating": "<Excellent/Good/Satisfactory/Needs Improvement>",
+      "keyInsight": "<1 sentence about what this answer revealed>"
+    }
+  ],
+  "hiringDecision": {
+    "verdict": "<PASS / HOLD / FAIL>",
+    "confidence": <percentage 0-100>,
+    "nextStep": "<specific recommended next action>",
+    "reasoning": "<2-3 sentences explaining the decision>"
+  },
+  "candidateProfile": {
+    "estimatedExperience": "<e.g., 2-3 years>",
+    "topSkills": ["skill1", "skill2", "skill3"],
+    "role_fit": "<Strong Fit / Moderate Fit / Weak Fit>"
+  }
+}
+
+Be honest, specific, and base everything on actual answers given. If answers were short or vague, score accordingly.`;
+
+    const completion = await retryWithBackoff(async () => {
+      return await groq.chat.completions.create({
+        model: "llama-3.3-70b-versatile",
+        messages: [
+          { role: "system", content: "You are an expert hiring evaluator. Generate detailed, honest interview evaluation reports in valid JSON only." },
+          { role: "user", content: prompt }
+        ],
+        response_format: { type: "json_object" },
+        temperature: 0.6,
+        max_tokens: 3000
+      });
+    });
+
+    const data = JSON.parse(completion.choices[0].message.content);
+
+    res.json({ success: true, data });
+  } catch (error) {
+    console.error('Interview report generation error:', error);
+    res.status(500).json({ success: false, error: error.message || 'Failed to generate report' });
+  }
+});
+
 module.exports = router;

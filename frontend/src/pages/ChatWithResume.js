@@ -164,6 +164,13 @@ Feel free to ask me anything about your resume! I'm here to provide personalized
 
   return (
     <div className="chat-container">
+      <input
+        type="file"
+        id="chat-file-input"
+        accept=".pdf"
+        onChange={handleFileChange}
+        style={{ display: 'none' }}
+      />
       <Sidebar />
 
       <div className="chat-main">

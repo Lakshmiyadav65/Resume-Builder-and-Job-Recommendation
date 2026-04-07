@@ -130,6 +130,16 @@ export const generateAssignments = async (data) => {
   return response.data;
 };
 
+export const generateInterviewQuestions = async (data) => {
+  const response = await api.post('/recruiter/generate-interview-questions', data);
+  return response.data;
+};
+
+export const generateInterviewReport = async (data) => {
+  const response = await api.post('/recruiter/generate-interview-report', data);
+  return response.data;
+};
+
 // ==================== Resume Builder APIs ====================
 
 export const saveResume = async (data) => {
