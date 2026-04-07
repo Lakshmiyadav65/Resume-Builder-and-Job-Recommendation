@@ -1422,7 +1422,13 @@ const RecruiterDashboard = () => {
                         <CheckCircle2 size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-emerald-400" />
                       )}
                     </div>
-                    {!inviteEmail && <p className="text-amber-400/70 text-[10px] mt-2 font-semibold">* Email is required to send the invite</p>}
+                    {inviteEmail && inviteEmail.includes('@') ? (
+                      <p className="text-emerald-400/80 text-[10px] mt-2 font-semibold flex items-center gap-1">
+                        <CheckCircle2 size={10} /> Extracted from resume. Edit if needed or enter a different email.
+                      </p>
+                    ) : (
+                      <p className="text-amber-400/70 text-[10px] mt-2 font-semibold">* No email found in resume. Please enter the candidate's email manually.</p>
+                    )}
                   </div>
 
                   <div className="modal-section mb-10">

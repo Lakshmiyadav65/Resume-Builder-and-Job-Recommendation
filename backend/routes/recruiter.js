@@ -282,6 +282,8 @@ Return JSON only:
       "rank": 1,
       "fileName": "resume.pdf",
       "name": "Candidate Name",
+      "email": "candidate@email.com",
+      "phone": "+1234567890",
       "fitScore": 85,
       "strengths": ["strength1", "strength2", "strength3"],
       "missingSkills": ["skill1", "skill2"],
@@ -289,6 +291,8 @@ Return JSON only:
     }
   ]
 }
+
+IMPORTANT: Extract the candidate's actual email and phone from their resume text. If not found, use empty string.
 
 Rank from highest to lowest fitScore. Be strict about domain alignment.`;
 
@@ -357,21 +361,32 @@ Rank from highest to lowest fitScore. Be strict about domain alignment.`;
         await Candidate.deleteMany({ sessionId, userId: req.user._id });
 
         // Save new candidates
-        const candidateDocs = analysisData.rankedCandidates.map((candidate, index) => ({
-          userId: req.user._id,
-          recruiterId: req.user._id.toString(),
-          sessionId: sessionId,
-          jobDescription: finalJobDescription,
-          fileName: candidate.fileName || resumeTexts[index].fileName,
-          resumeText: resumeTexts.find(r => r.fileName === candidate.fileName)?.text || '',
-          candidateName: candidate.name || `Candidate ${candidate.rank}`,
-          rank: candidate.rank,
-          fitScore: candidate.fitScore,
-          strengths: candidate.strengths || [],
-          missingSkills: candidate.missingSkills || [],
-          justification: candidate.justification || '',
-          status: 'pending',
-        }));
+        const candidateDocs = analysisData.rankedCandidates.map((candidate, index) => {
+          const resumeObj = resumeTexts.find(r => r.fileName === candidate.fileName) || resumeTexts[index];
+          const text = resumeObj?.text || '';
+
+          // Regex fallback for email/phone extraction from resume text
+          const emailMatch = text.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
+          const phoneMatch = text.match(/(\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}/);
+
+          return {
+            userId: req.user._id,
+            recruiterId: req.user._id.toString(),
+            sessionId: sessionId,
+            jobDescription: finalJobDescription,
+            fileName: candidate.fileName || resumeObj?.fileName || '',
+            resumeText: text,
+            candidateName: candidate.name || `Candidate ${candidate.rank}`,
+            email: candidate.email || (emailMatch ? emailMatch[0] : ''),
+            phone: candidate.phone || (phoneMatch ? phoneMatch[0] : ''),
+            rank: candidate.rank,
+            fitScore: candidate.fitScore,
+            strengths: candidate.strengths || [],
+            missingSkills: candidate.missingSkills || [],
+            justification: candidate.justification || '',
+            status: 'pending',
+          };
+        });
 
         await Candidate.insertMany(candidateDocs);
         console.log(`Saved ${candidateDocs.length} candidates to database`);
