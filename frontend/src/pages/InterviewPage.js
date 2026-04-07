@@ -474,69 +474,116 @@ const InterviewPage = () => {
             </motion.div>
           )}
 
-          {/* STEP 2: Live Interview */}
+          {/* STEP 2: Live Interview — Zoom/Meet Style */}
           {flowStep === 2 && (
             <motion.div key="interview" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              style={{ width: '100%', maxWidth: 1200, display: 'flex', gap: 0, height: 'calc(100vh - 60px)' }}>
+              style={{ width: '100%', height: 'calc(100vh - 60px)', display: 'flex', flexDirection: 'column', padding: '16px 20px 0', gap: 12 }}>
 
-              {/* Left: AI Agent */}
-              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 32, position: 'relative' }}>
-                {/* Voice Visualizer */}
-                <div style={{ width: 180, height: 180, borderRadius: '50%', background: '#090c14', border: isListening ? '2px solid #3b82f6' : '1.5px solid rgba(255,255,255,0.1)', boxShadow: isListening ? '0 0 40px rgba(59,130,246,0.2)' : '0 10px 30px rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 40 }}>
-                  <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
-                    {Array.from({ length: 12 }).map((_, i) => (
-                      <motion.div key={i} style={{ width: 3, background: '#6366f1', borderRadius: 4 }}
-                        animate={{ height: (isListening || isAgentSpeaking) ? [20, 50, 25, 45, 20] : [10, 15, 10] }}
-                        transition={{ repeat: Infinity, duration: 0.8 + i * 0.05, delay: i * 0.04 }} />
-                    ))}
+              {/* Video Grid — 2 tiles like Google Meet */}
+              <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, minHeight: 0 }}>
+
+                {/* Tile 1: AI Interviewer */}
+                <div style={{ background: '#111318', borderRadius: 16, position: 'relative', overflow: 'hidden', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                  {/* AI Avatar / Visualizer */}
+                  <div style={{ width: 120, height: 120, borderRadius: '50%', background: 'linear-gradient(135deg, #1e1b4b, #312e81)', border: isAgentSpeaking ? '3px solid #818cf8' : '2px solid rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 20, boxShadow: isAgentSpeaking ? '0 0 40px rgba(129,140,248,0.3)' : '0 8px 24px rgba(0,0,0,0.4)', transition: 'all 0.3s' }}>
+                    <div style={{ display: 'flex', gap: 3, alignItems: 'center' }}>
+                      {Array.from({ length: 8 }).map((_, i) => (
+                        <motion.div key={i} style={{ width: 3, background: isAgentSpeaking ? '#a5b4fc' : '#4338ca', borderRadius: 4 }}
+                          animate={{ height: isAgentSpeaking ? [12, 40, 18, 35, 12] : [6, 10, 6] }}
+                          transition={{ repeat: Infinity, duration: 0.7 + i * 0.06, delay: i * 0.05 }} />
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Question Bubble */}
+                  <div style={{ maxWidth: '85%', padding: '14px 18px', background: 'rgba(255,255,255,0.06)', borderRadius: 14, border: '1px solid rgba(255,255,255,0.08)', backdropFilter: 'blur(10px)' }}>
+                    <p style={{ margin: 0, fontSize: 14, color: '#e2e8f0', lineHeight: 1.6, textAlign: 'center' }}>
+                      "{currentQuestion || 'Preparing your first question...'}"
+                    </p>
+                  </div>
+
+                  {/* Name Badge */}
+                  <div style={{ position: 'absolute', bottom: 12, left: 12, background: 'rgba(0,0,0,0.7)', borderRadius: 8, padding: '6px 12px', display: 'flex', alignItems: 'center', gap: 8, backdropFilter: 'blur(8px)' }}>
+                    <Sparkles size={12} color="#818cf8" />
+                    <span style={{ fontSize: 12, fontWeight: 700, color: '#e2e8f0' }}>KIA AI Interviewer</span>
+                    {isAgentSpeaking && <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#818cf8', animation: 'pulse 1s infinite' }} />}
                   </div>
                 </div>
 
-                {/* Question + Transcript */}
-                <div style={{ width: '100%', maxWidth: 440, display: 'flex', flexDirection: 'column', gap: 16 }}>
-                  <div style={{ background: 'rgba(255,255,255,0.05)', backdropFilter: 'blur(10px)', padding: '16px 20px', borderRadius: '20px 20px 20px 4px', fontSize: 15, color: '#f8fafc', lineHeight: 1.5, border: '1px solid rgba(255,255,255,0.08)' }}>
-                    <span style={{ fontSize: 10, fontWeight: 900, color: '#6366f1', textTransform: 'uppercase', display: 'block', marginBottom: 4 }}>AI Agent</span>
-                    "{currentQuestion || 'Preparing your first question...'}"
+                {/* Tile 2: Candidate Camera */}
+                <div style={{ background: '#111318', borderRadius: 16, position: 'relative', overflow: 'hidden' }}>
+                  {cameraDetected ? (
+                    <video ref={setCameraRef} autoPlay muted playsInline style={{ width: '100%', height: '100%', objectFit: 'cover', transform: 'scaleX(-1)' }} />
+                  ) : (
+                    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12 }}>
+                      <div style={{ width: 80, height: 80, borderRadius: '50%', background: 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <Video size={32} color="#475569" />
+                      </div>
+                      <span style={{ color: '#475569', fontSize: 13, fontWeight: 600 }}>Camera Off</span>
+                    </div>
+                  )}
+
+                  {/* Name Badge */}
+                  <div style={{ position: 'absolute', bottom: 12, left: 12, background: 'rgba(0,0,0,0.7)', borderRadius: 8, padding: '6px 12px', display: 'flex', alignItems: 'center', gap: 8, backdropFilter: 'blur(8px)' }}>
+                    <span style={{ fontSize: 12, fontWeight: 700, color: '#e2e8f0' }}>{candidate?.candidateName || 'You'}</span>
+                    {isListening && <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#10b981', animation: 'pulse 1s infinite' }} />}
                   </div>
 
-                  {showCaptions && voiceTranscript && isListening && (
-                    <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
-                      style={{ background: 'rgba(59,130,246,0.12)', border: '1px solid rgba(59,130,246,0.2)', padding: '16px 20px', borderRadius: '20px 20px 20px 4px', fontSize: 15, color: '#93c5fd', fontStyle: 'italic', lineHeight: 1.5 }}>
-                      <span style={{ fontSize: 10, fontWeight: 900, color: '#3b82f6', textTransform: 'uppercase', display: 'block', marginBottom: 4 }}>You (Transcribing)</span>
-                      "{voiceTranscript}"
-                    </motion.div>
+                  {/* Mic Indicator */}
+                  {isListening && (
+                    <div style={{ position: 'absolute', bottom: 12, right: 12, background: 'rgba(0,0,0,0.7)', borderRadius: 8, padding: '6px 10px', display: 'flex', alignItems: 'center', gap: 6, backdropFilter: 'blur(8px)' }}>
+                      <Mic size={12} color="#10b981" />
+                      <div style={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+                        {Array.from({ length: 4 }).map((_, i) => (
+                          <motion.div key={i} style={{ width: 2, background: '#10b981', borderRadius: 2 }}
+                            animate={{ height: [4, 14, 6, 12, 4] }}
+                            transition={{ repeat: Infinity, duration: 0.6, delay: i * 0.08 }} />
+                        ))}
+                      </div>
+                    </div>
                   )}
                 </div>
-
-                {/* Next Question Button */}
-                {voiceTranscript.trim().length > 5 && isListening && (
-                  <motion.button initial={{ opacity: 0 }} animate={{ opacity: 1 }} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
-                    onClick={stopListeningAndSubmit}
-                    style={{ position: 'absolute', bottom: 40, right: 40, background: 'linear-gradient(135deg, #6366f1, #4f46e5)', color: 'white', padding: '14px 28px', borderRadius: 16, fontWeight: 900, fontSize: 13, display: 'flex', alignItems: 'center', gap: 12, border: 'none', cursor: 'pointer', boxShadow: '0 15px 30px rgba(79,70,229,0.3)', textTransform: 'uppercase', zIndex: 10 }}>
-                    <Send size={18} /> Next Question
-                  </motion.button>
-                )}
               </div>
 
-              {/* Right: Camera Feed */}
-              <div style={{ width: 420, background: '#000', position: 'relative' }}>
-                {cameraDetected ? (
-                  <video ref={setCameraRef} autoPlay muted playsInline style={{ width: '100%', height: '100%', objectFit: 'cover', transform: 'scaleX(-1)' }} />
-                ) : (
-                  <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#1e293b' }}><Video size={40} /></div>
-                )}
-                <div style={{ position: 'absolute', top: 16, left: 16, background: 'rgba(0,0,0,0.6)', borderRadius: 100, padding: '6px 14px', display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#10b981', boxShadow: '0 0 10px #10b981' }} />
-                  <span style={{ fontSize: 11, fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Student: Active</span>
+              {/* Captions Bar — like Meet live captions */}
+              {showCaptions && (
+                <div style={{ minHeight: 48, maxHeight: 80, padding: '10px 20px', background: 'rgba(255,255,255,0.03)', borderRadius: 12, border: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', gap: 12, overflow: 'hidden' }}>
+                  {voiceTranscript && isListening ? (
+                    <>
+                      <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'rgba(59,130,246,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                        <Mic size={13} color="#60a5fa" />
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <span style={{ fontSize: 10, fontWeight: 800, color: '#60a5fa', textTransform: 'uppercase', letterSpacing: '0.05em' }}>You</span>
+                        <p style={{ margin: 0, fontSize: 13, color: '#cbd5e1', lineHeight: 1.4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{voiceTranscript}</p>
+                      </div>
+                    </>
+                  ) : isAgentSpeaking ? (
+                    <>
+                      <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'rgba(99,102,241,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                        <Sparkles size={13} color="#818cf8" />
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <span style={{ fontSize: 10, fontWeight: 800, color: '#818cf8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>AI Interviewer</span>
+                        <p style={{ margin: 0, fontSize: 13, color: '#94a3b8' }}>Speaking...</p>
+                      </div>
+                    </>
+                  ) : (
+                    <p style={{ margin: 0, fontSize: 12, color: '#475569', fontStyle: 'italic', width: '100%', textAlign: 'center' }}>
+                      Live captions will appear here when speaking
+                    </p>
+                  )}
                 </div>
-                {isListening && (
-                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-                    style={{ position: 'absolute', bottom: 16, left: '50%', transform: 'translateX(-50%)', background: 'rgba(59,130,246,0.2)', border: '1px solid rgba(59,130,246,0.3)', borderRadius: 100, padding: '6px 16px', display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#3b82f6', animation: 'pulse 1.5s infinite' }} />
-                    <span style={{ fontSize: 10, fontWeight: 800, color: '#93c5fd', textTransform: 'uppercase' }}>Listening</span>
-                  </motion.div>
-                )}
-              </div>
+              )}
+
+              {/* Submit Answer floating button */}
+              {voiceTranscript.trim().length > 5 && isListening && (
+                <motion.button initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
+                  onClick={stopListeningAndSubmit}
+                  style={{ position: 'fixed', bottom: 100, right: 32, background: 'linear-gradient(135deg, #6366f1, #4f46e5)', color: 'white', padding: '12px 24px', borderRadius: 14, fontWeight: 800, fontSize: 13, display: 'flex', alignItems: 'center', gap: 10, border: 'none', cursor: 'pointer', boxShadow: '0 12px 30px rgba(79,70,229,0.4)', textTransform: 'uppercase', letterSpacing: '0.02em', zIndex: 200 }}>
+                  <Send size={16} /> Submit Answer
+                </motion.button>
+              )}
             </motion.div>
           )}
 
@@ -560,21 +607,66 @@ const InterviewPage = () => {
         </AnimatePresence>
       </div>
 
-      {/* Bottom Toolbar (during interview) */}
+      {/* Bottom Toolbar — Zoom/Meet Style */}
       {flowStep === 2 && (
-        <div style={{ height: 80, background: 'rgba(3,4,7,0.8)', borderTop: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 16, backdropFilter: 'blur(20px)', zIndex: 100 }}>
-          <Button variant="ghost" size="icon" style={{ width: 50, height: 50, borderRadius: 14, background: showCaptions ? 'rgba(99,102,241,0.2)' : 'rgba(255,255,255,0.05)', color: '#fff' }}
-            onClick={() => setShowCaptions(!showCaptions)}>
-            <FileText size={22} color={showCaptions ? '#818cf8' : 'white'} />
-          </Button>
-          <Button variant="ghost" size="icon"
-            style={{ width: 56, height: 56, borderRadius: 16, background: isListening ? '#6366f1' : 'rgba(255,255,255,0.05)', color: '#fff', boxShadow: isListening ? '0 0 20px rgba(99,102,241,0.3)' : 'none' }}
-            onClick={() => { if (isListening) stopListeningAndSubmit(); else startListening(); }}>
-            {isListening ? <Mic size={24} /> : <MicOff size={24} />}
-          </Button>
-          <Button variant="ghost" size="icon" style={{ width: 50, height: 50, borderRadius: 14, background: 'rgba(255,255,255,0.05)', color: '#fff' }}>
-            <Video size={22} />
-          </Button>
+        <div style={{ height: 72, background: '#1a1a2e', borderTop: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 24px', zIndex: 100 }}>
+
+          {/* Left: Meeting Info */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#10b981', boxShadow: '0 0 8px #10b981' }} />
+            <span style={{ fontSize: 12, fontWeight: 700, color: '#94a3b8' }}>{new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+            <span style={{ fontSize: 11, color: '#475569' }}>|</span>
+            <span style={{ fontSize: 12, fontWeight: 600, color: '#64748b' }}>Q{questionsAnswered + 1} of {totalQuestions}</span>
+          </div>
+
+          {/* Center: Controls */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <button
+              onClick={() => { if (isListening) stopListeningAndSubmit(); else startListening(); }}
+              style={{
+                width: 48, height: 48, borderRadius: '50%', border: 'none', cursor: 'pointer',
+                background: isListening ? '#10b981' : '#ef4444',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                boxShadow: isListening ? '0 0 16px rgba(16,185,129,0.3)' : '0 0 16px rgba(239,68,68,0.3)',
+                transition: 'all 0.2s'
+              }}>
+              {isListening ? <Mic size={20} color="white" /> : <MicOff size={20} color="white" />}
+            </button>
+
+            <button style={{ width: 48, height: 48, borderRadius: '50%', border: 'none', cursor: 'pointer', background: cameraDetected ? 'rgba(255,255,255,0.1)' : '#ef4444', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }}>
+              <Video size={20} color="white" />
+            </button>
+
+            <button onClick={() => setShowCaptions(!showCaptions)}
+              style={{
+                width: 48, height: 48, borderRadius: '50%', border: 'none', cursor: 'pointer',
+                background: showCaptions ? 'rgba(99,102,241,0.2)' : 'rgba(255,255,255,0.1)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s'
+              }}>
+              <FileText size={18} color={showCaptions ? '#818cf8' : 'white'} />
+            </button>
+
+            <div style={{ width: 1, height: 28, background: 'rgba(255,255,255,0.1)', margin: '0 8px' }} />
+
+            <button onClick={cleanupAndClose}
+              style={{
+                height: 40, padding: '0 20px', borderRadius: 20, border: 'none', cursor: 'pointer',
+                background: '#ef4444', color: 'white', fontSize: 13, fontWeight: 700,
+                display: 'flex', alignItems: 'center', gap: 8,
+                boxShadow: '0 4px 12px rgba(239,68,68,0.3)', transition: 'all 0.2s'
+              }}>
+              <span style={{ width: 16, height: 16, borderRadius: 4, background: 'white', display: 'inline-block', opacity: 0.9 }} />
+              End
+            </button>
+          </div>
+
+          {/* Right: Progress */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div style={{ width: 120, height: 4, background: 'rgba(255,255,255,0.1)', borderRadius: 4, overflow: 'hidden' }}>
+              <motion.div animate={{ width: `${(questionsAnswered / totalQuestions) * 100}%` }} style={{ height: '100%', background: '#6366f1', borderRadius: 4 }} />
+            </div>
+            <span style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8' }}>{Math.round((questionsAnswered / totalQuestions) * 100)}%</span>
+          </div>
         </div>
       )}
     </div>
