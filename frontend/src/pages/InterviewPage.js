@@ -47,7 +47,7 @@ const InterviewPage = () => {
   // Callback ref: auto-attach camera stream whenever a new video element mounts
   const setCameraRef = (el) => {
     cameraPreviewRef.current = el;
-    if (el && cameraStreamRef.current) {
+    if (el && cameraStreamRef.current && el.srcObject !== cameraStreamRef.current) {
       el.srcObject = cameraStreamRef.current;
       el.play().catch(() => {});
     }
@@ -78,13 +78,7 @@ const InterviewPage = () => {
     init();
   }, [token]);
 
-  // --- Camera Sync ---
-  useEffect(() => {
-    if (cameraDetected && cameraStreamRef.current && cameraPreviewRef.current) {
-      cameraPreviewRef.current.srcObject = cameraStreamRef.current;
-      cameraPreviewRef.current.play().catch(() => {});
-    }
-  }, [cameraDetected, flowStep, introPhase]);
+  // Camera sync handled by setCameraRef callback — no useEffect needed
 
   // --- Request Permissions ---
   const requestPermissions = async () => {
@@ -94,10 +88,7 @@ const InterviewPage = () => {
       setCameraDetected(true);
       setMicDetected(true);
 
-      if (cameraPreviewRef.current) {
-        cameraPreviewRef.current.srcObject = stream;
-        cameraPreviewRef.current.play().catch(() => {});
-      }
+      // setCameraRef callback will handle attaching stream to video element
 
       // Mic level monitoring
       const AudioContext = window.AudioContext || window.webkitAudioContext;
