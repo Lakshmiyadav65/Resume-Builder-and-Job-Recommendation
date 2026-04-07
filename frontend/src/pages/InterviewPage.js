@@ -43,6 +43,15 @@ const InterviewPage = () => {
   const recognitionRef = useRef(null);
   const cameraStreamRef = useRef(null);
   const cameraPreviewRef = useRef(null);
+
+  // Callback ref: auto-attach camera stream whenever a new video element mounts
+  const setCameraRef = (el) => {
+    cameraPreviewRef.current = el;
+    if (el && cameraStreamRef.current) {
+      el.srcObject = cameraStreamRef.current;
+      el.play().catch(() => {});
+    }
+  };
   const manuallyStoppedRef = useRef(false);
   const accumulatedTranscriptRef = useRef('');
   const speakGenRef = useRef(0);
@@ -374,7 +383,7 @@ const InterviewPage = () => {
               <div style={{ maxWidth: 420, margin: '0 auto', position: 'relative' }}>
                 <div style={{ background: '#000', borderRadius: 24, aspectRatio: '4/3', overflow: 'hidden', border: '2px solid rgba(255,255,255,0.05)', boxShadow: '0 30px 60px rgba(0,0,0,0.5)' }}>
                   {cameraDetected ? (
-                    <video ref={cameraPreviewRef} autoPlay muted playsInline style={{ width: '100%', height: '100%', objectFit: 'cover', transform: 'scaleX(-1)' }} />
+                    <video ref={setCameraRef} autoPlay muted playsInline style={{ width: '100%', height: '100%', objectFit: 'cover', transform: 'scaleX(-1)' }} />
                   ) : (
                     <div style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16 }}>
                       <div className="spinner" style={{ width: 36, height: 36 }} />
@@ -446,7 +455,7 @@ const InterviewPage = () => {
                 {/* Camera Preview */}
                 <div style={{ background: '#000', borderRadius: 16, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.05)', position: 'relative', aspectRatio: '16/10' }}>
                   {cameraDetected ? (
-                    <video ref={cameraPreviewRef} autoPlay muted playsInline style={{ width: '100%', height: '100%', objectFit: 'cover', transform: 'scaleX(-1)' }} />
+                    <video ref={setCameraRef} autoPlay muted playsInline style={{ width: '100%', height: '100%', objectFit: 'cover', transform: 'scaleX(-1)' }} />
                   ) : (
                     <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Video size={24} color="#1e293b" /></div>
                   )}
@@ -521,7 +530,7 @@ const InterviewPage = () => {
               {/* Right: Camera Feed */}
               <div style={{ width: 420, background: '#000', position: 'relative' }}>
                 {cameraDetected ? (
-                  <video ref={cameraPreviewRef} autoPlay muted playsInline style={{ width: '100%', height: '100%', objectFit: 'cover', transform: 'scaleX(-1)' }} />
+                  <video ref={setCameraRef} autoPlay muted playsInline style={{ width: '100%', height: '100%', objectFit: 'cover', transform: 'scaleX(-1)' }} />
                 ) : (
                   <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#1e293b' }}><Video size={40} /></div>
                 )}
