@@ -328,7 +328,7 @@ const InterviewPage = () => {
   );
 
   return (
-    <div style={{ minHeight: '100vh', background: '#06060e', color: '#fff', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ height: '100vh', background: '#06060e', color: '#fff', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
 
       {/* Top Bar */}
       {flowStep >= 2 && (
@@ -355,7 +355,7 @@ const InterviewPage = () => {
         </div>
       )}
 
-      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24, minHeight: 0, overflow: 'hidden' }}>
         <AnimatePresence mode="wait">
 
           {/* STEP 0: Identity Capture */}
@@ -477,7 +477,7 @@ const InterviewPage = () => {
           {/* STEP 2: Live Interview — Zoom/Meet Style */}
           {flowStep === 2 && (
             <motion.div key="interview" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              style={{ width: '100%', height: 'calc(100vh - 60px)', display: 'flex', flexDirection: 'column', padding: '16px 20px 0', gap: 12 }}>
+              style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', padding: '12px 16px', gap: 10, minHeight: 0, overflow: 'hidden' }}>
 
               {/* Video Grid — 2 tiles like Google Meet */}
               <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, minHeight: 0 }}>
