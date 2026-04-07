@@ -164,11 +164,24 @@ router.post('/validate', async (req, res) => {
         if (session.expiresAt < new Date()) return res.status(400).json({ success: false, error: 'Interview link has expired' });
         if (session.status === 'completed' || session.status === 'failed') return res.status(400).json({ success: false, error: 'Interview has already been conducted' });
 
+        // Build candidate info from either DB candidate or session fields
+        const candidateData = session.candidateId ? {
+            candidateName: session.candidateId.candidateName,
+            jobTitle: session.candidateId.jobTitle,
+            jobDescription: session.candidateId.jobDescription,
+            resumeText: session.candidateId.resumeText,
+        } : {
+            candidateName: session.candidateName || 'Candidate',
+            jobTitle: session.jobTitle || 'the position',
+            jobDescription: '',
+            resumeText: '',
+        };
+
         res.json({
             success: true,
-            candidate: session.candidateId,
+            candidate: candidateData,
             status: session.status,
-            currentStage: session.currentStage
+            currentStage: session.currentStage || 1
         });
     } catch (error) {
         res.status(500).json({ success: false, error: error.message });
@@ -183,30 +196,42 @@ router.post('/question', async (req, res) => {
 
         if (!session) return res.status(404).json({ success: false, error: 'Session not found' });
 
-        const candidate = session.candidateId;
-        const prompt = `You are an expert technical recruiter. Based on the candidate's resume and job description, generate ONE interview question for Stage ${stage}.
-    
-    Candidate Resume: ${candidate.resumeText.substring(0, 2000)}
-    Job Description: ${candidate.jobDescription.substring(0, 1000)}
-    
-    Previous Questions asked: ${session.questions.map(q => q.question).join(', ')}
-    
-    Return the output in JSON format:
-    {
-      "question": "The interview question",
-      "expectedKeywords": ["keyword1", "keyword2"]
-    }`;
+        // Get context from DB candidate or session fields
+        const resumeText = session.candidateId?.resumeText || '';
+        const jobDescription = session.candidateId?.jobDescription || '';
+        const jobTitle = session.candidateId?.jobTitle || session.jobTitle || 'Software Engineer';
+        const previousQuestions = session.questions.map(q => q.question).join(', ');
+
+        const prompt = `You are an expert technical recruiter conducting a Stage ${stage} interview for a ${jobTitle} position.
+
+${resumeText ? `Candidate Resume: ${resumeText.substring(0, 1500)}` : ''}
+${jobDescription ? `Job Description: ${jobDescription.substring(0, 1000)}` : `Role: ${jobTitle}`}
+
+Previous Questions asked: ${previousQuestions || 'None yet'}
+
+Generate ONE focused interview question. ${stage === 1 ? 'Stage 1 is voice screening — ask about experience, skills, and problem-solving.' : 'Stage 2 is deeper — ask about system design, leadership, and technical depth.'}
+
+Return JSON only:
+{
+  "question": "The interview question",
+  "expectedKeywords": ["keyword1", "keyword2"]
+}`;
 
         const completion = await groq.chat.completions.create({
             model: "llama-3.3-70b-versatile",
-            messages: [{ role: "user", content: prompt }],
-            response_format: { type: "json_object" }
+            messages: [
+                { role: "system", content: "You are an expert interviewer. Return valid JSON only." },
+                { role: "user", content: prompt }
+            ],
+            response_format: { type: "json_object" },
+            max_tokens: 300
         });
 
         const result = JSON.parse(completion.choices[0].message.content);
 
         res.json({ success: true, question: result.question });
     } catch (error) {
+        console.error('Question generation error:', error);
         res.status(500).json({ success: false, error: error.message });
     }
 });
@@ -217,24 +242,32 @@ router.post('/answer', async (req, res) => {
         const { token, stage, question, answer } = req.body;
         const session = await InterviewSession.findOne({ token }).populate('candidateId');
 
+        if (!session) return res.status(404).json({ success: false, error: 'Session not found' });
+
+        const jobContext = session.candidateId?.jobDescription?.substring(0, 500) || session.jobTitle || 'Software Engineer';
+
         const prompt = `Evaluate the following interview answer for an AI screening round.
-    Question: ${question}
-    Candidate Answer: ${answer}
-    
-    JD Context: ${session.candidateId.jobDescription.substring(0, 500)}
-    
-    Return evaluation in JSON format:
-    {
-      "score": number (0-100),
-      "rating": "poor" | "fair" | "good" | "excellent",
-      "feedback": "short constructive feedback",
-      "confidenceHint": number (0-100)
-    }`;
+Question: ${question}
+Candidate Answer: ${answer}
+
+Job Context: ${jobContext}
+
+Return evaluation in JSON format:
+{
+  "score": number (0-100),
+  "rating": "poor" | "fair" | "good" | "excellent",
+  "feedback": "short constructive feedback",
+  "confidenceHint": number (0-100)
+}`;
 
         const completion = await groq.chat.completions.create({
             model: "llama-3.3-70b-versatile",
-            messages: [{ role: "user", content: prompt }],
-            response_format: { type: "json_object" }
+            messages: [
+                { role: "system", content: "You are an expert interview evaluator. Return valid JSON only." },
+                { role: "user", content: prompt }
+            ],
+            response_format: { type: "json_object" },
+            max_tokens: 300
         });
 
         const evaluation = JSON.parse(completion.choices[0].message.content);
@@ -260,6 +293,7 @@ router.post('/answer', async (req, res) => {
             overallScore: session.overallScore
         });
     } catch (error) {
+        console.error('Answer evaluation error:', error);
         res.status(500).json({ success: false, error: error.message });
     }
 });
